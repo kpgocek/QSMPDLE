@@ -38,6 +38,16 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+Console.WriteLine($"BaseDirectory: {AppContext.BaseDirectory}");
+Console.WriteLine($"ContentRoot: {app.Environment.ContentRootPath}");
+
+var runtimeManifest =
+    Path.Combine(AppContext.BaseDirectory,
+        "QSMPDLE.Web.staticwebassets.runtime.json");
+
+Console.WriteLine($"Manifest exists: {File.Exists(runtimeManifest)}");
+Console.WriteLine(runtimeManifest);
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
 app.UseHttpsRedirection();
