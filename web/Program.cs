@@ -12,7 +12,11 @@ builder.Services.AddMemoryCache();
 
 builder.Services.AddMudServices();
 
-builder.Services.AddDbContext<QsmpdleDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+var relativePath = builder.Configuration["Database:Path"];
+
+var dbPath = Path.Combine(builder.Environment.ContentRootPath, relativePath!);
+
+builder.Services.AddDbContext<QsmpdleDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
 
 builder.Services.AddScoped<IMemberRepository, MemberRepository>();
 builder.Services.AddScoped<IGameStateStore, LocalStorageGameStateStore>();

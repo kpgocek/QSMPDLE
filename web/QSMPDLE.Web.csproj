@@ -19,4 +19,12 @@
     <PackageReference Include="MudBlazor" Version="9.5.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="../db/qsmpdle.db">
+      <Link>Data\qsmpdle.db</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
