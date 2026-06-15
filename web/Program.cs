@@ -1,4 +1,6 @@
+using BlazorBootstrap;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor;
 using MudBlazor.Services;
 using QSMPDLE.Web.Components;
 using QSMPDLE.Web.Data;
@@ -38,17 +40,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.MapGet("/routes", (EndpointDataSource ds) =>
-    ds.Endpoints.Select(e => e.DisplayName));
-
-app.MapGet("/manifest", () =>
-{
-    var path = Path.Combine(
-        AppContext.BaseDirectory,
-        "QSMPDLE.Web.staticwebassets.endpoints.json");
-
-    return Results.Text(File.ReadAllText(path));
-});
+Console.WriteLine(typeof(MudTheme).Assembly.Location);
+Console.WriteLine(typeof(Modal).Assembly.Location);
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
