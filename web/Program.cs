@@ -45,7 +45,6 @@ Console.WriteLine(typeof(Modal).Assembly.Location);
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
