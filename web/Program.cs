@@ -38,6 +38,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.MapGet("/routes", (EndpointDataSource ds) =>
+    ds.Endpoints.Select(e => e.DisplayName));
+
 Console.WriteLine(typeof(Program).Assembly.Location);
 Console.WriteLine(AppContext.BaseDirectory);
 
