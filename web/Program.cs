@@ -41,13 +41,14 @@ if (!app.Environment.IsDevelopment())
 app.MapGet("/routes", (EndpointDataSource ds) =>
     ds.Endpoints.Select(e => e.DisplayName));
 
-Console.WriteLine(typeof(Program).Assembly.Location);
-Console.WriteLine(AppContext.BaseDirectory);
-
-Console.WriteLine(File.Exists(
-    Path.Combine(
+app.MapGet("/manifest", () =>
+{
+    var path = Path.Combine(
         AppContext.BaseDirectory,
-        "QSMPDLE.Web.staticwebassets.endpoints.json")));
+        "QSMPDLE.Web.staticwebassets.endpoints.json");
+
+    return Results.Text(File.ReadAllText(path));
+});
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
