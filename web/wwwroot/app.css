@@ -30,7 +30,11 @@ a {
     color: var(--text);
 }
 
-a:focus {
+a:focus,
+h1:focus,
+h2:focus,
+h3:focus,
+h4:focus {
     outline: none;
 }
 
@@ -39,17 +43,21 @@ h1 {
     font-style: normal;
 }
 
-h1:focus {
-    outline: none;
-}
-
 h2 {
     font-family: "Bungee", sans-serif;
     font-style: normal;
 }
 
-h2:focus {
-    outline: none;
+h3 {
+    font-family: "Raleway", sans-serif;
+    font-style: normal;
+    font-weight: 800;
+}
+
+h4 {
+    font-family: "Raleway", sans-serif;
+    font-style: oblique;
+    font-weight: 600;
 }
 
 .text-accent {

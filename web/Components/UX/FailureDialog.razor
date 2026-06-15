@@ -1,5 +1,9 @@
 @using MudBlazor
+@using QSMPDLE.Web.Data.Gameplay
+@using QSMPDLE.Web.Services
 @inject IJSRuntime JS
+@inject IShareService ShareService
+@inject IShareTextBuilder ShareTextBuilder
 
 <div class="failure-overlay">
     <div class="failure-modal">
@@ -55,20 +59,17 @@
 @code {
     [Parameter] public int DayNumber { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-
+    [Parameter] public PlayerStats? Stats { get; set; } = null!;
     private async Task Share()
     {
-        var text =
-            $"""
-            QSMPDLE #{DayNumber}
+        ArgumentNullException.ThrowIfNull(DayNumber);
 
-            Couldn't guess within guessing limit.
-            Think you can do better?
+        var day = (int)DayNumber;
 
-            https://qsmpdle.com
-            """;
+        var text = ShareTextBuilder.BuildDailyChallenge(
+            day);
 
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        await ShareService.ShareAsync(text);
     }
 
     private async Task Close()

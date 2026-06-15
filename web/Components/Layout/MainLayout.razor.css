@@ -6,6 +6,7 @@
 }
 
 main {
+    width: 100%;
     flex: 1;
 
     margin-top: 1rem;
@@ -18,7 +19,7 @@ main {
     justify-content: flex-start;
     align-items: center;
 
-    overflow-y: visible;
+    overflow: visible;
 }
 
 #blazor-error-ui {

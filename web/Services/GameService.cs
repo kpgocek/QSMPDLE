@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using QSMPDLE.Web.Data;
@@ -52,9 +53,10 @@ public sealed class GameService(QsmpdleDbContext Qsmp, IMemoryCache Cache) : IGa
         }) ?? throw new InvalidOperationException();
     }
 
-    public Game StartEndless() => new() { Target = GetRandomMember() };
+    public async Task<Game> StartEndlessAsync() => new() { Target = await GetRandomMemberAsync() };
 
-    private Member GetRandomMember() => Qsmp.Members.ToList()[Random.Shared.Next(Qsmp.Members.Count())];
+
+    private async Task<Member> GetRandomMemberAsync() => Qsmp.Members.ToList().ElementAt(Random.Shared.Next(Qsmp.Members.Count()));
 
     public Guess SubmitGuess(Game game, int memberId)
     {

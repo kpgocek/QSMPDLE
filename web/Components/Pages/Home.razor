@@ -34,6 +34,10 @@ else if (IsGameLost)
     <FailureDialog DayNumber="@DailyNumber" Stats="@stats" OnClose="CloseFailurePopup" />
 }
 
+<style>
+    .daily-complete-banner {}
+</style>
+
 @code {
     private int DailyNumber = 0;
     private bool IsGameWon;

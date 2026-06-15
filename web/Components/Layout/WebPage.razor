@@ -1,0 +1,33 @@
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="py-5">
+
+    <MudPaper Elevation="2" Class="card pa-6">
+        @ChildContent
+    </MudPaper>
+
+</MudContainer>
+
+<style>
+    .card {
+        max-width: 850px;
+        margin: 0 auto;
+        border-radius: 2rem;
+        background: var(--shadow);
+        backdrop-filter: blur(16px);
+        color: var(--white);
+    }
+
+    .info {
+        color: var(--primary);
+    }
+
+    .section-title {
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+</style>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

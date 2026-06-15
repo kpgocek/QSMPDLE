@@ -1,70 +1,189 @@
 @page "/how-to-play"
+@using BlazorBootstrap
+@using MudBlazor
+@using QSMPDLE.Web.Components.UX
+@using QSMPDLE.Web.Data.Gameplay
 
-<div class="how-to-play">
-
+<WebPage>
     <h2>How to Play</h2>
 
-    <p class="intro">
-        Guess today's QSMP2 character in 6 tries.
-        Each guess reveals clues about the hidden character.
+    <p class="info">
+        Last updated: June 2026
     </p>
 
-    <section>
-        <h3>Clue Colors</h3>
+    <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Class="mb-6">
+        <strong>TL;DR:</strong> Guess today's QSMP2 character in 6 attempts.
+    </MudAlert>
 
-        <div class="legend">
-            <div class="legend-item">
-                <span class="legend-square correct"></span>
-                <div>
-                    <strong>Correct</strong>
-                    <p>The attribute matches exactly.</p>
-                </div>
-            </div>
 
-            <div class="legend-item">
-                <span class="legend-square partial"></span>
-                <div>
-                    <strong>Close</strong>
-                    <p>The attribute is related or partially matches.</p>
-                </div>
-            </div>
-
-            <div class="legend-item">
-                <span class="legend-square wrong"></span>
-                <div>
-                    <strong>Incorrect</strong>
-                    <p>The attribute does not match.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section>
-        <h3>Portrait Hints</h3>
+    <section class="mb-5">
+        <h3>Make a Guess</h3>
 
         <p>
-            The portrait becomes clearer after each guess.
-            Both the portrait and the clues help identify the character.
+            Start typing a character name and select one from the list.
+        </p>
+
+        <p>
+            After every guess, each attribute is compared with the hidden character.
         </p>
     </section>
 
-    <section>
+    <section class="mb-5">
+        <div class="example-wrapper">
+            <table class="guess-table mx-auto">
+                <thead>
+                    <tr>
+                        <th>Character</th>
+                        <th>Pronouns</th>
+                        <th>Species</th>
+                        <th>Languages</th>
+                        <th>Affiliations</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr class="answer-row">
+                        <td class="small-cell">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudAvatar Square="true" Size="Size.Large">
+                                    <MudImage Src="/graphics/mini-heads/FitMC.webp" />
+                                </MudAvatar>
+                                <span>FitMC</span>
+                            </MudStack>
+                        </td>
+
+                        <td class="small-cell">
+                            <GuessChip Result="ComparisonResult.Wrong">
+                                He/Him
+                            </GuessChip>
+                        </td>
+
+                        <td class="small-cell">
+                            <GuessChip Result="ComparisonResult.Correct">
+                                Human
+                            </GuessChip>
+
+                        </td>
+
+                        <td class="small-cell">
+                            <GuessChip Result="ComparisonResult.Less">
+                                3+ (5)
+                            </GuessChip>
+                        </td>
+
+                        <td class="small-cell">
+                            <GuessChip Result="ComparisonResult.Partial">
+                                The Regime
+                            </GuessChip>
+                        </td>
+
+                        <td class="small-cell">
+                            <GuessChip Result="ComparisonResult.Later">
+                                Day 1
+                            </GuessChip>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <p>
+                <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small">
+                    <strong>Green</strong>
+                </MudChip>
+                means an exact match.
+            </p>
+            <p>
+                <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small">
+                    <strong>Red</strong>
+                </MudChip>
+                means the attribute does not match at all.
+            </p>
+            <p>
+                <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small">
+                    <strong>Sky Blue</strong>
+                </MudChip>
+                with an arrow indicator a value that's higher, lower, later of earlier than provided.
+            </p>
+            <p>
+                <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small">
+                    <strong>Yellow</strong>
+                </MudChip>
+                means the attribute is partially correct (have at least one element of the answer).
+            </p>
+        </div>
+
+    </section>
+
+    <section class="mb-5">
+        <h3>Portrait Hints</h3>
+
+        <p>
+            The portrait starts heavily blurred and becomes clearer with every guess.
+            Even incorrect guesses reveal more of the image.
+        </p>
+
+    </section>
+
+    <section class="mb-5">
         <h3>Game Modes</h3>
 
-        <ul>
-            <li><strong>Daily Mode</strong> — one shared puzzle every day.</li>
-            <li><strong>Practice Mode</strong> — unlimited random characters.</li>
-        </ul>
+        <p>
+            <Icon Name="IconName.House" /> <strong>Daily</strong> — everyone receives the same character each day.
+        </p>
+
+        <p>
+            <Icon Name="IconName.Controller" /> <strong>Practice</strong> — play unlimited random rounds without
+            affecting your daily streak.
+        </p>
     </section>
+</WebPage>
 
-    <section>
-        <h3>Tips</h3>
+<style>
+    .example-wrapper {
+        margin-bottom: 5rem;
+    }
 
-        <ul>
-            <li>Use every clue to eliminate possibilities.</li>
-            <li>Partially matching attributes can be just as valuable as exact matches.</li>
-            <li>Try characters from different communities and backgrounds.</li>
-        </ul>
-    </section>
+    .guess-table {
+        border-spacing: 0 .5rem;
+    }
 
-</div>
+    .guess-table tr {
+        height: 3rem;
+    }
+
+    .guess-table th {
+        color: var(--white);
+        font-size: .8rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        font-weight: 600;
+        height: 2rem;
+    }
+
+    .guess-table td {
+        min-width: 8rem;
+    }
+
+    .guess-table td,
+    .guess-table th {
+        vertical-align: middle;
+    }
+
+    .answer-row {
+        user-select: none;
+        border: 0.125rem solid var(--primary-black);
+        box-shadow:
+            0 0 0 0.125rem var(--black),
+            0 .125rem .5rem var(--shadow);
+        background: linear-gradient(to right, var(--primary-black) 44%, var(--shadow) 100%);
+    }
+
+    .small-cell {
+        vertical-align: middle;
+        width: 5rem;
+    }
+</style>

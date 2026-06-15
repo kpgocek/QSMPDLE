@@ -1,0 +1,8 @@
+@media (max-width: 768px) {
+    .card {
+        width: 100vw;
+        max-width: 100%;
+        padding: 1.5rem !important;
+        border-radius: 16px;
+    }
+}

@@ -1,11 +1,9 @@
-﻿@using BlazorBootstrap
-@using MudBlazor
-@using MudBlazor.State
-@using QSMPDLE.Web.Components.UX
+﻿@using MudBlazor
 @using QSMPDLE.Web.DTOs
 @using QSMPDLE.Web.Data.Gameplay
 @using QSMPDLE.Web.Services
 
+@inject IJSRuntime JS
 @inject IGameService GameService
 @inject IGameStateStore GameStateStore
 @inject IPlayerStatsStore PlayerStatsStore
@@ -17,6 +15,14 @@
         <MemberPortrait Member="currentGame.Target" GuessesMade="currentGame.Guesses.Count" IsGuessed="IsGameWon"
                         IsFailed="IsGameLost" />
     </MudPaper>
+
+    @if (EndlessMode)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="StartNewGame">
+            New Character
+        </MudButton>
+    }
 
     <MemberSelector @bind-Value="GuessedMember" OnGuessConfirmed="Guess" IsGuessed="IsGameOver" />
 
@@ -65,7 +71,7 @@
     protected override async Task OnInitializedAsync()
     {
         currentGame = EndlessMode
-            ? GameService.StartEndless()
+            ? await GameService.StartEndlessAsync()
             : await GameService.StartDailyAsync();
 
         await DayNumberChanged.InvokeAsync(currentGame.DayNumber);
@@ -123,6 +129,7 @@
             if (!state.VictoryPopupShown)
             {
                 await VictoryAnnounced.InvokeAsync(currentGame.Guesses);
+                await JS.InvokeVoidAsync("scrollToTop");
                 state.VictoryPopupShown = true;
             }
 
@@ -142,6 +149,7 @@
             if (!state.FailurePopupShown)
             {
                 await FailureAnnounced.InvokeAsync();
+                await JS.InvokeVoidAsync("scrollToTop");
                 state.FailurePopupShown = true;
             }
 
@@ -217,5 +225,19 @@
         await PlayerStatsStore.SaveAsync(stats);
 
         await StatsUpdated.InvokeAsync(stats);
+    }
+
+    private async Task StartNewGame()
+    {
+        state = await LoadGameStateOrNewAsync();
+
+        IsGameLost = false;
+        IsGameWon = false;
+
+        GuessedMember = null;
+
+        currentGame = await GameService.StartEndlessAsync();
+
+        StateHasChanged();
     }
 }

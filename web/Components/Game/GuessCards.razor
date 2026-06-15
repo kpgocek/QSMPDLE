@@ -5,55 +5,6 @@
 
 <div class="mobile-guesses">
 
-    @foreach (var guess in Guesses)
-    {
-        <div class="guess-card">
-
-            <div class="guess-card-header">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
-                    <MudAvatar Square="true" Size="Size.Large">
-                        <MudImage Src="@ImageHelper.GetMemberHead(guess.Member)" />
-                    </MudAvatar>
-
-                    <span class="guess-name">@guess.Member.Name</span>
-                </MudStack>
-            </div>
-
-            <div class="guess-card-grid">
-
-                <GuessChip Result="guess.Pronouns">
-                    <span class="chip-labels">Pronouns:</span> @DisplayList(guess.Member.Pronouns)
-                </GuessChip>
-
-                <GuessChip Result="guess.Species">
-                    <span class="chip-labels">Species:</span>
-                    @(guess.Member.Species.Contains("Human")
-                        ? @DisplayList(guess.Member.Species)
-                        : @guess.Member.Species.Contains("Unknown")
-                            ? @DisplayList(guess.Member.Species)
-                            : $"Not Human ({@DisplayList(guess.Member.Species)})")
-                </GuessChip>
-
-
-                <GuessChip Result="guess.Languages">
-                    <span class="chip-labels">Languages:</span>
-                    @(@guess.Member.Languages > 3
-                        ? $"3+ ({@guess.Member.Languages})"
-                        : @guess.Member.Languages)
-                </GuessChip>
-
-                <GuessChip Result="guess.Affiliation">
-                    <span class="chip-labels">Affiliations:</span> @DisplayList(guess.Member.Affiliations)
-                </GuessChip>
-
-                <GuessChip Result="guess.Joined">
-                    <span class="chip-labels">Joined on</span> Day @guess.Member.JoinDayNumber
-                </GuessChip>
-
-            </div>
-        </div>
-    }
-
     @for (int i = Guesses.Count; i < MaxGuesses; i++)
     {
         <div class="placeholder-card">
@@ -88,6 +39,58 @@
         </div>
     }
 
+    @foreach (var guess in Guesses)
+    {
+        <div class="guess-card">
+
+            <div class="guess-card-header">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+                    <MudAvatar Square="true" Size="Size.Large">
+                        <MudImage Src="@ImageHelper.GetMemberHead(guess.Member)" />
+                    </MudAvatar>
+
+                    <span class="guess-name">@guess.Member.Name</span>
+                </MudStack>
+            </div>
+
+            <div class="guess-card-grid">
+
+                <GuessChip Result="guess.Pronouns">
+                    @(guess.Member.Pronouns.Contains("Any") ? "Pronouns: Any" : @DisplayList(guess.Member.Pronouns))
+                </GuessChip>
+
+                <GuessChip Result="guess.Species">
+                    @(guess.Member.Species.Contains("Human")
+                        ? "Human"
+                        : @guess.Member.Species.Contains("Unknown")
+                            ? "Species: Unknown"
+                            : $"Not Human")
+                </GuessChip>
+
+
+                <GuessChip Result="guess.Languages">
+                    <span class="chip-labels">Languages:</span>
+                    @(@guess.Member.Languages > 3
+                        ? $"3+"
+                        : @guess.Member.Languages)
+                </GuessChip>
+
+
+                @foreach (var affiliation in guess.Member.Affiliations)
+                {
+                    <GuessChip Result="guess.Affiliation">
+                        @affiliation
+                    </GuessChip>
+
+                }
+                <GuessChip Result="guess.Joined">
+                    <span class="chip-labels">Joined on</span> Day @guess.Member.JoinDayNumber
+                </GuessChip>
+
+            </div>
+        </div>
+    }
+
 </div>
 
 <style>
@@ -111,8 +114,18 @@
 
     .guess-card-grid,
     .placeholder-card-grid {
+        display: grid;
+
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+
+        gap: .75rem;
+
         margin-top: 1rem;
-        text-align: center;
+    }
+
+    .guess-card-grid .mud-chip,
+    .placeholder-card-grid .mud-chip {
+        width: 100%;
     }
 
     .guess-avatar,
@@ -159,7 +172,7 @@
     private static string DisplayList(IEnumerable<string> values)
     {
         return values.Any()
-            ? string.Join(" / ", values)
+            ? string.Join(", ", values)
             : "None";
     }
 }

@@ -5,6 +5,6 @@ namespace QSMPDLE.Web.Services;
 public interface IGameService
 {
     Task<Game> StartDailyAsync(CancellationToken cancellationToken = default);
-    Game StartEndless();
+    Task<Game> StartEndlessAsync();
     Guess SubmitGuess(Game game, int memberId);
 }

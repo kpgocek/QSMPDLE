@@ -4,6 +4,21 @@ namespace QSMPDLE.Web.Services;
 
 public sealed class ShareTextBuilder : IShareTextBuilder
 {
+    public string BuildDailyChallenge(int dayNumber)
+    {
+        return
+    $"""
+QSMPDLE #{dayNumber}
+
+I was unable to beat today's challenge.
+Will you do better?
+
+😭
+
+https://qsmpdle.com
+""";
+    }
+
     public string BuildDailyResult(
         int dayNumber,
         IReadOnlyList<Guess> guesses)
@@ -37,7 +52,7 @@ https://qsmpdle.com
             ComparisonResult.Later => "➡️",
             ComparisonResult.Less => "⬇️",
             ComparisonResult.More => "⬆️",
-            ComparisonResult.Partial => "🟦",
+            ComparisonResult.Partial => "🟨",
             ComparisonResult.Wrong => "🟥",
             _ => "⬜",
         };

@@ -9,64 +9,85 @@
 
         <h2>Correct!</h2>
 
-        <p>
-            You guessed character #@DayNumber in @Guesses.Count guesses.
-        </p>
-
-        <div class="stats-popup">
-
-            <h3>Statistics</h3>
-
-            <div class="stats-grid">
-
-                <div class="stat">
-                    <span class="value">@Stats.GamesPlayed</span>
-                    <span class="label">Played</span>
-                </div>
-
-                <div class="stat">
-                    <span class="value">@Math.Round(Stats.WinRate)</span>
-                    <span class="label">Win %</span>
-                </div>
-
-                <div class="stat">
-                    <span class="value">@Stats.CurrentStreak</span>
-                    <span class="label">Current Streak</span>
-                </div>
-
-                <div class="stat">
-                    <span class="value">@Stats.MaxStreak</span>
-                    <span class="label">Max Streak</span>
-                </div>
-
-            </div>
-
-            <h4>Guess Distribution</h4>
-
-            <div class="distribution">
-
-                @for (var i = 0; i < 6; i++)
+        @if (DayNumber is not null)
+        {
+            <p>
+                You guessed character #@DayNumber in @Guesses.Count guesses.
+            </p>
+        }
+        else
+        {
+            <p>
+                It took you
+                @if (@Guesses.Count > 1)
                 {
-                    <div class="distribution-row">
-                        <span class="guess-number">@(i + 1)</span>
+                    <span>@Guesses.Count guesses</span>
+                }
+                else
+                {
+                    <span>@Guesses.Count guess</span>
+                }
+                to find the right answer.
+            </p>
+        }
 
-                        <div class="distribution-bar-container">
-                            <div class="distribution-bar" style="width:@GetBarWidth(i)%">
-                                @Stats.GuessDistribution[i]
+        @if (Stats is not null)
+        {
+            <div class="stats-popup">
+
+                <h3>Statistics</h3>
+
+                <div class="stats-grid">
+
+                    <div class="stat">
+                        <span class="value">@Stats.GamesPlayed</span>
+                        <span class="label">Played</span>
+                    </div>
+
+                    <div class="stat">
+                        <span class="value">@Math.Round(Stats.WinRate)</span>
+                        <span class="label">Win %</span>
+                    </div>
+
+                    <div class="stat">
+                        <span class="value">@Stats.CurrentStreak</span>
+                        <span class="label">Current Streak</span>
+                    </div>
+
+                    <div class="stat">
+                        <span class="value">@Stats.MaxStreak</span>
+                        <span class="label">Max Streak</span>
+                    </div>
+
+                </div>
+
+                <h4>Guess Distribution</h4>
+
+                <div class="distribution">
+
+                    @for (var i = 0; i < 6; i++)
+                    {
+                        <div class="distribution-row">
+                            <span class="guess-number">@(i + 1)</span>
+
+                            <div class="distribution-bar-container">
+                                <div class="distribution-bar" style="width:@GetBarWidth(i)%">
+                                    @Stats.GuessDistribution[i]
+                                </div>
                             </div>
                         </div>
-                    </div>
-                }
+                    }
 
+                </div>
             </div>
-
-        </div>
-
+        }
         <div class="buttons">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Share">
-                Share
-            </MudButton>
-
+            @if (DayNumber is not null)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Share">
+                    Share
+                </MudButton>
+            }
             <MudButton OnClick="Close">
                 Close
             </MudButton>
@@ -176,15 +197,17 @@
 </style>
 
 @code {
-    [Parameter] public int DayNumber { get; set; }
+    [Parameter] public int? DayNumber { get; set; }
     [Parameter] public List<Guess> Guesses { get; set; } = null!;
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public PlayerStats Stats { get; set; } = null!;
+    [Parameter] public PlayerStats? Stats { get; set; } = null!;
 
     private async Task Share()
     {
+        ArgumentNullException.ThrowIfNull(DayNumber);
+
         var text = ShareTextBuilder.BuildDailyResult(
-            DayNumber,
+            (int)DayNumber,
             Guesses);
 
         await ShareService.ShareAsync(text);
@@ -197,6 +220,8 @@
 
     private double GetBarWidth(int index)
     {
+        ArgumentNullException.ThrowIfNull(Stats);
+
         var max = Stats.GuessDistribution.Max();
 
         if (max == 0)
