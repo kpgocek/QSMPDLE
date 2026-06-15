@@ -38,15 +38,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-Console.WriteLine($"BaseDirectory: {AppContext.BaseDirectory}");
-Console.WriteLine($"ContentRoot: {app.Environment.ContentRootPath}");
+Console.WriteLine(typeof(Program).Assembly.Location);
+Console.WriteLine(AppContext.BaseDirectory);
 
-var runtimeManifest =
-    Path.Combine(AppContext.BaseDirectory,
-        "QSMPDLE.Web.staticwebassets.runtime.json");
-
-Console.WriteLine($"Manifest exists: {File.Exists(runtimeManifest)}");
-Console.WriteLine(runtimeManifest);
+Console.WriteLine(File.Exists(
+    Path.Combine(
+        AppContext.BaseDirectory,
+        "QSMPDLE.Web.staticwebassets.endpoints.json")));
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
