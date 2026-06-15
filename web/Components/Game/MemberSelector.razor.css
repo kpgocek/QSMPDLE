@@ -1,0 +1,13 @@
+@media (max-width: 768px) {
+    .selection-area {
+        width: min(100%, 24rem);
+    }
+
+    .input-field input {
+        width: 100%;
+    }
+
+    .suggestions {
+        width: 100%;
+    }
+}

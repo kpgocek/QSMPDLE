@@ -1,0 +1,36 @@
+﻿@using BlazorBootstrap
+@inject NavigationManager Nav
+
+<header class="topbar">
+    <div class="topbar-container">
+
+        <h1 class="logo">QSMP<span class="text-accent">DLE</span></h1>
+
+        <nav class="links">
+
+            @foreach (var item in NavigationItems.Items)
+            {
+                <NavLink href="@item.Url" Match="@(item.Url == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
+                    <Icon Name="@item.Icon" />
+                    <span>@item.Label</span>
+                </NavLink>
+            }
+
+        </nav>
+
+    </div>
+</header>
+
+@code {
+    public static class NavigationItems
+    {
+        public static readonly NavItem[] Items =
+        [
+            new("/", "Daily", IconName.House),
+            new("/practice", "Practice", IconName.Controller),
+            new("/how-to-play", "How to Play", IconName.Search),
+        ];
+    }
+
+    public record NavItem(string Url, string Label, IconName Icon = IconName.None);
+}

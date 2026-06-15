@@ -1,0 +1,59 @@
+@font-face {
+    font-family: "Pixel";
+    src: url("fonts/04b_03__.ttf");
+}
+
+@font-face {
+    font-family: "Crafter";
+    src: url("fonts/minecrafter.reg.ttf");
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
+
+    min-height: 100vh;
+
+    background: linear-gradient(to bottom, var(--background) 30%, var(--primary-black) 90%);
+    color: var(--text);
+}
+
+a {
+    text-decoration: none;
+    color: var(--text);
+}
+
+a:focus {
+    outline: none;
+}
+
+h1 {
+    font-family: "Crafter", sans-serif;
+    font-style: normal;
+}
+
+h1:focus {
+    outline: none;
+}
+
+h2 {
+    font-family: "Bungee", sans-serif;
+    font-style: normal;
+}
+
+h2:focus {
+    outline: none;
+}
+
+.text-accent {
+    background: linear-gradient(to right, var(--correct) -10%, var(--primary) 65%);
+    background-clip: text;
+    color: transparent;
+}

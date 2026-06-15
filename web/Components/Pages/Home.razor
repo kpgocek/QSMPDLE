@@ -1,0 +1,78 @@
+@page "/"
+@using QSMPDLE.Web.Components.Game
+@using QSMPDLE.Web.Components.UX
+@using QSMPDLE.Web.Data.Gameplay
+@using QSMPDLE.Web.Services
+@rendermode InteractiveServer
+
+
+<h2>DAILY CHARACTER <span class="text-accent">#@DailyNumber.ToString("00")</span></h2>
+
+@if (IsGameWon)
+{
+    <div class="daily-complete-banner">
+        You already know who it is
+    </div>
+}
+else if (IsGameLost)
+{
+    <div class="daily-complete-banner">
+        Welp.
+    </div>
+}
+
+<Gameplay EndlessMode="false" DayNumberChanged="OnDayUpdate" StatsUpdated="OnStatsUpdate" GameEnded="OnGameEnd"
+          VictoryAnnounced="OnShowVictoryPopup" FailureAnnounced="OnShowFailurePopup" />
+
+@if (ShowVictoryPopup)
+{
+    <VictoryDialog DayNumber="@DailyNumber" Guesses="@Guesses" Stats="@stats" OnClose="CloseVictoryPopup" />
+}
+
+@if (ShowFailurePopup)
+{
+    <FailureDialog DayNumber="@DailyNumber" Stats="@stats" OnClose="CloseFailurePopup" />
+}
+
+@code {
+    private int DailyNumber = 0;
+    private bool IsGameWon;
+    private bool IsGameLost;
+
+    private bool ShowVictoryPopup;
+    private bool ShowFailurePopup;
+
+    private List<Guess> Guesses = null!;
+
+    private PlayerStats stats = null!;
+
+    private void OnDayUpdate(int num)
+    {
+        DailyNumber = num;
+    }
+
+    private void OnGameEnd(bool isWon)
+    {
+        IsGameLost = !isWon;
+        IsGameWon = isWon;
+    }
+
+    private void OnShowVictoryPopup(List<Guess> guesses)
+    {
+        ShowVictoryPopup = true;
+        Guesses = guesses;
+    }
+
+    private void OnShowFailurePopup()
+    {
+        ShowFailurePopup = true;
+    }
+
+    private void CloseVictoryPopup() => ShowVictoryPopup = false;
+    private void CloseFailurePopup() => ShowFailurePopup = false;
+
+    private void OnStatsUpdate(PlayerStats stats)
+    {
+        this.stats = stats;
+    }
+}

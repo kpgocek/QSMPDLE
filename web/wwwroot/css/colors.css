@@ -1,0 +1,28 @@
+:root {
+    --white: #FAFBFC;
+    --black: #010a1e;
+
+    --white-hsl: 210, 25%, 98%;
+    --black-hsl: 30, 9%, 4%;
+    --primary-hsl: 198, 100%, 54%;
+
+    --primary: #16BAFF;
+    --primary-dark: #094099;
+    --primary-black: #0A2C5E;
+
+    --secondary: #7cf1c4;
+
+    --correct: #2FBB36;
+    --partial: #FFA056;
+    --wrong: #CC284C;
+
+    --warning: #F72C25;
+    --alert: #F7B32B;
+
+    --background: var(--black);
+    --text: var(--white);
+
+    --shadow: hsla(var(--black-hsl), 0.2);
+    --ghost: hsla(var(--white-hsl), 0.3);
+    --tint: hsla(var(--primary-hsl), 0.5);
+}

@@ -1,0 +1,165 @@
+@using MudBlazor
+@using QSMPDLE.Web.Components.UX
+@using QSMPDLE.Web.Data.Gameplay
+@using QSMPDLE.Web.Services
+
+<div class="mobile-guesses">
+
+    @foreach (var guess in Guesses)
+    {
+        <div class="guess-card">
+
+            <div class="guess-card-header">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+                    <MudAvatar Square="true" Size="Size.Large">
+                        <MudImage Src="@ImageHelper.GetMemberHead(guess.Member)" />
+                    </MudAvatar>
+
+                    <span class="guess-name">@guess.Member.Name</span>
+                </MudStack>
+            </div>
+
+            <div class="guess-card-grid">
+
+                <GuessChip Result="guess.Pronouns">
+                    <span class="chip-labels">Pronouns:</span> @DisplayList(guess.Member.Pronouns)
+                </GuessChip>
+
+                <GuessChip Result="guess.Species">
+                    <span class="chip-labels">Species:</span>
+                    @(guess.Member.Species.Contains("Human")
+                        ? @DisplayList(guess.Member.Species)
+                        : @guess.Member.Species.Contains("Unknown")
+                            ? @DisplayList(guess.Member.Species)
+                            : $"Not Human ({@DisplayList(guess.Member.Species)})")
+                </GuessChip>
+
+
+                <GuessChip Result="guess.Languages">
+                    <span class="chip-labels">Languages:</span>
+                    @(@guess.Member.Languages > 3
+                        ? $"3+ ({@guess.Member.Languages})"
+                        : @guess.Member.Languages)
+                </GuessChip>
+
+                <GuessChip Result="guess.Affiliation">
+                    <span class="chip-labels">Affiliations:</span> @DisplayList(guess.Member.Affiliations)
+                </GuessChip>
+
+                <GuessChip Result="guess.Joined">
+                    <span class="chip-labels">Joined on</span> Day @guess.Member.JoinDayNumber
+                </GuessChip>
+
+            </div>
+        </div>
+    }
+
+    @for (int i = Guesses.Count; i < MaxGuesses; i++)
+    {
+        <div class="placeholder-card">
+
+            <div class="placeholder-card-header">
+                <MudAvatar Square="true" Class="placeholder-avatar" Size="Size.Large" />
+            </div>
+
+            <div class="placeholder-card-grid">
+
+                <MudChip T="string" Class="placeholder-chip">
+                    &nbsp;
+                </MudChip>
+
+                <MudChip T="string" Class="placeholder-chip">
+                    &nbsp;
+                </MudChip>
+
+                <MudChip T="string" Class="placeholder-chip">
+                    &nbsp;
+                </MudChip>
+
+                <MudChip T="string" Class="placeholder-chip">
+                    &nbsp;
+                </MudChip>
+
+                <MudChip T="string" Class="placeholder-chip">
+                    &nbsp;
+                </MudChip>
+
+            </div>
+        </div>
+    }
+
+</div>
+
+<style>
+    .guess-card,
+    .placeholder-card {
+        padding: 1rem;
+
+        background:
+            linear-gradient(to top left, var(--primary-black) 50%, var(--tint) 200%);
+
+        backdrop-filter: blur(1rem);
+
+        border-radius: 0;
+        border-inline: none;
+        border-block: .125rem solid var(--shadow);
+    }
+
+    .placeholder-card {
+        opacity: 0.5;
+    }
+
+    .guess-card-grid,
+    .placeholder-card-grid {
+        margin-top: 1rem;
+        text-align: center;
+    }
+
+    .guess-avatar,
+    .placeholder-avatar {
+        width: 5rem;
+        height: 5rem;
+
+        image-rendering: pixelated;
+        background: var(--ghost);
+        border: 1px solid var(--ghost);
+    }
+
+    .placeholder-avatar {
+        opacity: .4;
+    }
+
+    .guess-name {
+        font-size: 1.1rem;
+        font-weight: 500;
+        letter-spacing: .02em;
+    }
+
+    .placeholder-text {
+        color: rgba(255, 255, 255, .25);
+    }
+
+    .placeholder-chip {
+        width: 6rem;
+        margin: 0 auto;
+
+        opacity: .25;
+        pointer-events: none;
+    }
+</style>
+
+
+@code {
+    [Parameter]
+    public IReadOnlyList<Guess> Guesses { get; set; } = null!;
+
+    [Parameter]
+    public int MaxGuesses { get; set; } = 6;
+
+    private static string DisplayList(IEnumerable<string> values)
+    {
+        return values.Any()
+            ? string.Join(" / ", values)
+            : "None";
+    }
+}

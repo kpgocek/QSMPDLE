@@ -1,0 +1,78 @@
+@using MudBlazor
+@inject IJSRuntime JS
+
+<div class="failure-overlay">
+    <div class="failure-modal">
+
+        <h2>Welp!</h2>
+
+        <p>
+            You've reached the limit trying to guess character #@DayNumber.
+        </p>
+
+        <div class="buttons">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Share">
+                Challenge others
+            </MudButton>
+
+            <MudButton OnClick="Close">
+                Close
+            </MudButton>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .failure-overlay {
+        position: fixed;
+        inset: 0;
+
+        background: rgba(0, 0, 0, .75);
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        z-index: 10000;
+    }
+
+    .failure-modal {
+        background: var(--primary-black);
+        padding: 2rem;
+        border-radius: .5rem;
+        min-width: 320px;
+    }
+
+    .buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: end;
+        margin-top: 1rem;
+    }
+</style>
+
+@code {
+    [Parameter] public int DayNumber { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task Share()
+    {
+        var text =
+            $"""
+            QSMPDLE #{DayNumber}
+
+            Couldn't guess within guessing limit.
+            Think you can do better?
+
+            https://qsmpdle.com
+            """;
+
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+}

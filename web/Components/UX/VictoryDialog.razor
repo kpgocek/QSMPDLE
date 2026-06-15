@@ -1,0 +1,209 @@
+@using MudBlazor
+@using QSMPDLE.Web.Data.Gameplay
+@using QSMPDLE.Web.Services
+@inject IShareService ShareService
+@inject IShareTextBuilder ShareTextBuilder
+
+<div class="victory-overlay">
+    <div class="victory-modal">
+
+        <h2>Correct!</h2>
+
+        <p>
+            You guessed character #@DayNumber in @Guesses.Count guesses.
+        </p>
+
+        <div class="stats-popup">
+
+            <h3>Statistics</h3>
+
+            <div class="stats-grid">
+
+                <div class="stat">
+                    <span class="value">@Stats.GamesPlayed</span>
+                    <span class="label">Played</span>
+                </div>
+
+                <div class="stat">
+                    <span class="value">@Math.Round(Stats.WinRate)</span>
+                    <span class="label">Win %</span>
+                </div>
+
+                <div class="stat">
+                    <span class="value">@Stats.CurrentStreak</span>
+                    <span class="label">Current Streak</span>
+                </div>
+
+                <div class="stat">
+                    <span class="value">@Stats.MaxStreak</span>
+                    <span class="label">Max Streak</span>
+                </div>
+
+            </div>
+
+            <h4>Guess Distribution</h4>
+
+            <div class="distribution">
+
+                @for (var i = 0; i < 6; i++)
+                {
+                    <div class="distribution-row">
+                        <span class="guess-number">@(i + 1)</span>
+
+                        <div class="distribution-bar-container">
+                            <div class="distribution-bar" style="width:@GetBarWidth(i)%">
+                                @Stats.GuessDistribution[i]
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+        <div class="buttons">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Share">
+                Share
+            </MudButton>
+
+            <MudButton OnClick="Close">
+                Close
+            </MudButton>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .victory-overlay {
+        position: fixed;
+        inset: 0;
+
+        background: rgba(0, 0, 0, .75);
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        z-index: 10000;
+    }
+
+    .victory-modal {
+        background: var(--primary-black);
+        padding: 2rem;
+        border-radius: .5rem;
+        min-width: 320px;
+    }
+
+    .buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: end;
+        margin-top: 1rem;
+    }
+
+    .stats-popup {
+        min-width: 340px;
+        max-width: 500px;
+    }
+
+    .stats-popup h2,
+    .stats-popup h3 {
+        text-align: center;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+
+        gap: 1rem;
+
+        margin: 1.5rem 0;
+    }
+
+    .stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat .value {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .stat .label {
+        font-size: .75rem;
+        text-align: center;
+        opacity: .75;
+    }
+
+    .distribution {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+    }
+
+    .distribution-row {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .guess-number {
+        width: 1rem;
+        text-align: center;
+        font-weight: 700;
+    }
+
+    .distribution-bar-container {
+        flex: 1;
+    }
+
+    .distribution-bar {
+        min-width: 2rem;
+
+        padding: .25rem .5rem;
+
+        background: var(--primary-dark);
+
+        color: white;
+        font-weight: 700;
+        text-align: right;
+    }
+</style>
+
+@code {
+    [Parameter] public int DayNumber { get; set; }
+    [Parameter] public List<Guess> Guesses { get; set; } = null!;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public PlayerStats Stats { get; set; } = null!;
+
+    private async Task Share()
+    {
+        var text = ShareTextBuilder.BuildDailyResult(
+            DayNumber,
+            Guesses);
+
+        await ShareService.ShareAsync(text);
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private double GetBarWidth(int index)
+    {
+        var max = Stats.GuessDistribution.Max();
+
+        if (max == 0)
+            return 8;
+
+        return Math.Max(
+            8,
+            Stats.GuessDistribution[index] * 100.0 / max);
+    }
+}

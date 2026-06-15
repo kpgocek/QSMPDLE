@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "QSMPDLE",
+            "database": "${workspaceFolder:QSMPDLE}/db/qsmpdle.db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}

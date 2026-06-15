@@ -1,0 +1,12 @@
+.mobile-guesses {
+    display: none;
+}
+
+@media (max-width: 768px) {
+
+    .mobile-guesses {
+        display: flex;
+        flex-direction: column;
+        gap: .75rem;
+    }
+}

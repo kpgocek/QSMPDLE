@@ -1,0 +1,221 @@
+﻿@using BlazorBootstrap
+@using MudBlazor
+@using MudBlazor.State
+@using QSMPDLE.Web.Components.UX
+@using QSMPDLE.Web.DTOs
+@using QSMPDLE.Web.Data.Gameplay
+@using QSMPDLE.Web.Services
+
+@inject IGameService GameService
+@inject IGameStateStore GameStateStore
+@inject IPlayerStatsStore PlayerStatsStore
+@rendermode InteractiveServer
+
+<MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100">
+
+    <MudPaper Class="ma-4" Elevation="0">
+        <MemberPortrait Member="currentGame.Target" GuessesMade="currentGame.Guesses.Count" IsGuessed="IsGameWon"
+                        IsFailed="IsGameLost" />
+    </MudPaper>
+
+    <MemberSelector @bind-Value="GuessedMember" OnGuessConfirmed="Guess" IsGuessed="IsGameOver" />
+
+    <div class="guess-table-container">
+        <GuessTable Guesses="currentGame?.Guesses" />
+        <GuessCards Guesses="currentGame?.Guesses" />
+    </div>
+</MudStack>
+
+<style>
+    .guess-table-container {
+        width: 100%;
+        max-width: 1200px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool EndlessMode { get; set; }
+
+    [Parameter]
+    public EventCallback<int> DayNumberChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> GameEnded { get; set; }
+
+    [Parameter]
+    public EventCallback<List<Guess>> VictoryAnnounced { get; set; }
+    [Parameter]
+    public EventCallback FailureAnnounced { get; set; }
+
+    [Parameter]
+    public EventCallback<PlayerStats> StatsUpdated { get; set; }
+
+    private Game currentGame = null!;
+    private MemberLookup? GuessedMember;
+    private GameState state = new();
+
+    private bool IsGameWon;
+    private bool IsGameLost;
+
+    private bool IsGameOver => IsGameWon || IsGameLost;
+
+    private string GameKey => $"qsmpdle-daily-{currentGame.DayNumber}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentGame = EndlessMode
+            ? GameService.StartEndless()
+            : await GameService.StartDailyAsync();
+
+        await DayNumberChanged.InvokeAsync(currentGame.DayNumber);
+
+        if (!EndlessMode)
+        {
+            await GameStateStore.Init(GameKey);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        state = await LoadGameStateOrNewAsync();
+
+        foreach (var memberId in state.GuessesMade)
+        {
+            GameService.SubmitGuess(currentGame, memberId);
+        }
+
+        IsGameWon = state.IsCompleted;
+        IsGameLost = state.IsFailed;
+
+        StateHasChanged();
+    }
+
+    public async Task Guess()
+    {
+        if (IsGameWon || GuessedMember is null)
+            return;
+
+        if (state.GuessesMade.Contains(GuessedMember.Id))
+        {
+            ClearGuessingField();
+            return;
+        }
+
+        var latestGuess = GameService.SubmitGuess(currentGame, GuessedMember.Id);
+
+        state.GuessesMade.Add(GuessedMember.Id);
+
+        if (latestGuess.IsCorrect)
+        {
+            IsGameWon = true;
+            state.IsCompleted = true;
+
+            if (!EndlessMode && !state.StatsRecorded)
+            {
+                await RecordWin();
+                state.StatsRecorded = true;
+            }
+
+            if (!state.VictoryPopupShown)
+            {
+                await VictoryAnnounced.InvokeAsync(currentGame.Guesses);
+                state.VictoryPopupShown = true;
+            }
+
+            await GameEnded.InvokeAsync(true);
+        }
+        else if (currentGame.Guesses.Count >= 6)
+        {
+            IsGameLost = true;
+            state.IsFailed = true;
+
+            if (!EndlessMode && !state.StatsRecorded)
+            {
+                await RecordLoss();
+                state.StatsRecorded = true;
+            }
+
+            if (!state.FailurePopupShown)
+            {
+                await FailureAnnounced.InvokeAsync();
+                state.FailurePopupShown = true;
+            }
+
+            await GameEnded.InvokeAsync(false);
+        }
+
+        if (!EndlessMode)
+        {
+            await SaveGameState();
+        }
+
+        ClearGuessingField();
+    }
+
+    private async Task<GameState> LoadGameStateOrNewAsync()
+    {
+        if (EndlessMode)
+            return new GameState();
+
+        return await GameStateStore.GetAsync() ?? new GameState();
+    }
+
+    private async Task SaveGameState()
+    {
+        await GameStateStore.SaveAsync(state);
+    }
+
+    private void ClearGuessingField()
+    {
+        GuessedMember = null;
+    }
+
+    private async Task RecordWin()
+    {
+        var stats = await PlayerStatsStore.LoadAsync();
+
+        stats.GamesPlayed++;
+        stats.GamesWon++;
+
+        if (stats.LastCompletedDayNumber == currentGame.DayNumber - 1)
+        {
+            stats.CurrentStreak++;
+        }
+        else if (stats.LastCompletedDayNumber != currentGame.DayNumber)
+        {
+            stats.CurrentStreak = 1;
+        }
+
+        stats.MaxStreak =
+            Math.Max(stats.MaxStreak, stats.CurrentStreak);
+
+        stats.LastCompletedDayNumber =
+            currentGame.DayNumber;
+
+        var guessCount =
+            Math.Clamp(currentGame.Guesses.Count, 1, 6);
+
+        stats.GuessDistribution[guessCount - 1]++;
+
+        await PlayerStatsStore.SaveAsync(stats);
+
+        await StatsUpdated.InvokeAsync(stats);
+    }
+
+    private async Task RecordLoss()
+    {
+        var stats = await PlayerStatsStore.LoadAsync();
+
+        stats.GamesPlayed++;
+
+        stats.CurrentStreak = 0;
+
+        await PlayerStatsStore.SaveAsync(stats);
+
+        await StatsUpdated.InvokeAsync(stats);
+    }
+}

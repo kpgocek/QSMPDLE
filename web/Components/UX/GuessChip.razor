@@ -1,0 +1,27 @@
+@using BlazorBootstrap
+@using MudBlazor
+@using QSMPDLE.Web.Data.Gameplay
+@using QSMPDLE.Web.Services
+
+<MudChip T="string" Color="@CssHelper.ToColor(Result)" Variant="Variant.Filled" Size="Size.Medium">
+    <span>@ChildContent</span>
+    @if (Icon != IconName.None)
+    {
+        <Icon Name="@Icon" class="ml-2" />
+    }
+</MudChip>
+
+@code {
+    [Parameter] public ComparisonResult Result { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private IconName Icon => Result switch
+    {
+        ComparisonResult.Earlier => IconName.ArrowLeft,
+        ComparisonResult.Later => IconName.ArrowRight,
+        ComparisonResult.More => IconName.ArrowUp,
+        ComparisonResult.Less => IconName.ArrowDown,
+        _ => IconName.None
+    };
+}

@@ -1,0 +1,224 @@
+@inject QSMPDLE.Web.Data.IMemberRepository MembersRepository
+@rendermode InteractiveServer
+
+@using QSMPDLE.Web.DTOs
+@using QSMPDLE.Web.Services
+
+<div class="selection-area">
+    <div class="input-field">
+        <input type="text" @bind="SearchText" @bind:event="oninput" @onkeydown="HandleKeyDown"
+               @onfocus="() => IsFocused = true" @onblur="() => IsFocused = false" placeholder="Type in character's name"
+               disabled="@IsGuessed" />
+    </div>
+
+    @if (!IsGuessed && IsFocused && Suggestions.Any())
+    {
+        <div class="suggestions">
+            @foreach (var item in Suggestions.Select((m, i) => new { Member = m, Index = i }))
+            {
+                <button type="button" class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
+                        @onmousedown="() => SelectAndGuess(item.Member)">
+                    <img src="@ImageHelper.GetMemberHead(@item.Member)" } />
+                    <div class="names">
+                        <span>@item.Member.Name</span>
+                    </div>
+                </button>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .selection-area {
+        position: relative;
+    }
+
+    .input-field {
+        user-select: none;
+        position: sticky;
+        top: 0;
+
+        z-index: 200;
+    }
+
+    .input-field input {
+        padding: 0 .375rem;
+
+        width: 24rem;
+        height: 3rem;
+
+
+        background: var(--black);
+
+        border: 0.125rem solid var(--primary-black);
+        box-shadow:
+            0 0 0 0.125rem var(--black),
+            0 .125rem .5rem var(--shadow);
+
+        color: var(--white);
+
+        font-size: 1rem;
+    }
+
+    .input-field input:focus {
+        border: 0.125em solid var(--primary-dark);
+        outline: none;
+    }
+
+    .suggestions {
+        width: 100%;
+        position: absolute;
+        top: calc(100%);
+
+        display: flex;
+        flex-direction: column;
+
+        z-index: 100;
+
+        background: var(--primary-black);
+        border: .25rem solid var(--shadow);
+
+        box-shadow:
+            0 1rem 2.5rem var(--shadow);
+    }
+
+    .suggestion {
+        background: var(--primary-black);
+
+        border: none;
+
+        transition:
+            background .15s ease;
+
+        padding: .5rem .75rem;
+
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+
+        justify-content: start;
+
+        border: none;
+        cursor: pointer;
+
+    }
+
+    .suggestion img {
+        width: 32px;
+        height: 32px;
+
+        flex-shrink: 0;
+
+        image-rendering: pixelated;
+    }
+
+    .names span {
+        font-weight: 700;
+    }
+
+    .suggestion:hover,
+    .suggestion.active {
+        border-color: var(--tint);
+    }
+</style>
+
+@code {
+    [Parameter]
+    public MemberLookup? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<MemberLookup?> ValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<MemberLookup> OnGuessConfirmed { get; set; }
+
+    [Parameter] public bool IsGuessed { get; set; }
+
+    private string SearchText = "";
+
+    private int ActiveSuggestionIndex = 0;
+
+    private bool IsFocused = false;
+
+
+    private List<MemberLookup> Members = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        Members = await MembersRepository.GetLookupAsync();
+    }
+
+    private async Task SelectAndGuess(MemberLookup? member)
+    {
+        if (member is null)
+            return;
+
+        Value = member;
+        await ValueChanged.InvokeAsync(member);
+
+        await OnGuessConfirmed.InvokeAsync();
+
+        SearchText = "";
+    }
+
+    private async Task GuessFromSuggestions()
+    {
+        var member = Suggestions.FirstOrDefault();
+
+        if (member is null)
+            return;
+
+        Value = member;
+        await ValueChanged.InvokeAsync(member);
+
+        await OnGuessConfirmed.InvokeAsync();
+
+        SearchText = "";
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        var suggestions = Suggestions.ToList();
+
+        if (suggestions.Count == 0)
+            return;
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                ActiveSuggestionIndex = Math.Min(ActiveSuggestionIndex + 1, suggestions.Count - 1);
+                break;
+
+            case "ArrowUp":
+                ActiveSuggestionIndex = Math.Max(ActiveSuggestionIndex - 1, 0);
+                break;
+
+            case "Enter":
+                await SelectAndGuess(suggestions[ActiveSuggestionIndex]);
+                break;
+
+            default:
+                ActiveSuggestionIndex = 0;
+                break;
+        }
+    }
+
+    private void UpdateSearchText()
+    {
+        SearchText = Suggestions.ElementAt(ActiveSuggestionIndex).Name;
+    }
+
+    private IEnumerable<MemberLookup> Suggestions =>
+    string.IsNullOrWhiteSpace(SearchText)
+        ? []
+        : Members
+            .Where(p =>
+                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+    @* .Where(p => !string.Equals(
+                    p.Name,
+                    SearchText,
+                    StringComparison.OrdinalIgnoreCase)) *@
+    .Take(5);
+
+    private string GetHeadSrc(MemberLookup member) => $"/graphics/mini-heads/{@member.Name}.webp";
+}
