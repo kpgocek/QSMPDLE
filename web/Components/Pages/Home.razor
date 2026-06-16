@@ -6,7 +6,7 @@
 @rendermode InteractiveServer
 
 
-<h2>DAILY CHARACTER <span class="text-accent">#@DailyNumber.ToString("00")</span></h2>
+<h2>DAILY CHARACTER<span class="separator">|</span>#@DailyNumber.ToString("00")</h2>
 
 @if (IsGameWon)
 {
@@ -35,7 +35,13 @@ else if (IsGameLost)
 }
 
 <style>
-    .daily-complete-banner {}
+    h2 {
+        margin-top: 2.75rem;
+    }
+
+    .separator {
+        color: var(--tint);
+    }
 </style>
 
 @code {

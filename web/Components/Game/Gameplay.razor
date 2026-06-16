@@ -9,9 +9,9 @@
 @inject IPlayerStatsStore PlayerStatsStore
 @rendermode InteractiveServer
 
-<MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100">
+<MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
 
-    <MudPaper Class="ma-4" Elevation="0">
+    <MudPaper Class="ma-4 image-wrapper" Elevation="0">
         <MemberPortrait Member="currentGame.Target" GuessesMade="currentGame.Guesses.Count" IsGuessed="IsGameWon"
                         IsFailed="IsGameLost" />
     </MudPaper>
@@ -33,6 +33,22 @@
 </MudStack>
 
 <style>
+    .gameplay {
+        position: relative;
+    }
+
+    .gameplay::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+
+        background: radial-gradient(ellipse at center,
+                rgba(0, 140, 255, .12),
+                transparent 70%);
+
+        z-index: -1;
+    }
+
     .guess-table-container {
         width: 100%;
         max-width: 1200px;

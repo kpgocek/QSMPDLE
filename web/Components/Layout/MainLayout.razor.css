@@ -1,8 +1,21 @@
 .page {
+    display: flex;
+    flex-direction: column;
+
+    background: radial-gradient(circle at top center,
+            var(--primary-black) -30%,
+            var(--shadow) 50%,
+            transparent 70%);
+
+    width: 100vw;
+}
+
+.content {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 100vw;
+    width: 100%;
+    min-height: 100vh;
 }
 
 main {
@@ -10,8 +23,6 @@ main {
     flex: 1;
 
     margin-top: 1rem;
-    margin-bottom: 2rem;
-
     margin-inline: auto;
 
     display: flex;
@@ -44,12 +55,7 @@ main {
 }
 
 .footer {
-    margin-top: 4rem;
     padding: 2rem 1rem;
-
-    border-top: 1px solid var(--shadow);
-
-    background: rgb(0 0 0 / 20%);
 }
 
 .footer-content {

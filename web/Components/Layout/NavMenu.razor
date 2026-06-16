@@ -8,18 +8,94 @@
 
         <nav class="links">
 
-            @foreach (var item in NavigationItems.Items)
+            @for (var i = 0; i < NavigationItems.Items.Length; i++)
             {
-                <NavLink href="@item.Url" Match="@(item.Url == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
-                    <Icon Name="@item.Icon" />
-                    <span>@item.Label</span>
+                var item = NavigationItems.Items[i];
+
+                <NavLink href="@item.Url">
+                    @item.Label
                 </NavLink>
+
+                @if (i < NavigationItems.Items.Length - 1)
+                {
+                    <span class="separator">•</span>
+                }
             }
 
         </nav>
 
     </div>
 </header>
+
+<style>
+    .topbar {
+        display: block;
+        padding-top: 2rem;
+    }
+
+    .topbar-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .logo {
+        font-size: 5rem;
+        line-height: 1em;
+        color: var(--text);
+    }
+
+    .logo::before,
+    .logo::after {
+        content: 'III';
+        overflow: hidden;
+        user-select: none;
+    }
+
+    .logo::before {
+        background: linear-gradient(to right, transparent 20%, var(--ghost) 225%);
+        background-clip: text;
+        color: transparent;
+    }
+
+    .logo::after {
+        background: linear-gradient(to left, transparent 20%, var(--tint) 225%);
+        background-clip: text;
+        color: transparent;
+    }
+
+    .links {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    ::deep .links a {
+        color: var(--ghost);
+
+        font-weight: 700;
+
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+
+        transition: .15s ease;
+    }
+
+    ::deep .links a:hover,
+    ::deep .links a.active {
+        color: var(--white);
+    }
+
+    .separator {
+        color: var(--ghost);
+        margin: 0 .75rem;
+    }
+</style>
 
 @code {
     public static class NavigationItems

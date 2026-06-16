@@ -3,7 +3,7 @@
 @using QSMPDLE.Web.Data.Gameplay
 @using QSMPDLE.Web.Services
 
-@if (Guesses is not null && Guesses.Count > 0)
+@if (Guesses is not null)
 {
     <table class="guess-table mx-auto">
         <thead>
@@ -69,9 +69,9 @@
                 </tr>
             }
 
-            @for (int i = Guesses.Count; i < MaxGuesses; i++)
+            @for (int i = Guesses.Count; i < MaxGuesses; i++) // 1-2-3-4-5-6
             {
-                <tr class="empty-row">
+                <tr class="empty-row opacity-@(MaxGuesses + Guesses.Count - i)">
                     <td class="large-cell">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                             <MudAvatar Square="true" Class="placeholder-avatar" Size="Size.Large" />

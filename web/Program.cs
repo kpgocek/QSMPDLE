@@ -40,9 +40,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-Console.WriteLine(typeof(MudTheme).Assembly.Location);
-Console.WriteLine(typeof(Modal).Assembly.Location);
-
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
 app.UseStaticFiles();

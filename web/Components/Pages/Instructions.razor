@@ -87,29 +87,68 @@
 
                 </tbody>
             </table>
+
+            <div class="guess-card">
+
+                <div class="guess-card-header">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+                        <MudAvatar Square="true" Size="Size.Large">
+                            <MudImage Src="/graphics/mini-heads/FitMC.webp" />
+                        </MudAvatar>
+
+                        <span class="guess-name">FitMC</span>
+                    </MudStack>
+                </div>
+
+                <div class="guess-card-grid">
+
+                    <GuessChip Result="ComparisonResult.Wrong">
+                        He/Him
+                    </GuessChip>
+
+                    <GuessChip Result="ComparisonResult.Correct">
+                        Human
+                    </GuessChip>
+
+
+                    <GuessChip Result="ComparisonResult.Less">
+                        Languages: 3+ (5)
+                    </GuessChip>
+
+
+                    <GuessChip Result="ComparisonResult.Partial">
+                        The Regime
+                    </GuessChip>
+
+                    <GuessChip Result="ComparisonResult.Later">
+                        Day 1
+                    </GuessChip>
+
+                </div>
+            </div>
         </div>
 
         <div>
             <p>
-                <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small">
+                <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Green</strong>
                 </MudChip>
                 means an exact match.
             </p>
             <p>
-                <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small">
+                <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Red</strong>
                 </MudChip>
                 means the attribute does not match at all.
             </p>
             <p>
-                <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small">
+                <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Sky Blue</strong>
                 </MudChip>
                 with an arrow indicator a value that's higher, lower, later of earlier than provided.
             </p>
             <p>
-                <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small">
+                <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Yellow</strong>
                 </MudChip>
                 means the attribute is partially correct (have at least one element of the answer).
@@ -132,11 +171,11 @@
         <h3>Game Modes</h3>
 
         <p>
-            <Icon Name="IconName.House" /> <strong>Daily</strong> — everyone receives the same character each day.
+            <strong>DAILY</strong> — everyone receives the same character each day.
         </p>
 
         <p>
-            <Icon Name="IconName.Controller" /> <strong>Practice</strong> — play unlimited random rounds without
+            <strong>PRACTICE</strong> — play unlimited random rounds without
             affecting your daily streak.
         </p>
     </section>
@@ -185,5 +224,60 @@
     .small-cell {
         vertical-align: middle;
         width: 5rem;
+    }
+
+    @* CARD *@
+    .guess-card  {
+        width: 100vw;
+        padding: 1rem;
+        margin-inline-start: -12px;
+
+        background:
+            linear-gradient(160deg, var(--tint) -20%, var(--primary-black) 60%);
+
+        backdrop-filter: blur(1rem);
+
+        border-inline: none;
+        box-shadow:
+            0 .125rem .5rem var(--black);
+    }
+
+    .guess-card-grid  {
+        display: grid;
+
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+
+        gap: .5rem;
+
+        margin-top: 1rem;
+    }
+
+    .guess-card-grid .mud-chip,
+    .placeholder-card-grid .mud-chip {
+        width: 100%;
+    }
+
+    .guess-avatar,
+    .placeholder-avatar {
+        width: 5rem;
+        height: 5rem;
+
+        image-rendering: pixelated;
+        background: var(--ghost);
+        border: 1px solid var(--ghost);
+    }
+
+    .placeholder-avatar {
+        opacity: .4;
+    }
+
+    .guess-name {
+        font-size: 1.1rem;
+        font-weight: 500;
+        letter-spacing: .02em;
+    }
+
+    .color {
+        margin-inline-start: -.5em;
     }
 </style>

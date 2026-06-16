@@ -1,1 +1,17 @@
+.guess-card {
+    display: none;
+}
 
+@media (max-width: 1088px) {
+    .example-wrapper {
+        margin-bottom: 2rem;
+    }
+
+    .guess-card {
+        display: block;
+    }
+
+    .guess-table {
+        display: none;
+    }
+}
