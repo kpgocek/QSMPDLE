@@ -25,6 +25,19 @@ body {
     color: var(--text);
 }
 
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+
+    background-image:
+        url('./graphics/film_grain.png');
+    background-repeat: repeat;
+
+    opacity: 0.075;
+    pointer-events: none;
+}
+
 a {
     text-decoration: none;
     color: var(--text);

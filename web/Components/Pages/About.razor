@@ -1,1 +1,166 @@
 @page "/about"
+@using MudBlazor
+
+<PageTitle>About QSMPDLE</PageTitle>
+
+<WebPage>
+
+    <h2>
+        About the Game
+    </h2>
+
+    <p class="info">
+        A daily guessing game dedicated to the characters of QSMP2.
+    </p>
+
+    <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mb-6">
+        This is an unofficial fan project and is not affiliated with QSMP or its creators.
+    </MudAlert>
+
+    <section class="mb-5">
+        <h3>
+            So, what is it?
+        </h3>
+
+        <p>
+            QSMPDLE is a character guessing game inspired by Wordle and similar daily puzzle games.
+        </p>
+
+        <p>
+            Every day, players are challenged to identify a QSMP character using a series
+            of clues and comparisons. Each guess helps narrow down the possibilities until
+            the correct answer is found.
+        </p>
+
+        <p>
+            Whether you're a casual viewer, a lore enthusiast, or someone who can recite
+            an entire character arc from memory, the goal is simple:
+        </p>
+
+        <MudPaper Outlined="true" Class="quote-box pa-6 mt-4 w-75 mx-auto text-center">
+            <strong>
+                Guess the character before you run out of ideas.
+            </strong>
+        </MudPaper>
+    </section>
+
+    <section class="mb-5">
+        <h3>
+            Why Was It Created?
+        </h3>
+
+        <p>
+            Because QSMP has a huge cast of memorable characters, complicated lore,
+            legendary moments, questionable decisions, emotional damage, and far more
+            eggs than most stories reasonably require.
+        </p>
+
+        <p>
+            It felt like the perfect setting for a guessing game.
+        </p>
+
+        <p>
+            The project started as a small experiment and gradually evolved into a fully
+            playable fan-made experience.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h3>
+            Features
+        </h3>
+
+        <ul>
+            <li>Daily character challenges</li>
+            <li>Practice mode</li>
+            <li>Player statistics and streaks</li>
+            <li>Character information and lore references</li>
+            <li>Playable entirely in your browser</li>
+            <li>No account required</li>
+        </ul>
+    </section>
+
+    <section class="mb-5">
+        <h3>
+            About The Project
+        </h3>
+
+        <p>
+            QSMPDLE is developed and maintained by a single fan in their spare time.
+        </p>
+
+        <p>
+            New features, visual improvements, bug fixes, and additional content are added
+            whenever time, energy, and real life permit.
+        </p>
+
+        <p>
+            If something breaks, there's a good chance the developer is already looking
+            directly at the same bug wondering how it happened.
+        </p>
+    </section>
+
+    <section class="mb-3 text-center">
+
+        <h3>
+            One Last Thing
+        </h3>
+
+        <div class="story-box">
+
+            <p>
+                If you get today's character in one guess,
+                congratulations.
+            </p>
+
+            <p>
+                If it takes fifteen guesses,
+                congratulations.
+            </p>
+
+            <p>
+                If you spend twenty minutes staring at the screen before
+                realizing you forgot an entire character existed,
+                welcome to QSMP.
+            </p>
+
+        </div>
+
+    </section>
+
+</WebPage>
+
+<style>
+    .about-card {
+        max-width: 850px;
+        margin: 0 auto;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+    }
+
+    .section-title {
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+
+    .about-card p {
+        line-height: 1.8;
+        opacity: .95;
+    }
+
+    .quote-box {
+        border-radius: 16px;
+    }
+
+    .story-box {
+        padding: 2rem;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .story-box p:last-child {
+        margin-bottom: 0;
+    }
+</style>

@@ -1,8 +1,8 @@
 @using MudBlazor
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="py-5">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="px-0 py-2">
 
-    <MudPaper Elevation="2" Class="card pa-6">
+    <MudPaper Elevation="2" Class="card pa-3">
         @ChildContent
     </MudPaper>
 
@@ -10,12 +10,14 @@
 
 <style>
     .card {
+        position: relative;
+
         max-width: 850px;
         margin: 0 auto;
-        border-radius: 2rem;
-        background: var(--shadow);
+        background: linear-gradient(to bottom, transparent 40%, var(--shadow) 90%);
         backdrop-filter: blur(16px);
         color: var(--white);
+        border: none;
     }
 
     .info {

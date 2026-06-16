@@ -7,7 +7,7 @@
 
     @for (int i = Guesses.Count; i < MaxGuesses; i++)
     {
-        <div class="placeholder-card">
+        <div class="placeholder-card opacity-@(i)">
 
             <div class="placeholder-card-header">
                 <MudAvatar Square="true" Class="placeholder-avatar" Size="Size.Large" />
@@ -116,9 +116,9 @@
     .placeholder-card-grid {
         display: grid;
 
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 
-        gap: .75rem;
+        gap: .5rem;
 
         margin-top: 1rem;
     }
