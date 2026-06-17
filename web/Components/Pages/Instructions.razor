@@ -5,6 +5,7 @@
 @using QSMPDLE.Web.Data.Gameplay
 
 <WebPage>
+
     <h2>How to Play</h2>
 
     <p class="info">
@@ -34,8 +35,22 @@
                 <thead>
                     <tr>
                         <th>Character</th>
-                        <th>Pronouns</th>
-                        <th>Species</th>
+                        <th>
+                            <MudTooltip Text="Including 'Any'">
+                                <span>
+                                    Pronouns
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                                </span>
+                            </MudTooltip>
+                        </th>
+                         <th>
+                            <MudTooltip Text="'Human', 'Not Human' or 'Unknown'">
+                                <span>Species
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                                </span>
+
+                            </MudTooltip>
+                        </th>
                         <th>Languages</th>
                         <th>Affiliations</th>
                         <th>Joined</th>
@@ -68,7 +83,7 @@
 
                         <td class="small-cell">
                             <GuessChip Result="ComparisonResult.Less">
-                                3+ (5)
+                                4+ (5)
                             </GuessChip>
                         </td>
 

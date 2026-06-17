@@ -1,5 +1,4 @@
 @inject QSMPDLE.Web.Data.IMemberRepository MembersRepository
-@rendermode InteractiveServer
 
 @using QSMPDLE.Web.DTOs
 @using QSMPDLE.Web.Services
@@ -11,14 +10,14 @@
                disabled="@IsGuessed" />
     </div>
 
-    @if (!IsGuessed && IsFocused && Suggestions.Any())
+    @if (!IsGuessed && Suggestions.Any())
     {
         <div class="suggestions">
             @foreach (var item in Suggestions.Select((m, i) => new { Member = m, Index = i }))
             {
                 <button type="button" class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
-                        @onmousedown="() => SelectAndGuess(item.Member)">
-                    <img src="@ImageHelper.GetMemberHead(@item.Member)" } />
+                        @onclick="() => SelectAndGuess(item.Member)"">
+                    <img src=" @ImageHelper.GetMemberHead(@item.Member)" } />
                     <div class="names">
                         <span>@item.Member.Name</span>
                     </div>
@@ -35,10 +34,6 @@
 
     .input-field {
         user-select: none;
-        position: sticky;
-        top: 0;
-
-        z-index: 200;
     }
 
     .input-field input {
@@ -73,7 +68,7 @@
         display: flex;
         flex-direction: column;
 
-        z-index: 100;
+        z-index: 500;
 
         background: var(--primary-black);
         border: .25rem solid var(--shadow);
@@ -140,6 +135,7 @@
 
     private bool IsFocused = false;
 
+    private bool ShowSuggestions => !IsGuessed && !string.IsNullOrWhiteSpace(SearchText) && Suggestions.Any();
 
     private List<MemberLookup> Members = [];
 

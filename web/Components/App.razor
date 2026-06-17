@@ -45,13 +45,7 @@
 </head>
 
 <body>
-    <MudBreakpointProvider />
-    <MudThemeProvider Theme="@QsmpdleTheme.Theme" IsDarkMode="true" />
-    <MudPopoverProvider />
-    <MudDialogProvider />
-    <MudSnackbarProvider />
-
-    <Routes />
+    <Routes @rendermode="InteractiveServer" />
     <ReconnectModal />
 
     <script src="@Assets["/framework/blazor.web.js"]"></script>
@@ -61,7 +55,8 @@
             integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
             crossorigin="anonymous"></script>
 
-    <script src="@Assets["/vendor/Blazor.Bootstrap/blazor.bootstrap.js"]"></script>
+    <script src="@Assets["/vendors/Blazor.Bootstrap/blazor.bootstrap.js"]"></script>
+    <script src="/vendors/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/share.js"></script>
     <script src="js/scroll.js"></script>
 </body>

@@ -9,8 +9,21 @@
         <thead>
             <tr>
                 <th>Character</th>
-                <th>Pronouns</th>
-                <th>Species</th>
+                <th>
+                    <MudTooltip Text="Including 'Any'">
+                        <span>Pronouns
+                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                        </span>
+                    </MudTooltip>
+                </th>
+
+                <th>
+                    <MudTooltip Text="'Human', 'Not Human' or 'Unknown'">
+                        <span>Species
+                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                        </span>
+                    </MudTooltip>
+                </th>
                 <th>Languages</th>
                 <th>Affiliations</th>
                 <th>Joined</th>
@@ -50,7 +63,7 @@
                     <td class="small-cell">
                         <GuessChip Result="guess.Languages">
                             @(@guess.Member.Languages > 3
-                                ? $"3+ ({@guess.Member.Languages})"
+                                ? $"4+ ({@guess.Member.Languages})"
                                 : @guess.Member.Languages)
                         </GuessChip>
                     </td>
@@ -129,11 +142,9 @@
 
     .guess-table th {
         color: var(--white);
-        font-size: .8rem;
         text-transform: uppercase;
         letter-spacing: .05em;
         font-weight: 600;
-        height: 2rem;
     }
 
     .guess-table td {
@@ -243,7 +254,7 @@
     private static string DisplayList(IEnumerable<string> values)
     {
         return values.Any()
-            ? string.Join(" / ", values)
+            ? string.Join("/", values)
             : "None";
     }
 }

@@ -102,6 +102,8 @@ public static class MemberComparer
             return ComparisonResult.Partial;
         }
 
+        if (guessedPronouns.Contains("Any")) return ComparisonResult.Partial;
+
         if (targetPronouns.IsSubsetOf(guessedPronouns)) return ComparisonResult.Correct;
         if (targetPronouns.Overlaps(guessedPronouns)) return ComparisonResult.Partial;
 
