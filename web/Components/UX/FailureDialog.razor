@@ -15,9 +15,34 @@
         </p>
 
         <div class="buttons">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Share">
-                Challenge others
-            </MudButton>
+            <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary">
+
+                <MudMenuItem OnClick="Share">
+                    <MudIcon Icon="@Icons.Material.Filled.Share" />
+                    Challenge Others
+                </MudMenuItem>
+
+                <MudMenuItem OnClick="CopyShareText">
+                    <MudIcon Icon="@Icons.Material.Filled.ContentCopy" />
+                    Copy
+                </MudMenuItem>
+
+                <MudMenuItem Href="@BuildXLink()" Target="_blank">
+                    <MudIcon Icon="@Icons.Custom.Brands.Twitter" />
+                    X
+                </MudMenuItem>
+
+                <MudMenuItem Href="@BuildTelegramLink()" Target="_blank">
+                    <MudIcon Icon="@Icons.Custom.Brands.Telegram" />
+                    Telegram
+                </MudMenuItem>
+
+                <MudMenuItem Href="@BuildRedditLink()" Target="_blank">
+                    <MudIcon Icon="@Icons.Custom.Brands.Reddit" />
+                    Reddit
+                </MudMenuItem>
+
+            </MudMenu>
 
             <MudButton OnClick="Close">
                 Close
@@ -57,17 +82,15 @@
 </style>
 
 @code {
-    [Parameter] public int DayNumber { get; set; }
+    [Parameter] public int? DayNumber { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public PlayerStats? Stats { get; set; } = null!;
     private async Task Share()
     {
         ArgumentNullException.ThrowIfNull(DayNumber);
 
-        var day = (int)DayNumber;
-
         var text = ShareTextBuilder.BuildDailyChallenge(
-            day);
+            DayNumber.Value);
 
         await ShareService.ShareAsync(text);
     }
@@ -75,5 +98,32 @@
     private async Task Close()
     {
         await OnClose.InvokeAsync();
+    }
+
+    private string BuildShareText()
+    {
+        ArgumentNullException.ThrowIfNull(DayNumber);
+
+        return ShareTextBuilder.BuildDailyChallenge(DayNumber.Value);
+    }
+
+    private async Task CopyShareText()
+    {
+        await ShareService.ShareAsync(BuildShareText());
+    }
+
+    private string BuildXLink()
+    {
+        return $"https://twitter.com/intent/tweet?text={Uri.EscapeDataString(BuildShareText())}";
+    }
+
+    private string BuildTelegramLink()
+    {
+        return $"https://t.me/share/url?text={Uri.EscapeDataString(BuildShareText())}";
+    }
+
+    private string BuildRedditLink()
+    {
+        return $"https://reddit.com/submit?title={Uri.EscapeDataString(BuildShareText())}";
     }
 }
