@@ -14,10 +14,12 @@
 }
 
 body {
-    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-family: 'Nunito Sans', Helvetica, Arial, sans-serif;
     font-optical-sizing: auto;
-    font-weight: 500;
+    font-weight: 300;
     font-style: normal;
+
+    font-size: 1rem;
 
     min-height: 100vh;
 
@@ -62,13 +64,13 @@ h2 {
 }
 
 h3 {
-    font-family: "Raleway", sans-serif;
+    font-family: "Nunito Sans", sans-serif;
     font-style: normal;
     font-weight: 800;
 }
 
 h4 {
-    font-family: "Raleway", sans-serif;
+    font-family: "Nunito Sans", sans-serif;
     font-style: oblique;
     font-weight: 600;
 }
@@ -77,4 +79,6 @@ h4 {
     background: linear-gradient(to right, var(--correct) -10%, var(--primary) 65%);
     background-clip: text;
     color: transparent;
+    position: relative;
+    top: -1px;
 }

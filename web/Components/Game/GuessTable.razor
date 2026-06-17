@@ -11,7 +11,7 @@
                 <th>Character</th>
                 <th>
                     <MudTooltip Text="Including 'Any'">
-                        <span>Pronouns
+                        <span class="header-with-icon">Pronouns
                             <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
                         </span>
                     </MudTooltip>
@@ -19,7 +19,7 @@
 
                 <th>
                     <MudTooltip Text="'Human', 'Not Human' or 'Unknown'">
-                        <span>Species
+                        <span class="header-with-icon">Species
                             <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
                         </span>
                     </MudTooltip>
@@ -144,7 +144,7 @@
         color: var(--white);
         text-transform: uppercase;
         letter-spacing: .05em;
-        font-weight: 600;
+        font-weight: 400;
     }
 
     .guess-table td {
@@ -154,6 +154,17 @@
     .guess-table td,
     .guess-table th {
         vertical-align: middle;
+    }
+
+    .header-with-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+    }
+
+    .header-with-icon .mud-icon-root {
+        position: relative;
+        top: -1px;
     }
 
     .answer-row {

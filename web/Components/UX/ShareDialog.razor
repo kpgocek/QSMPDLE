@@ -1,0 +1,63 @@
+@using MudBlazor
+@inject IJSRuntime JS
+@inject IDialogService DialogService
+
+<MudDialog>
+
+    <DialogContent>
+
+        <MudText Typo="Typo.h6">
+            Share your results
+        </MudText>
+
+        <MudStack Spacing="2">
+
+            <MudButton FullWidth="true" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="Copy">
+                Copy Results
+            </MudButton>
+
+            <MudButton FullWidth="true" Href="@TwitterUrl" Target="_blank">
+                Share on X
+            </MudButton>
+
+            <MudButton FullWidth="true" Href="@TelegramUrl" Target="_blank">
+                Share on Telegram
+            </MudButton>
+
+            <MudButton FullWidth="true" Href="@RedditUrl" Target="_blank">
+                Share on Reddit
+            </MudButton>
+
+        </MudStack>
+
+    </DialogContent>
+
+</MudDialog>
+
+@code {
+    [Parameter]
+    public string ShareText { get; set; } = "";
+
+    [Inject]
+    public ISnackbar Snackbar { get; set; } = null!;
+
+    private string TwitterUrl =>
+        $"https://twitter.com/intent/tweet?text={Uri.EscapeDataString(ShareText)}";
+
+    private string TelegramUrl =>
+        $"https://t.me/share/url?text={Uri.EscapeDataString(ShareText)}";
+
+    private string RedditUrl =>
+        $"https://reddit.com/submit?title={Uri.EscapeDataString(ShareText)}";
+
+    private async Task Copy()
+    {
+        await JS.InvokeVoidAsync(
+            "navigator.clipboard.writeText",
+            ShareText);
+
+        Snackbar.Add(
+            "Results copied to clipboard",
+            Severity.Success);
+    }
+}

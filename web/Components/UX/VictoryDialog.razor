@@ -84,9 +84,34 @@
         <div class="buttons">
             @if (DayNumber is not null)
             {
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Share">
-                    Share
-                </MudButton>
+                <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary">
+
+                    <MudMenuItem OnClick="Share">
+                        <MudIcon Icon="@Icons.Material.Filled.Share" />
+                        Share...
+                    </MudMenuItem>
+
+                    <MudMenuItem OnClick="CopyShareText">
+                        <MudIcon Icon="@Icons.Material.Filled.ContentCopy" />
+                        Copy
+                    </MudMenuItem>
+
+                    <MudMenuItem Href="@BuildXLink()" Target="_blank">
+                        <MudIcon Icon="@Icons.Custom.Brands.Twitter" />
+                        X
+                    </MudMenuItem>
+
+                    <MudMenuItem Href="@BuildTelegramLink()" Target="_blank">
+                        <MudIcon Icon="@Icons.Custom.Brands.Telegram" />
+                        Telegram
+                    </MudMenuItem>
+
+                    <MudMenuItem Href="@BuildRedditLink()" Target="_blank">
+                        <MudIcon Icon="@Icons.Custom.Brands.Reddit" />
+                        Reddit
+                    </MudMenuItem>
+
+                </MudMenu>
             }
             <MudButton OnClick="Close">
                 Close
@@ -207,7 +232,7 @@
         ArgumentNullException.ThrowIfNull(DayNumber);
 
         var text = ShareTextBuilder.BuildDailyResult(
-            (int)DayNumber,
+            DayNumber.Value,
             Guesses);
 
         await ShareService.ShareAsync(text);
@@ -230,5 +255,34 @@
         return Math.Max(
             8,
             Stats.GuessDistribution[index] * 100.0 / max);
+    }
+
+    private string BuildShareText()
+    {
+        ArgumentNullException.ThrowIfNull(DayNumber);
+
+        return ShareTextBuilder.BuildDailyResult(
+            DayNumber.Value,
+            Guesses);
+    }
+
+    private async Task CopyShareText()
+    {
+        await ShareService.ShareAsync(BuildShareText());
+    }
+
+    private string BuildXLink()
+    {
+        return $"https://twitter.com/intent/tweet?text={Uri.EscapeDataString(BuildShareText())}";
+    }
+
+    private string BuildTelegramLink()
+    {
+        return $"https://t.me/share/url?text={Uri.EscapeDataString(BuildShareText())}";
+    }
+
+    private string BuildRedditLink()
+    {
+        return $"https://reddit.com/submit?title={Uri.EscapeDataString(BuildShareText())}";
     }
 }

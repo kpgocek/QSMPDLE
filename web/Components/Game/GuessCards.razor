@@ -75,14 +75,24 @@
                         : @guess.Member.Languages)
                 </GuessChip>
 
+                @if (guess.Member.Affiliations.Count > 0)
+                {
+                    @foreach (var affiliation in guess.Member.Affiliations)
+                    {
+                        <GuessChip Result="guess.Affiliation">
+                            @affiliation
+                        </GuessChip>
 
-                @foreach (var affiliation in guess.Member.Affiliations)
+                    }
+                }
+                else
                 {
                     <GuessChip Result="guess.Affiliation">
-                        @affiliation
+                        Affiliations: None
                     </GuessChip>
-
                 }
+
+
                 <GuessChip Result="guess.Joined">
                     <span class="chip-labels">Joined on</span> Day @guess.Member.JoinDayNumber
                 </GuessChip>

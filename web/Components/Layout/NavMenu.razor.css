@@ -6,9 +6,10 @@
     .links {
         width: 100%;
         justify-content: space-evenly;
+        padding-inline: 1rem;
     }
 
-    ::deep .links a span {
+    .links a span {
         display: none;
     }
 }
