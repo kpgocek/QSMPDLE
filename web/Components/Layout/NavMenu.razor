@@ -7,20 +7,23 @@
         <h1 class="logo">QSMP<span class="text-accent">DLE</span></h1>
 
         <nav class="links">
+            <NavLink href="/" Match="NavLinkMatch.All">
+                Daily
+            </NavLink>
 
-            @for (var i = 0; i < NavigationItems.Items.Length; i++)
-            {
-                var item = NavigationItems.Items[i];
+            <span class="separator">•</span>
 
-                <NavLink href="@item.Url">
-                    @item.Label
-                </NavLink>
+            <NavLink href="/practice">
+                Practice
+            </NavLink>
 
-                @if (i < NavigationItems.Items.Length - 1)
-                {
-                    <span class="separator">•</span>
-                }
-            }
+            <span class="separator">•</span>
+
+            <NavLink href="/how-to-play">
+                How to Play
+            </NavLink>
+
+
 
         </nav>
 
@@ -94,17 +97,3 @@
         margin-inline: 0.75rem;
     }
 </style>
-
-@code {
-    public static class NavigationItems
-    {
-        public static readonly NavItem[] Items =
-        [
-            new("/", "Daily", IconName.House),
-            new("/practice", "Practice", IconName.Controller),
-            new("/how-to-play", "How to Play", IconName.Search),
-        ];
-    }
-
-    public record NavItem(string Url, string Label, IconName Icon = IconName.None);
-}
