@@ -37,7 +37,7 @@
                         <th>Character</th>
                         <th>
                             <MudTooltip Text="Including 'Any'">
-                                <span>
+                                <span class="header-with-icon">
                                     Pronouns
                                     <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
                                 </span>
@@ -45,7 +45,7 @@
                         </th>
                          <th>
                             <MudTooltip Text="'Human', 'Not Human' or 'Unknown'">
-                                <span>Species
+                                <span class="header-with-icon">Species
                                     <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
                                 </span>
 
@@ -160,7 +160,7 @@
                 <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Sky Blue</strong>
                 </MudChip>
-                with an arrow indicator a value that's higher, lower, later of earlier than provided.
+                with an arrow indicates a value that's higher, lower, later of earlier than provided.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small" Class="color">
@@ -225,6 +225,17 @@
     .guess-table td,
     .guess-table th {
         vertical-align: middle;
+    }
+
+    .header-with-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+    }
+
+    .header-with-icon .mud-icon-root {
+        position: relative;
+        top: -1px;
     }
 
     .answer-row {
