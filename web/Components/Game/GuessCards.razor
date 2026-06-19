@@ -1,7 +1,6 @@
 @using MudBlazor
 @using QSMPDLE.Web.Components.UX
-@using QSMPDLE.Web.Data.Gameplay
-@using QSMPDLE.Web.Services
+@using QSMPDLE.Web.Features.Gameplay.Models
 
 <div class="mobile-guesses">
 
@@ -45,8 +44,11 @@
 
             <div class="guess-card-header">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+                    @*<MudAvatar Square="true" Size="Size.Large">
+                        <MudImage Src="@ShareImageGenerator.GetMemberHead(guess.Member)" />
+                    </MudAvatar>*@
                     <MudAvatar Square="true" Size="Size.Large">
-                        <MudImage Src="@ImageHelper.GetMemberHead(guess.Member)" />
+                        <span>@guess.Member.Name.Substring(0, 1)</span>
                     </MudAvatar>
 
                     <span class="guess-name">@guess.Member.Name</span>

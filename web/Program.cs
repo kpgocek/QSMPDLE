@@ -4,7 +4,10 @@ using MudBlazor;
 using MudBlazor.Services;
 using QSMPDLE.Web.Components;
 using QSMPDLE.Web.Data;
-using QSMPDLE.Web.Services;
+using QSMPDLE.Web.Features.Characters;
+using QSMPDLE.Web.Features.Gameplay;
+using QSMPDLE.Web.Features.Sharing;
+using QSMPDLE.Web.Features.Sharing.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,13 +23,9 @@ var dbPath = Path.Combine(builder.Environment.ContentRootPath, relativePath!);
 
 builder.Services.AddDbContext<QsmpdleDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
 
-builder.Services.AddScoped<IMemberRepository, MemberRepository>();
-builder.Services.AddScoped<IGameStateStore, LocalStorageGameStateStore>();
-builder.Services.AddScoped<IPlayerStatsStore, LocalStoragePlayerStatsStore>();
-builder.Services.AddScoped<IGameService, GameService>();
-
-builder.Services.AddScoped<IShareService, ShareService>();
-builder.Services.AddSingleton<IShareTextBuilder, ShareTextBuilder>();
+builder.Services.AddCharactersFeature();
+builder.Services.AddGameplayFeature();
+builder.Services.AddSharingFeature();
 
 builder.Services
     .AddRazorComponents()

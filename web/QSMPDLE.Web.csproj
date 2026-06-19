@@ -22,7 +22,7 @@
   </ItemGroup>
 
 <ItemGroup>
-  <Content Include="DB\qsmpdle.db">
+  <Content Include="Infrastructure\Persistence\DB\qsmpdle.db">
     <CopyToPublishDirectory>Always</CopyToPublishDirectory>
   </Content>
 </ItemGroup>

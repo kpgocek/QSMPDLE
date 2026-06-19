@@ -1,11 +1,13 @@
 ﻿@using MudBlazor
 @using QSMPDLE.Web.DTOs
-@using QSMPDLE.Web.Data.Gameplay
-@using QSMPDLE.Web.Services
+@using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Features.Gameplay.Services
+@using QSMPDLE.Web.Features.Gameplay.Stores
 
 @inject IJSRuntime JS
 @inject IGameService GameService
-@inject IGameStateStore GameStateStore
+@inject IGameStateManager GameStateManager
+@inject IGameplayOrchestrator GameplayOrchestrator
 @inject IPlayerStatsStore PlayerStatsStore
 
 <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
@@ -90,11 +92,6 @@
             : await GameService.StartDailyAsync();
 
         await DayNumberChanged.InvokeAsync(currentGame.DayNumber);
-
-        if (!EndlessMode)
-        {
-            await GameStateStore.Init(GameKey);
-        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -102,8 +99,10 @@
         if (!firstRender)
             return;
 
-        state = await LoadGameStateOrNewAsync();
+        // Load game state from local storage (JS interop only allowed here)
+        state = await GameStateManager.LoadOrCreateAsync(EndlessMode, GameKey);
 
+        // Restore previous guesses from saved state
         foreach (var memberId in state.GuessesMade)
         {
             GameService.SubmitGuess(currentGame, memberId);
@@ -120,24 +119,26 @@
         if (IsGameWon || GuessedMember is null)
             return;
 
-        if (state.GuessesMade.Contains(GuessedMember.Id))
+        // Process guess through orchestrator
+        var result = GameplayOrchestrator.ProcessGuess(currentGame, GuessedMember.Id, state);
+
+        // Duplicate guess check
+        if (result.LatestGuess is null)
         {
-            ClearGuessingField();
+            GuessedMember = null;
             return;
         }
 
-        var latestGuess = GameService.SubmitGuess(currentGame, GuessedMember.Id);
+        IsGameWon = result.IsGameWon;
+        IsGameLost = result.IsGameLost;
 
-        state.GuessesMade.Add(GuessedMember.Id);
-
-        if (latestGuess.IsCorrect)
+        // Handle win
+        if (result.IsGameWon)
         {
-            IsGameWon = true;
-            state.IsCompleted = true;
-
             if (!EndlessMode && !state.StatsRecorded)
             {
-                await RecordWin();
+                var stats = await GameplayOrchestrator.RecordWinAsync(currentGame, EndlessMode);
+                await StatsUpdated.InvokeAsync(stats);
                 state.StatsRecorded = true;
             }
 
@@ -150,14 +151,13 @@
 
             await GameEnded.InvokeAsync(true);
         }
-        else if (currentGame.Guesses.Count >= 6)
+        // Handle loss
+        else if (result.IsGameLost)
         {
-            IsGameLost = true;
-            state.IsFailed = true;
-
             if (!EndlessMode && !state.StatsRecorded)
             {
-                await RecordLoss();
+                var stats = await GameplayOrchestrator.RecordLossAsync();
+                await StatsUpdated.InvokeAsync(stats);
                 state.StatsRecorded = true;
             }
 
@@ -171,80 +171,15 @@
             await GameEnded.InvokeAsync(false);
         }
 
-        if (!EndlessMode)
-        {
-            await SaveGameState();
-        }
+        // Save state to local storage
+        await GameStateManager.SaveAsync(state, EndlessMode, GameKey);
 
-        ClearGuessingField();
-    }
-
-    private async Task<GameState> LoadGameStateOrNewAsync()
-    {
-        if (EndlessMode)
-            return new GameState();
-
-        return await GameStateStore.GetAsync() ?? new GameState();
-    }
-
-    private async Task SaveGameState()
-    {
-        await GameStateStore.SaveAsync(state);
-    }
-
-    private void ClearGuessingField()
-    {
         GuessedMember = null;
-    }
-
-    private async Task RecordWin()
-    {
-        var stats = await PlayerStatsStore.LoadAsync();
-
-        stats.GamesPlayed++;
-        stats.GamesWon++;
-
-        if (stats.LastCompletedDayNumber == currentGame.DayNumber - 1)
-        {
-            stats.CurrentStreak++;
-        }
-        else if (stats.LastCompletedDayNumber != currentGame.DayNumber)
-        {
-            stats.CurrentStreak = 1;
-        }
-
-        stats.MaxStreak =
-            Math.Max(stats.MaxStreak, stats.CurrentStreak);
-
-        stats.LastCompletedDayNumber =
-            currentGame.DayNumber;
-
-        var guessCount =
-            Math.Clamp(currentGame.Guesses.Count, 1, 6);
-
-        stats.GuessDistribution[guessCount - 1]++;
-
-        await PlayerStatsStore.SaveAsync(stats);
-
-        await StatsUpdated.InvokeAsync(stats);
-    }
-
-    private async Task RecordLoss()
-    {
-        var stats = await PlayerStatsStore.LoadAsync();
-
-        stats.GamesPlayed++;
-
-        stats.CurrentStreak = 0;
-
-        await PlayerStatsStore.SaveAsync(stats);
-
-        await StatsUpdated.InvokeAsync(stats);
     }
 
     private async Task StartNewGame()
     {
-        state = await LoadGameStateOrNewAsync();
+        state = new GameState();
 
         IsGameLost = false;
         IsGameWon = false;

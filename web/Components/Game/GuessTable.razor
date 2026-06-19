@@ -1,7 +1,6 @@
 @using MudBlazor
 @using QSMPDLE.Web.Components.UX
-@using QSMPDLE.Web.Data.Gameplay
-@using QSMPDLE.Web.Services
+@using QSMPDLE.Web.Features.Gameplay.Models
 
 @if (Guesses is not null)
 {
@@ -36,8 +35,11 @@
                 <tr class="answer-row">
                     <td class="medium-cell">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            @*<MudAvatar Square="true" Size="Size.Large">
+                                <MudImage Src="@ShareImageGenerator.GetMemberHead(@guess.Member)" />
+                            </MudAvatar>*@
                             <MudAvatar Square="true" Size="Size.Large">
-                                <MudImage Src="@ImageHelper.GetMemberHead(@guess.Member)" />
+                                <span>@guess.Member.Name.Substring(0, 1)</span>
                             </MudAvatar>
                             <span>@guess.Member.Name</span>
                         </MudStack>
