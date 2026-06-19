@@ -10,10 +10,18 @@
     <div class="failure-modal">
 
         <h2>Welp!</h2>
-
-        <p>
-            You've reached the limit trying to guess character #@DayNumber.
-        </p>
+        @if (DayNumber is not null)
+        {
+            <p>
+                You've reached the limit trying to guess character #@DayNumber.
+            </p>
+        }
+        else
+        {
+            <p>
+                You've reached the maximum number of guesses. Try again?
+            </p>
+        }
 
         <div class="buttons">
             <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary">

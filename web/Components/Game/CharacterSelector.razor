@@ -1,8 +1,7 @@
-@inject QSMPDLE.Web.Features.Characters.Repositories.ICharacterRepository MembersRepository
+@inject QSMPDLE.Web.Features.Characters.Repositories.ICharacterRepository CharacterRepository
 
-@using QSMPDLE.Web.DTOs
-@using QSMPDLE.Web.Features.Sharing.Services
-@using QSMPDLE.Web.Features.Sharing.Builders
+@using QSMPDLE.Web.Features.Characters.DTOs
+
 
 <div class="selection-area">
     <div class="input-field">
@@ -13,13 +12,13 @@
     @if (!IsGuessed && Suggestions.Any())
     {
         <div class="suggestions">
-            @foreach (var item in Suggestions.Select((m, i) => new { Member = m, Index = i }))
+            @foreach (var item in Suggestions.Select((m, i) => new { Character = m, Index = i }))
             {
                 <button type="button" class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
-                        @onclick="() => SelectAndGuess(item.Member)"">
-                    <img src=" @GetHeadSrc(item.Member)" alt="@item.Member.Name" />
+                        @onclick="() => SelectAndGuess(item.Character)"">
+                    <img src=" @CharacterImageHelper.GetHeadSrc(item.Character)" alt="@item.Character.Name" />
                     <div class="names">
-                        <span>@item.Member.Name</span>
+                        <span>@item.Character.Name</span>
                     </div>
                 </button>
             }
@@ -119,13 +118,13 @@
 
 @code {
     [Parameter]
-    public MemberLookup? Value { get; set; }
+    public CharacterLookup? Value { get; set; }
 
     [Parameter]
-    public EventCallback<MemberLookup?> ValueChanged { get; set; }
+    public EventCallback<CharacterLookup?> ValueChanged { get; set; }
 
     [Parameter]
-    public EventCallback<MemberLookup> OnGuessConfirmed { get; set; }
+    public EventCallback<CharacterLookup> OnGuessConfirmed { get; set; }
 
     [Parameter] public bool IsGuessed { get; set; }
 
@@ -135,20 +134,20 @@
 
     private bool ShowSuggestions => !IsGuessed && !string.IsNullOrWhiteSpace(SearchText) && Suggestions.Any();
 
-    private List<MemberLookup> Members = [];
+    private List<CharacterLookup> Characters = [];
 
     protected override async Task OnInitializedAsync()
     {
-        Members = await MembersRepository.GetLookupAsync();
+        Characters = await CharacterRepository.GetLookupAsync();
     }
 
-    private async Task SelectAndGuess(MemberLookup? member)
+    private async Task SelectAndGuess(CharacterLookup? character)
     {
-        if (member is null)
+        if (character is null)
             return;
 
-        Value = member;
-        await ValueChanged.InvokeAsync(member);
+        Value = character;
+        await ValueChanged.InvokeAsync(character);
 
         await OnGuessConfirmed.InvokeAsync();
 
@@ -157,13 +156,13 @@
 
     private async Task GuessFromSuggestions()
     {
-        var member = Suggestions.FirstOrDefault();
+        var character = Suggestions.FirstOrDefault();
 
-        if (member is null)
+        if (character is null)
             return;
 
-        Value = member;
-        await ValueChanged.InvokeAsync(member);
+        Value = character;
+        await ValueChanged.InvokeAsync(character);
 
         await OnGuessConfirmed.InvokeAsync();
 
@@ -202,17 +201,11 @@
         SearchText = Suggestions.ElementAt(ActiveSuggestionIndex).Name;
     }
 
-    private IEnumerable<MemberLookup> Suggestions =>
+    private IEnumerable<CharacterLookup> Suggestions =>
     string.IsNullOrWhiteSpace(SearchText)
         ? []
-        : Members
+        : Characters
             .Where(p =>
                 p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
-    @* .Where(p => !string.Equals(
-                    p.Name,
-                    SearchText,
-                    StringComparison.OrdinalIgnoreCase)) *@
     .Take(5);
-
-    private string GetHeadSrc(MemberLookup member) => $"/graphics/mini-heads/{@member.Name}.webp";
 }

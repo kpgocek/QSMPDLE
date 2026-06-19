@@ -1,12 +1,17 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace QSMPDLE.Web.Models;
 
 public sealed class DailyGame
 {
+    [Column("id")]
     public int Id { get; set; }
 
+    [Column("date")]
     public DateOnly Date { get; set; }
 
-    public int MemberId { get; set; }
+    [Column("character_id")]
+    public int CharacterId { get; set; }
 
-    public Character Member { get; set; } = null!;
+    public Character Character { get; set; } = null!;
 }

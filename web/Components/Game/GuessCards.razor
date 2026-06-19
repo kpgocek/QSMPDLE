@@ -1,6 +1,7 @@
 @using MudBlazor
 @using QSMPDLE.Web.Components.UX
 @using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Models
 
 <div class="mobile-guesses">
 
@@ -44,42 +45,43 @@
 
             <div class="guess-card-header">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
-                    @*<MudAvatar Square="true" Size="Size.Large">
-                        <MudImage Src="@ShareImageGenerator.GetMemberHead(guess.Member)" />
-                    </MudAvatar>*@
                     <MudAvatar Square="true" Size="Size.Large">
-                        <span>@guess.Member.Name.Substring(0, 1)</span>
+                        <MudImage Src=@CharacterImageHelper.GetHeadSrc(guess.Character) />
                     </MudAvatar>
 
-                    <span class="guess-name">@guess.Member.Name</span>
+                    <span class="guess-name">@guess.Character.Name</span>
                 </MudStack>
             </div>
 
             <div class="guess-card-grid">
 
                 <GuessChip Result="guess.Pronouns">
-                    @(guess.Member.Pronouns.Contains("Any") ? "Pronouns: Any" : @DisplayList(guess.Member.Pronouns))
+                    @(guess.Character.Pronouns.Contains("Any") ? "Pronouns: Any" : @DisplayList(guess.Character.Pronouns))
                 </GuessChip>
 
                 <GuessChip Result="guess.Species">
-                    @(guess.Member.Species.Contains("Human")
-                        ? "Human"
-                        : @guess.Member.Species.Contains("Unknown")
-                            ? "Species: Unknown"
-                            : $"Not Human")
+                    @(
+                                    guess.Character.Species.Contains("Human")
+                                            ? "Human"
+                                            : @guess.Character.Species.Contains("Unknown")
+                                                ? "Species: Unknown"
+                                                : $"Not Human"
+                                    )
                 </GuessChip>
 
 
                 <GuessChip Result="guess.Languages">
                     <span class="chip-labels">Languages:</span>
-                    @(@guess.Member.Languages > 3
-                        ? $"4+"
-                        : @guess.Member.Languages)
+                    @(
+                    @guess.Character.Languages > 3
+                            ? $"4+"
+                            : @guess.Character.Languages
+                    )
                 </GuessChip>
 
-                @if (guess.Member.Affiliations.Count > 0)
+                @if (guess.Character.Affiliations.Count > 0)
                 {
-                    @foreach (var affiliation in guess.Member.Affiliations)
+                    @foreach (var affiliation in guess.Character.Affiliations)
                     {
                         <GuessChip Result="guess.Affiliation">
                             @affiliation
@@ -96,7 +98,7 @@
 
 
                 <GuessChip Result="guess.Joined">
-                    <span class="chip-labels">Joined on</span> Day @guess.Member.JoinDayNumber
+                    <span class="chip-labels">Joined on</span> Day @guess.Character.JoinDayNumber
                 </GuessChip>
 
             </div>

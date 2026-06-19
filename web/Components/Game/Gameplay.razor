@@ -1,8 +1,9 @@
 ﻿@using MudBlazor
-@using QSMPDLE.Web.DTOs
+@using QSMPDLE.Web.Features.Characters.DTOs
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Gameplay.Services
 @using QSMPDLE.Web.Features.Gameplay.Stores
+@using QSMPDLE.Web.Models
 
 @inject IJSRuntime JS
 @inject IGameService GameService
@@ -13,9 +14,15 @@
 <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
 
     <MudPaper Class="ma-4 image-wrapper" Elevation="0">
-        <MemberPortrait Member="currentGame.Target" GuessesMade="currentGame.Guesses.Count" IsGuessed="IsGameWon"
-                        IsFailed="IsGameLost" />
+        <CharacterPortrait Character="currentGame.Target" GuessesMade="currentGame.Guesses.Count" IsGuessed="IsGameWon"
+                           IsFailed="IsGameLost" />
     </MudPaper>
+    @if (IsGameOver)
+    {
+        <div class="answer-reveal @(IsGameWon ? "success" : "failure")">
+            <h3>@currentGame.Target.Name</h3>
+        </div>
+    }
 
     @if (EndlessMode)
     {
@@ -25,7 +32,7 @@
         </MudButton>
     }
 
-    <MemberSelector @bind-Value="GuessedMember" OnGuessConfirmed="Guess" IsGuessed="IsGameOver" />
+    <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="IsGameOver" />
 
     <div class="guess-table-container">
         <GuessTable Guesses="currentGame?.Guesses" />
@@ -54,6 +61,22 @@
         width: 100%;
         max-width: 1200px;
     }
+
+    .answer-reveal {
+        text-align: center;
+    }
+
+    .answer-reveal h3 {
+        font-weight: 700;
+    }
+
+    .success {
+        color: var(--correct);
+    }
+
+    .failure {
+        color: var(--wrong);
+    }
 </style>
 
 @code {
@@ -69,13 +92,13 @@
     [Parameter]
     public EventCallback<List<Guess>> VictoryAnnounced { get; set; }
     [Parameter]
-    public EventCallback FailureAnnounced { get; set; }
+    public EventCallback<Character> FailureAnnounced { get; set; }
 
     [Parameter]
     public EventCallback<PlayerStats> StatsUpdated { get; set; }
 
     private Game currentGame = null!;
-    private MemberLookup? GuessedMember;
+    private CharacterLookup? GuessedCharacter;
     private GameState state = new();
 
     private bool IsGameWon;
@@ -103,9 +126,9 @@
         state = await GameStateManager.LoadOrCreateAsync(EndlessMode, GameKey);
 
         // Restore previous guesses from saved state
-        foreach (var memberId in state.GuessesMade)
+        foreach (var characterId in state.GuessesMade)
         {
-            GameService.SubmitGuess(currentGame, memberId);
+            GameService.SubmitGuess(currentGame, characterId);
         }
 
         IsGameWon = state.IsCompleted;
@@ -116,16 +139,16 @@
 
     public async Task Guess()
     {
-        if (IsGameWon || GuessedMember is null)
+        if (IsGameWon || GuessedCharacter is null)
             return;
 
         // Process guess through orchestrator
-        var result = GameplayOrchestrator.ProcessGuess(currentGame, GuessedMember.Id, state);
+        var result = GameplayOrchestrator.ProcessGuess(currentGame, GuessedCharacter.Id, state);
 
         // Duplicate guess check
         if (result.LatestGuess is null)
         {
-            GuessedMember = null;
+            GuessedCharacter = null;
             return;
         }
 
@@ -163,7 +186,7 @@
 
             if (!state.FailurePopupShown)
             {
-                await FailureAnnounced.InvokeAsync();
+                await FailureAnnounced.InvokeAsync(currentGame.Target);
                 await JS.InvokeVoidAsync("scrollToTop");
                 state.FailurePopupShown = true;
             }
@@ -174,7 +197,7 @@
         // Save state to local storage
         await GameStateManager.SaveAsync(state, EndlessMode, GameKey);
 
-        GuessedMember = null;
+        GuessedCharacter = null;
     }
 
     private async Task StartNewGame()
@@ -184,7 +207,7 @@
         IsGameLost = false;
         IsGameWon = false;
 
-        GuessedMember = null;
+        GuessedCharacter = null;
 
         currentGame = await GameService.StartEndlessAsync();
 

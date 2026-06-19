@@ -5,7 +5,7 @@ namespace QSMPDLE.Web.Data;
 
 public sealed class QsmpdleDbContext(DbContextOptions<QsmpdleDbContext> options) : DbContext(options)
 {
-    public DbSet<Character> Members => Set<Character>();
+    public DbSet<Character> Characters => Set<Character>();
     public DbSet<DailyGame> DailyGames => Set<DailyGame>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

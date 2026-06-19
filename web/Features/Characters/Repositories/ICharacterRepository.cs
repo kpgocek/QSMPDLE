@@ -1,8 +1,8 @@
-using QSMPDLE.Web.DTOs;
+using QSMPDLE.Web.Features.Characters.DTOs;
 
 namespace QSMPDLE.Web.Features.Characters.Repositories;
 
 public interface ICharacterRepository
 {
-    Task<List<MemberLookup>> GetLookupAsync();
+    Task<List<CharacterLookup>> GetLookupAsync();
 }

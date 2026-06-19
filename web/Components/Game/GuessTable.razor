@@ -35,50 +35,47 @@
                 <tr class="answer-row">
                     <td class="medium-cell">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            @*<MudAvatar Square="true" Size="Size.Large">
-                                <MudImage Src="@ShareImageGenerator.GetMemberHead(@guess.Member)" />
-                            </MudAvatar>*@
                             <MudAvatar Square="true" Size="Size.Large">
-                                <span>@guess.Member.Name.Substring(0, 1)</span>
+                                <MudImage Src="@CharacterImageHelper.GetHeadSrc(guess.Character)" />
                             </MudAvatar>
-                            <span>@guess.Member.Name</span>
+                            <span>@guess.Character.Name</span>
                         </MudStack>
                     </td>
 
                     <td class="small-cell">
                         <GuessChip Result="guess.Pronouns">
-                            @DisplayList(@guess.Member.Pronouns)
+                            @DisplayList(@guess.Character.Pronouns)
                         </GuessChip>
                     </td>
 
                     <td class="medium-cell">
                         <GuessChip Result="guess.Species">
-                            @(guess.Member.Species.Contains("Human")
-                                ? @DisplayList(guess.Member.Species)
-                                : @guess.Member.Species.Contains("Unknown")
-                                    ? @DisplayList(guess.Member.Species)
-                                    : $"Not Human ({@DisplayList(guess.Member.Species)})")
+                            @(guess.Character.Species.Contains("Human")
+                                ? @DisplayList(guess.Character.Species)
+                                : @guess.Character.Species.Contains("Unknown")
+                                    ? @DisplayList(guess.Character.Species)
+                                    : $"Not Human ({@DisplayList(guess.Character.Species)})")
                         </GuessChip>
 
                     </td>
 
                     <td class="small-cell">
                         <GuessChip Result="guess.Languages">
-                            @(@guess.Member.Languages > 3
-                                ? $"4+ ({@guess.Member.Languages})"
-                                : @guess.Member.Languages)
+                            @(@guess.Character.Languages > 3
+                                ? $"4+ ({@guess.Character.Languages})"
+                                : @guess.Character.Languages)
                         </GuessChip>
                     </td>
 
                     <td class="large-cell">
                         <GuessChip Result="guess.Affiliation">
-                            @DisplayList(@guess.Member.Affiliations)
+                            @DisplayList(@guess.Character.Affiliations)
                         </GuessChip>
                     </td>
 
                     <td class="small-cell">
                         <GuessChip Result="guess.Joined">
-                            Day @guess.Member.JoinDayNumber
+                            Day @guess.Character.JoinDayNumber
                         </GuessChip>
                     </td>
                 </tr>

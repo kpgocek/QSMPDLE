@@ -4,7 +4,7 @@ namespace QSMPDLE.Web.Features.Gameplay.Models;
 
 public sealed class Guess
 {
-    public Character Member { get; init; } = null!;
+    public Character Character { get; init; } = null!;
     public bool IsCorrect { get; init; }
 
     public ComparisonResult Pronouns { get; init; }

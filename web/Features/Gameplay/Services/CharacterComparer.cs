@@ -11,7 +11,7 @@ public static class CharacterComparer
     {
         return new Guess
         {
-            Member = guessed,
+            Character = guessed,
             IsCorrect = guessed.Id == target.Id,
 
             Pronouns = ComparePronouns(target, guessed),

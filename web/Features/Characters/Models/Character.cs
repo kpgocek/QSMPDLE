@@ -12,32 +12,43 @@ public sealed class Character
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
+    [Column("id")]
     [JsonIgnore]
     public int Id { get; set; }
 
+    [Column("name")]
     public required string Name { get; set; }
 
+    [Column("aliases")]
     [JsonIgnore]
     public string AliasesJson { get; set; } = "";
 
+    [Column("pronouns")]
     [JsonIgnore]
     public string PronounsJson { get; set; } = "";
 
+    [Column("languages")]
     public int Languages { get; set; }
 
+    [Column("affiliations")]
     [JsonIgnore]
     public string AffiliationsJson { get; set; } = "";
 
+    [Column("species")]
     [JsonIgnore]
     public string SpeciesJson { get; set; } = "";
 
+    [Column("icon_url")]
     [JsonIgnore]
-    public string CharacterIconUrl { get; set; } = "";
+    public string IconUrl { get; set; } = "";
 
+    [Column("join_day_number")]
     public int? JoinDayNumber { get; set; }
 
-    public string MemberPageUrl { get; set; } = "";
+    [Column("page_url")]
+    public string PageUrl { get; set; } = "";
 
+    [Column("minecraft_username")]
     public string? MinecraftUsername { get; set; }
 
     [NotMapped]
@@ -71,8 +82,8 @@ public sealed class Character
     [NotMapped]
     public string? CharacterIcon
     {
-        get => CharacterIconUrl;
-        set => CharacterIconUrl = value ?? "";
+        get => IconUrl;
+        set => IconUrl = value ?? "";
     }
 
     private static List<string> DeserializeList(string json) =>

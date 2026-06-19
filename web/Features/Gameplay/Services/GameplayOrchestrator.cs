@@ -11,7 +11,7 @@ public interface IGameplayOrchestrator
     /// <summary>
     /// Processes a guess and returns game outcome information.
     /// </summary>
-    GameplayResult ProcessGuess(Game game, int memberId, GameState state);
+    GameplayResult ProcessGuess(Game game, int characterId, GameState state);
 
     /// <summary>
     /// Records a win in player statistics and returns updated stats.
@@ -48,15 +48,15 @@ public class GameplayOrchestrator : IGameplayOrchestrator
     /// <summary>
     /// Processes a guess, updates game state, and checks win/loss conditions.
     /// </summary>
-    public GameplayResult ProcessGuess(Game game, int memberId, GameState state)
+    public GameplayResult ProcessGuess(Game game, int characterId, GameState state)
     {
         // Check if already guessed
-        if (state.GuessesMade.Contains(memberId))
+        if (state.GuessesMade.Contains(characterId))
             return new GameplayResult(null!, false, false);
 
         // Submit guess through game service
-        var latestGuess = _gameService.SubmitGuess(game, memberId);
-        state.GuessesMade.Add(memberId);
+        var latestGuess = _gameService.SubmitGuess(game, characterId);
+        state.GuessesMade.Add(characterId);
 
         bool isGameWon = false;
         bool isGameLost = false;
