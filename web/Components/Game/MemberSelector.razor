@@ -7,8 +7,7 @@
 <div class="selection-area">
     <div class="input-field">
         <input type="text" @bind="SearchText" @bind:event="oninput" @onkeydown="HandleKeyDown"
-               @onfocus="() => IsFocused = true" @onblur="() => IsFocused = false" placeholder="Type in character's name"
-               disabled="@IsGuessed" />
+               placeholder="Type in character's name" disabled="@IsGuessed" />
     </div>
 
     @if (!IsGuessed && Suggestions.Any())
@@ -133,8 +132,6 @@
     private string SearchText = "";
 
     private int ActiveSuggestionIndex = 0;
-
-    private bool IsFocused = false;
 
     private bool ShowSuggestions => !IsGuessed && !string.IsNullOrWhiteSpace(SearchText) && Suggestions.Any();
 
