@@ -10,9 +10,9 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 
 namespace QSMPDLE.Web.Migrations
 {
-    [DbContext(typeof(QsmpdleDbContext))]
-    [Migration("20260625110546_InitialCreate")]
-    partial class InitialCreate
+    [DbContext(typeof(GameplayDbContext))]
+    [Migration("20260626131109_MoveStats")]
+    partial class MoveStats
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,7 +20,7 @@ namespace QSMPDLE.Web.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
-            modelBuilder.Entity("QSMPDLE.Web.Features.Characters.Models.Character", b =>
+            modelBuilder.Entity("QSMPDLE.Web.Features.Gameplay.Models.Character", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -79,7 +79,7 @@ namespace QSMPDLE.Web.Migrations
                     b.ToTable("Characters");
                 });
 
-            modelBuilder.Entity("QSMPDLE.Web.Features.DailySelection.Models.DailyGame", b =>
+            modelBuilder.Entity("QSMPDLE.Web.Features.Gameplay.Models.DailyGame", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -104,91 +104,15 @@ namespace QSMPDLE.Web.Migrations
                     b.ToTable("DailyGames");
                 });
 
-            modelBuilder.Entity("QSMPDLE.Web.Features.Statistics.Models.GameGuess", b =>
+            modelBuilder.Entity("QSMPDLE.Web.Features.Gameplay.Models.DailyGame", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("GameSessionId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("GuessOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("GuessedCharacterId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GameSessionId");
-
-                    b.ToTable("GameGuess");
-                });
-
-            modelBuilder.Entity("QSMPDLE.Web.Features.Statistics.Models.GameSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("DailyNumber")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTimeOffset?>("FinishedOnUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsWon")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Mode")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("PlayerId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset>("StartedOnUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("TargetCharacterId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GameStats");
-                });
-
-            modelBuilder.Entity("QSMPDLE.Web.Features.DailySelection.Models.DailyGame", b =>
-                {
-                    b.HasOne("QSMPDLE.Web.Features.Characters.Models.Character", "Character")
+                    b.HasOne("QSMPDLE.Web.Features.Gameplay.Models.Character", "Character")
                         .WithMany()
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Character");
-                });
-
-            modelBuilder.Entity("QSMPDLE.Web.Features.Statistics.Models.GameGuess", b =>
-                {
-                    b.HasOne("QSMPDLE.Web.Features.Statistics.Models.GameSession", "GameSession")
-                        .WithMany("Guesses")
-                        .HasForeignKey("GameSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("GameSession");
-                });
-
-            modelBuilder.Entity("QSMPDLE.Web.Features.Statistics.Models.GameSession", b =>
-                {
-                    b.Navigation("Guesses");
                 });
 #pragma warning restore 612, 618
         }

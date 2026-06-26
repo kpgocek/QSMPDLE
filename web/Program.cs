@@ -16,11 +16,12 @@ builder.Services.AddMemoryCache();
 
 builder.Services.AddMudServices();
 
-var relativePath = builder.Configuration["Database:Path"];
+var dataDbPath = Path.Combine(builder.Environment.ContentRootPath, builder.Configuration["Database:DataPath"]!);
+var statsDbPath = Path.Combine(builder.Environment.ContentRootPath, builder.Configuration["Database:StatsPath"]!);
 
-var dbPath = Path.Combine(builder.Environment.ContentRootPath, relativePath!);
+builder.Services.AddDbContext<GameplayDbContext>(options => options.UseSqlite($"Data Source={dataDbPath}"));
+builder.Services.AddDbContext<TelemetryDbContext>(options => options.UseSqlite($"Data Source={statsDbPath}"));
 
-builder.Services.AddDbContext<QsmpdleDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddInfrastructure();
 
 builder.Services.AddInternalCommunication();
@@ -48,5 +49,7 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+
+await app.MigrateDatabasesAsync();
 
 app.Run();

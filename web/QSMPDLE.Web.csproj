@@ -29,8 +29,12 @@
   </ItemGroup>
 
 <ItemGroup>
-  <Content Include="Infrastructure\Persistence\DB\qsmpdle.db">
+  <Content Include="Infrastructure\Persistence\DB\data.db">
     <CopyToPublishDirectory>Always</CopyToPublishDirectory>
   </Content>
+</ItemGroup>
+
+<ItemGroup>
+  <Folder Include="Migrations\TelemetryDb\" />
 </ItemGroup>
 </Project>

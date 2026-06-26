@@ -4,7 +4,7 @@ using QSMPDLE.Web.Features.Gameplay.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
-public class CachedDatabaseCharacterStore(QsmpdleDbContext Database, IMemoryCache Cache) : ICharacterStore
+public class CachedDatabaseCharacterStore(GameplayDbContext Gameplay, IMemoryCache Cache) : ICharacterStore
 {
     public async Task<IReadOnlyList<Character>> GetCharactersAsync(CancellationToken cancellationToken = default)
     {
@@ -13,7 +13,7 @@ public class CachedDatabaseCharacterStore(QsmpdleDbContext Database, IMemoryCach
             entry.AbsoluteExpirationRelativeToNow =
                 TimeSpan.FromHours(12);
 
-            return await Database.Characters.AsNoTracking().ToListAsync(cancellationToken);
+            return await Gameplay.Characters.AsNoTracking().ToListAsync(cancellationToken);
         }) ?? throw new InvalidOperationException();
 
         return characters.AsReadOnly();
@@ -47,7 +47,7 @@ public class CachedDatabaseCharacterStore(QsmpdleDbContext Database, IMemoryCach
             entry.AbsoluteExpirationRelativeToNow =
                     TimeSpan.FromDays(1);
 
-            var character = await Database.DailyGames
+            var character = await Gameplay.DailyGames
                     .Where(x => x.Id == dayNumber)
                     .Select(x => x.Character)
                     .SingleAsync(cancellationToken);
@@ -56,9 +56,9 @@ public class CachedDatabaseCharacterStore(QsmpdleDbContext Database, IMemoryCach
                 return character;
 
             var random = new Random(dayNumber);
-            var index = random.Next(Database.Characters.Count());
+            var index = random.Next(Gameplay.Characters.Count());
 
-            return Database.Characters.ToList().ElementAt(index);
+            return Gameplay.Characters.ToList().ElementAt(index);
 
 
         }) ?? throw new InvalidOperationException();

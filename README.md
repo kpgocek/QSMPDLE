@@ -1,4 +1,4 @@
-# QSMPDLE 1.0.0
+# QSMPDLE 1.1.0
 A daily character guessing game based on QSMP2.
 
 🎮 Play now: https://www.qsmpdle.com
@@ -12,6 +12,8 @@ A daily character guessing game based on QSMP2.
 - [x] Practice Mode
 - [x] Character Profiles
 - [x] Local Statistics
+- [x] Global Statistics
+- [ ] Animations
 
 
 ### Built with
