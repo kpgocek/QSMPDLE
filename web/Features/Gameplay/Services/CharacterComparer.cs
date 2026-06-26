@@ -1,15 +1,14 @@
 using QSMPDLE.Web.Features.Gameplay.Models;
-using QSMPDLE.Web.Models;
 
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 public static class CharacterComparer
 {
-    public static Guess Compare(
+    public static GuessResult Compare(
         Character target,
         Character guessed)
     {
-        return new Guess
+        return new GuessResult
         {
             Character = guessed,
             IsCorrect = guessed.Id == target.Id,

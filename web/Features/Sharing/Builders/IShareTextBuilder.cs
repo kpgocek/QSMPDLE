@@ -6,7 +6,7 @@ public interface IShareTextBuilder
 {
     string BuildDailyResult(
         int dayNumber,
-        IReadOnlyList<Guess> guesses);
+        IReadOnlyList<GuessResult> guesses);
 
     string BuildDailyChallenge(
         int dayNumber

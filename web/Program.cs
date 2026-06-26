@@ -1,13 +1,12 @@
-using BlazorBootstrap;
 using Microsoft.EntityFrameworkCore;
-using MudBlazor;
 using MudBlazor.Services;
 using QSMPDLE.Web.Components;
-using QSMPDLE.Web.Data;
-using QSMPDLE.Web.Features.Characters;
+using QSMPDLE.Web.Features.Communication;
 using QSMPDLE.Web.Features.Gameplay;
 using QSMPDLE.Web.Features.Sharing;
-using QSMPDLE.Web.Features.Sharing.Services;
+using QSMPDLE.Web.Features.Statistics;
+using QSMPDLE.Web.Infrastructure;
+using QSMPDLE.Web.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,10 +21,14 @@ var relativePath = builder.Configuration["Database:Path"];
 var dbPath = Path.Combine(builder.Environment.ContentRootPath, relativePath!);
 
 builder.Services.AddDbContext<QsmpdleDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
+builder.Services.AddInfrastructure();
 
-builder.Services.AddCharactersFeature();
-builder.Services.AddGameplayFeature();
+builder.Services.AddInternalCommunication();
+
+builder.Services.AddGameplay();
+
 builder.Services.AddSharingFeature();
+builder.Services.AddStatistics();
 
 builder.Services
     .AddRazorComponents()

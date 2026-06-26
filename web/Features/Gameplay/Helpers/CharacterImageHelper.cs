@@ -1,8 +1,6 @@
 namespace QSMPDLE.Web.Features.Gameplay.Helpers;
 
-using Models;
-using QSMPDLE.Web.Models;
-using QSMPDLE.Web.Features.Characters.DTOs;
+using QSMPDLE.Web.Features.Gameplay.Models;
 
 /// <summary>
 /// Helper for generating character image URLs.

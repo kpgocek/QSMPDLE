@@ -2,6 +2,10 @@
 @using QSMPDLE.Web.Components.Game
 @using QSMPDLE.Web.Components.UX
 @using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Features.Statistics.Models
+@using QSMPDLE.Web.Features.Statistics.Services
+
+@inject IStatisticsService StatisticsService
 
 <h2>Training Grounds</h2>
 
@@ -18,8 +22,7 @@ else if (IsGameLost)
     </div>
 }
 
-<Gameplay EndlessMode="true" GameEnded="OnGameEnd" FailureAnnounced="OnShowFailurePopup"
-          VictoryAnnounced="OnShowVictoryPopup" />
+<Gameplay GameMode="GameMode.Practice" GameStateChanged="OnGameStateChange" />
 
 @if (ShowVictoryPopup)
 {
@@ -44,23 +47,20 @@ else if (IsGameLost)
     private bool ShowVictoryPopup;
     private bool ShowFailurePopup;
 
-    private List<Guess> Guesses = null!;
+    private List<GuessResult> Guesses = null!;
+    private GameSession Stats = null!;
 
-    private void OnGameEnd(bool isWon)
+    private async Task OnGameStateChange(GameState gameState)
     {
-        IsGameLost = !isWon;
-        IsGameWon = isWon;
-    }
+        IsGameLost = gameState.IsLost;
+        IsGameWon = gameState.IsWon;
 
-    private void OnShowVictoryPopup(List<Guess> guesses)
-    {
-        ShowVictoryPopup = true;
-        Guesses = guesses;
-    }
+        Guesses = gameState.GuessesMade;
 
-    private void OnShowFailurePopup()
-    {
-        ShowFailurePopup = true;
+        ShowVictoryPopup = gameState.IsWon;
+        ShowFailurePopup = gameState.IsLost;
+
+        Stats = await StatisticsService.GetGameStatsAsync(gameState.GameId);
     }
 
     private void CloseVictoryPopup() => ShowVictoryPopup = false;

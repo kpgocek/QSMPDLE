@@ -1,50 +1,133 @@
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 using Models;
-using Stores;
+using QSMPDLE.Web.Extensions;
+using QSMPDLE.Web.Infrastructure.LocalStorage;
+using QSMPDLE.Web.Infrastructure.Persistence;
 
-/// <summary>
-/// Manages game state loading, saving, and lifecycle for both daily and endless modes.
-/// </summary>
-public interface IGameStateManager
+// <summary>
+// Manages the game state for different game modes (daily, practice, archival).
+// </summary>
+public class GameStateManager(IGameStateStore GameStateStore, IGameService GameService, IPlayerStatsStore PlayerStatsStore, ICharacterStore CharacterStore) : IGameStateManager
 {
-    Task<GameState> LoadOrCreateAsync(bool endlessMode, string gameKey);
-    Task SaveAsync(GameState state, bool endlessMode, string gameKey);
-    void ClearGuessField();
-}
+    public GameState GameState { get; private set; } = null!;
 
-public class GameStateManager : IGameStateManager
-{
-    private readonly IGameStateStore _gameStateStore;
-
-    public GameStateManager(IGameStateStore gameStateStore)
+    public async Task<LoadGameResult> LoadOrCreateAsync(GameMode mode, int? dayNumber = null, CancellationToken cancellationToken = default)
     {
-        _gameStateStore = gameStateStore;
+        if (mode == GameMode.Daily)
+        {
+            dayNumber = await GameService.GetTodayDayNumberAsync(cancellationToken);
+        }
+
+        // create a unique game id based on the mode and day number (if applicable)
+        var gameId = dayNumber?.ToString() ?? Guid.NewGuid().ToString();
+
+        // initialize the game state store for the specific game
+        await GameStateStore.Init($"{mode.ToString().ToLower()}-{gameId}");
+
+        var playerData = await PlayerStatsStore.LoadAsync();
+        var playerId = playerData.Id;
+
+        if (playerId == Guid.Empty)
+        {
+            playerId = Guid.NewGuid();
+            playerData.Id = playerId;
+            await PlayerStatsStore.SaveAsync(playerData);
+
+        }
+
+        // load the game state from the store if it exists
+        var gameState = await GameStateStore.GetAsync();
+
+        if (gameState is not null)
+        {
+            GameState = gameState;
+
+            if (GameState.PlayerId == Guid.Empty)
+            {
+                GameState.PlayerId = playerId;
+                await GameStateStore.SaveAsync(GameState);
+            }
+
+            return LoadGameResult.LoadedExisting;
+        }
+
+        // create a new game state based on the mode
+        if (mode == GameMode.Daily)
+        {
+            GameState = await GameService.StartDailyAsync(cancellationToken);
+        }
+
+        else if (mode == GameMode.Archive)
+        {
+            if (!dayNumber.HasValue)
+            {
+                return LoadGameResult.Failed;
+            }
+
+            GameState = await GameService.StartArchivalAsync(dayNumber.Value, cancellationToken);
+        }
+
+        else
+        {
+            GameState = await GameService.StartPracticeAsync(cancellationToken);
+        }
+
+        await GameStateStore.SaveAsync(GameState);
+        return LoadGameResult.CreatedNew;
     }
 
-    /// <summary>
-    /// Loads existing game state for daily mode or creates new state for endless mode.
-    /// </summary>
-    public async Task<GameState> LoadOrCreateAsync(bool endlessMode, string gameKey)
+    public async Task<GuessResult> MakeGuessAsync(int characterId, CancellationToken cancellationToken = default)
     {
-        if (endlessMode)
-            return new GameState();
+        if (GameState is null)
+        {
+            throw new InvalidOperationException("Game state is not initialized.");
+        }
 
-        await _gameStateStore.Init(gameKey);
-        return await _gameStateStore.GetAsync() ?? new GameState();
+        var guessResult = await GuessAsync(characterId, cancellationToken);
+
+        await GameStateStore.SaveAsync(GameState);
+
+        return guessResult ?? throw new InvalidOperationException("Guess result is null.");
     }
 
-    /// <summary>
-    /// Persists game state to local storage (daily mode only).
-    /// </summary>
-    public async Task SaveAsync(GameState state, bool endlessMode, string gameKey)
-    {
-        if (!endlessMode)
-            await _gameStateStore.SaveAsync(state);
-    }
+    private const int MaxGuesses = 6;
 
-    public void ClearGuessField()
+
+    public async Task<GuessResult?> GuessAsync(int characterId, CancellationToken cancellationToken = default)
     {
-        // Placeholder for any cleanup logic if needed
+        if (GameState.IsFinished)
+            return null;
+
+        if (GameState.GuessesMade.Any(g => g.Character.Id == characterId))
+            return null;
+
+        var character = await CharacterStore.GetCharacterAsync(characterId, cancellationToken);
+
+        if (character is null)
+            return null;
+
+        var result = GameState.Game.VerifyGuess(character);
+
+        if (result is null)
+            return null;
+
+        // record the guess
+        GameState.GuessesMade.Add(result);
+
+        // Check win condition
+        if (result.IsCorrect)
+        {
+            GameState.IsWon = true;
+        }
+
+        // Check loss condition
+        else if (GameState.GuessesMade.Count >= MaxGuesses)
+        {
+            GameState.IsLost = true;
+        }
+
+        return result;
+
     }
 }

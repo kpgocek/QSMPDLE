@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using QSMPDLE.Web.Features.Sharing.Builders;
 using QSMPDLE.Web.Features.Sharing.Services;
 
@@ -10,6 +9,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IShareService, ShareService>();
         services.AddSingleton<IShareTextBuilder, ShareTextBuilder>();
+
         return services;
     }
 }

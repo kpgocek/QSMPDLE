@@ -1,24 +1,31 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
     <StaticWebAssetsEnabled>true</StaticWebAssetsEnabled>
+	<TargetFramework>net10.0</TargetFramework>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<Nullable>enable</Nullable>
+    <NuGetAudit>True</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>moderate</NuGetAuditLevel>
   </PropertyGroup>
 
   <ItemGroup>
+	<!-- Blazor & UI-->
     <PackageReference Include="Blazor.Bootstrap" Version="3.5.0" />
     <PackageReference Include="Blazor.LocalStorage" Version="10.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
-    <PackageReference Include="MudBlazor" Version="9.5.0" />
+
+	<!-- EF Core & SQLite -->
+	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
+	<PackageReference Include="MudBlazor" Version="9.5.0" />
+
+	<!-- Analyzers -->
+	<PackageReference Include="Roslynator.Analyzers" Version="4.15.0" />
+	<PackageReference Include="Roslynator.Formatting.Analyzers" Version="4.15.0" />
   </ItemGroup>
 
 <ItemGroup>

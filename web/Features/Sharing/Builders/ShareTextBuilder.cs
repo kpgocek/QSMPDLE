@@ -21,12 +21,12 @@ https://qsmpdle.com
 
     public string BuildDailyResult(
         int dayNumber,
-        IReadOnlyList<Guess> guesses)
+        IReadOnlyList<GuessResult> guesses)
     {
 
         var rows = guesses.Select(ToEmoji);
 
-        var result = guesses.LastOrDefault()?.IsCorrect == true
+        var result = guesses[guesses.Count - 1].IsCorrect
                 ? $"{guesses.Count}/6"
                 : "X/6";
 
@@ -42,8 +42,8 @@ https://qsmpdle.com
 """;
     }
 
-    private string ToEmoji(Guess guess) => string.Join("", ToEmoji(guess.Pronouns), ToEmoji(guess.Species), ToEmoji(guess.Languages), ToEmoji(guess.Affiliation), ToEmoji(guess.Joined));
-    private string ToEmoji(ComparisonResult result)
+    private string ToEmoji(GuessResult guess) => string.Concat(ToEmoji(guess.Pronouns), ToEmoji(guess.Species), ToEmoji(guess.Languages), ToEmoji(guess.Affiliation), ToEmoji(guess.Joined));
+    private static string ToEmoji(ComparisonResult result)
     {
         return result switch
         {

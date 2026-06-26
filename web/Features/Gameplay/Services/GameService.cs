@@ -1,71 +1,65 @@
-using System.Runtime.CompilerServices;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using QSMPDLE.Web.Data;
 using QSMPDLE.Web.Features.Gameplay.Models;
-using QSMPDLE.Web.Models;
+using QSMPDLE.Web.Infrastructure.Persistence;
 
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
-public sealed class GameService(QsmpdleDbContext Qsmp, IMemoryCache Cache) : IGameService
+public sealed class GameService(ICharacterStore CharacterStore) : IGameService
 {
-    public async Task<Game> StartDailyAsync(CancellationToken cancellationToken = default) => new() { Target = await GetDailyCharacterAsync(cancellationToken), DayNumber = await GetDayAsync(cancellationToken) };
+    private static readonly DateOnly FirstDay = new(2026, 6, 15);
 
-    public async Task<int> GetDayAsync(CancellationToken cancellationToken)
+    public async Task<GameState> StartDailyAsync(CancellationToken cancellationToken = default)
+    {
+        var dayNumber = await GetTodayDayNumberAsync(cancellationToken);
+
+        var game = await StartGameForDayAsync(dayNumber, cancellationToken);
+
+        return game is null
+            ? throw new InvalidOperationException($"Cannot initialize Archival game for day #{dayNumber}.")
+            : new GameState { Game = game, GameId = Guid.NewGuid() };
+    }
+
+    public async Task<GameState> StartPracticeAsync(CancellationToken cancellationToken = default)
+    {
+        var character = await CharacterStore.GetRandomCharacterAsync(cancellationToken);
+
+        var game = new Game
+        {
+            Target = character
+        };
+
+        return new GameState { Game = game, GameId = Guid.NewGuid() };
+    }
+
+    public async Task<GameState> StartArchivalAsync(int dayNumber, CancellationToken cancellationToken = default)
+    {
+        var game = await StartGameForDayAsync(dayNumber, cancellationToken);
+
+        return game is null
+            ? throw new InvalidOperationException($"Cannot initialize Archival game for day #{dayNumber}.")
+            : new GameState { Game = game, GameId = Guid.NewGuid() };
+    }
+
+    private async Task<Game> StartGameForDayAsync(int dayNumber, CancellationToken cancellationToken = default)
+    {
+        var character = await CharacterStore.GetCharacterForDayAsync(dayNumber, cancellationToken);
+
+        ArgumentNullException.ThrowIfNull(character, nameof(character));
+
+        return new Game
+        {
+            Target = character,
+            DayNumber = dayNumber
+        };
+    }
+
+    public async Task<int> GetTodayDayNumberAsync(CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        return await Cache.GetOrCreateAsync($"daily-number-{today}", async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow =
-                    TimeSpan.FromDays(1);
-
-            var dayNo = await Qsmp.DailyGames
-                    .Where(x => x.Date == today)
-                    .Select(x => x.Id).SingleAsync(cancellationToken);
-
-            return dayNo;
-        });
+        return today.DayNumber - FirstDay.DayNumber + 1;
     }
 
-    public async Task<Character> GetDailyCharacterAsync(CancellationToken cancellationToken)
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        return await Cache.GetOrCreateAsync($"daily-character-{today}", async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow =
-                    TimeSpan.FromDays(1);
-
-            var character = await Qsmp.DailyGames
-                    .Where(x => x.Date == today)
-                    .Select(x => x.Character)
-                    .SingleAsync(cancellationToken);
-
-            if (character is not null) return character;
-
-            var random = new Random(today.DayNumber);
-            var index = random.Next(Qsmp.Characters.Count());
-
-            return Qsmp.Characters.ToList()[index];
 
 
-        }) ?? throw new InvalidOperationException();
-    }
 
-    public async Task<Game> StartEndlessAsync() => new() { Target = await GetRandomCharacterAsync() };
-
-
-    private async Task<Character> GetRandomCharacterAsync() => Qsmp.Characters.ToList().ElementAt(Random.Shared.Next(Qsmp.Characters.Count()));
-
-    public Guess SubmitGuess(Game game, int characterId)
-    {
-        var guessed = Qsmp.Characters.Single(x => x.Id == characterId);
-
-        var result = CharacterComparer.Compare(game.Target, guessed);
-
-        game.Guesses.Add(result);
-
-        return result;
-    }
 }

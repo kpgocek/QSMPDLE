@@ -93,7 +93,7 @@
 @code {
     [Parameter] public int? DayNumber { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public PlayerStats? Stats { get; set; } = null!;
+
     private async Task Share()
     {
         ArgumentNullException.ThrowIfNull(DayNumber);

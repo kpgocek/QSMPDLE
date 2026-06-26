@@ -1,43 +1,45 @@
 ﻿@using MudBlazor
-@using QSMPDLE.Web.Features.Characters.DTOs
+@using QSMPDLE.Web.Components.Game.Modules
+@using QSMPDLE.Web.Features.Communication.GameEvents
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Gameplay.Services
-@using QSMPDLE.Web.Features.Gameplay.Stores
-@using QSMPDLE.Web.Models
+@using QSMPDLE.Web.Features.Statistics.Services
 
-@inject IJSRuntime JS
 @inject IGameService GameService
 @inject IGameStateManager GameStateManager
-@inject IGameplayOrchestrator GameplayOrchestrator
-@inject IPlayerStatsStore PlayerStatsStore
+@inject IStatisticsService StatisticsService
 
 <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
-
-    <MudPaper Class="ma-4 image-wrapper" Elevation="0">
-        <CharacterPortrait Character="currentGame.Target" GuessesMade="currentGame.Guesses.Count" IsGuessed="IsGameWon"
-                           IsFailed="IsGameLost" />
-    </MudPaper>
-    @if (IsGameOver)
+    @if (GameStateManager.GameState is not null)
     {
-        <div class="answer-reveal @(IsGameWon ? "success" : "failure")">
-            <h3>@currentGame.Target.Name</h3>
+        <MudPaper Class="ma-4 image-wrapper" Elevation="0">
+            <CharacterPortrait Character="GameStateManager.GameState.Game.Target" GuessesMade="GameStateManager.GameState.GuessesMade.Count" IsGuessed="GameStateManager.GameState.IsWon"                           
+            IsFailed="GameStateManager.GameState.IsLost" />
+        </MudPaper>
+    }
+
+    @if (GameStateManager.GameState?.IsFinished ?? false)
+    {
+        <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
+            <h3>@GameStateManager.GameState.Game.Target.Name</h3>
         </div>
     }
 
-    @if (EndlessMode)
+    @if (GameMode == GameMode.Practice)
     {
         <MudButton Variant="Variant.Filled" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh"
-                   OnClick="StartNewGame">
+                   OnClick="StartNewGameAsync">
             New Character
         </MudButton>
     }
 
-    <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="IsGameOver" />
+    <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="GameStateManager.GameState?.IsFinished ?? false" />
 
     <div class="guess-table-container">
-        <GuessTable Guesses="currentGame?.Guesses" />
-        <GuessCards Guesses="currentGame?.Guesses" />
+        <GuessTable Guesses="GameStateManager.GameState?.GuessesMade ?? []" />
+        <GuessCards Guesses="GameStateManager.GameState?.GuessesMade ?? []" />
     </div>
+
 </MudStack>
 
 <style>
@@ -81,136 +83,95 @@
 
 @code {
     [Parameter]
-    public bool EndlessMode { get; set; }
+    public GameMode GameMode { get; set; }
 
     [Parameter]
-    public EventCallback<int> DayNumberChanged { get; set; }
+    public int? ArchiveGameNumber { get; set; }
 
     [Parameter]
-    public EventCallback<bool> GameEnded { get; set; }
+    public EventCallback<GameState> GameStateChanged { get; set; }
 
-    [Parameter]
-    public EventCallback<List<Guess>> VictoryAnnounced { get; set; }
-    [Parameter]
-    public EventCallback<Character> FailureAnnounced { get; set; }
-
-    [Parameter]
-    public EventCallback<PlayerStats> StatsUpdated { get; set; }
-
-    private Game currentGame = null!;
     private CharacterLookup? GuessedCharacter;
-    private GameState state = new();
-
-    private bool IsGameWon;
-    private bool IsGameLost;
-
-    private bool IsGameOver => IsGameWon || IsGameLost;
-
-    private string GameKey => $"qsmpdle-daily-{currentGame.DayNumber}";
-
-    protected override async Task OnInitializedAsync()
-    {
-        currentGame = EndlessMode
-            ? await GameService.StartEndlessAsync()
-            : await GameService.StartDailyAsync();
-
-        await DayNumberChanged.InvokeAsync(currentGame.DayNumber);
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-            return;
-
-        // Load game state from local storage (JS interop only allowed here)
-        state = await GameStateManager.LoadOrCreateAsync(EndlessMode, GameKey);
-
-        // Restore previous guesses from saved state
-        foreach (var characterId in state.GuessesMade)
+        if (firstRender)
         {
-            GameService.SubmitGuess(currentGame, characterId);
+            await StartNewGameAsync();
         }
-
-        IsGameWon = state.IsCompleted;
-        IsGameLost = state.IsFailed;
-
-        StateHasChanged();
     }
 
     public async Task Guess()
     {
-        if (IsGameWon || GuessedCharacter is null)
+        if (GameStateManager.GameState is null || GameStateManager.GameState.IsFinished || GuessedCharacter is null)
             return;
 
-        // Process guess through orchestrator
-        var result = GameplayOrchestrator.ProcessGuess(currentGame, GuessedCharacter.Id, state);
+        // Make a guess and get the result
+        var result = await GameStateManager.MakeGuessAsync(GuessedCharacter.Id);
 
-        // Duplicate guess check
-        if (result.LatestGuess is null)
+        if (result is null)
         {
             GuessedCharacter = null;
             return;
         }
 
-        IsGameWon = result.IsGameWon;
-        IsGameLost = result.IsGameLost;
+        // Raise event to record guess result
+        await StatisticsService.RecordGuessMadeAsync(new GuessMadeEvent
+            {
+                Timestamp = DateTime.UtcNow,
+                PlayerId = GameStateManager.GameState.PlayerId,
+                GameId = GameStateManager.GameState.GameId,
+                GuessedCharacterId = GuessedCharacter.Id,
+            });
 
-        // Handle win
-        if (result.IsGameWon)
+
+        if (result.IsCorrect)
         {
-            if (!EndlessMode && !state.StatsRecorded)
+            await StatisticsService.RecordGameFinishedAsync(new GameFinishedEvent
             {
-                var stats = await GameplayOrchestrator.RecordWinAsync(currentGame, EndlessMode);
-                await StatsUpdated.InvokeAsync(stats);
-                state.StatsRecorded = true;
-            }
-
-            if (!state.VictoryPopupShown)
-            {
-                await VictoryAnnounced.InvokeAsync(currentGame.Guesses);
-                await JS.InvokeVoidAsync("scrollToTop");
-                state.VictoryPopupShown = true;
-            }
-
-            await GameEnded.InvokeAsync(true);
-        }
-        // Handle loss
-        else if (result.IsGameLost)
-        {
-            if (!EndlessMode && !state.StatsRecorded)
-            {
-                var stats = await GameplayOrchestrator.RecordLossAsync();
-                await StatsUpdated.InvokeAsync(stats);
-                state.StatsRecorded = true;
-            }
-
-            if (!state.FailurePopupShown)
-            {
-                await FailureAnnounced.InvokeAsync(currentGame.Target);
-                await JS.InvokeVoidAsync("scrollToTop");
-                state.FailurePopupShown = true;
-            }
-
-            await GameEnded.InvokeAsync(false);
+                Timestamp = DateTime.UtcNow,
+                GameMode = GameMode,
+                DayNumber = GameStateManager.GameState.Game.DayNumber,
+                PlayerId = GameStateManager.GameState.PlayerId,
+                GameId = GameStateManager.GameState.GameId,
+                GuessCount = GameStateManager.GameState.GuessesMade.Count,
+                IsWon = GameStateManager.GameState.IsWon,
+            });
         }
 
-        // Save state to local storage
-        await GameStateManager.SaveAsync(state, EndlessMode, GameKey);
+        // Notify parent component of the updated game state
+        // This allows the parent component to react to the game state change, such as showing a victory or failure popup.
+        await GameStateChanged.InvokeAsync(GameStateManager.GameState);
 
+        // Clear the guessed character after processing the guess
         GuessedCharacter = null;
     }
 
-    private async Task StartNewGame()
+    private async Task StartNewGameAsync()
     {
-        state = new GameState();
+        var playerStats = await StatisticsService.GetPlayerStatsAsync();
+        var lastPlayedGame = playerStats.LastPlayedDailyGameId;
 
-        IsGameLost = false;
-        IsGameWon = false;
+        var loadingResult = await GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber : null);
 
-        GuessedCharacter = null;
+        if (loadingResult == LoadGameResult.Failed)
+        {
+            throw new InvalidOperationException("Cannot initiate new game.");
+        }
 
-        currentGame = await GameService.StartEndlessAsync();
+        await StatisticsService.RecordGameStartedAsync(new GameStartedEvent
+        {
+            Timestamp = DateTime.UtcNow,
+            DayNumber = GameStateManager.GameState.Game.DayNumber,
+            PlayerId = GameStateManager.GameState.PlayerId,
+            GameId = GameStateManager.GameState.GameId,
+            GameMode = GameMode,
+            TargetCharacterId = GameStateManager.GameState.Game.Target.Id,
+        });
 
         StateHasChanged();
+
+        // Notify parent component of the updated game state
+        await GameStateChanged.InvokeAsync(GameStateManager.GameState);
     }
 }

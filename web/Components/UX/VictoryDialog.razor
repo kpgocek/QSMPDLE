@@ -1,7 +1,8 @@
 @using MudBlazor
 @using QSMPDLE.Web.Features.Gameplay.Models
-@using QSMPDLE.Web.Features.Sharing.Services
 @using QSMPDLE.Web.Features.Sharing.Builders
+@using QSMPDLE.Web.Features.Sharing.Services
+@using QSMPDLE.Web.Features.Statistics.Models
 @inject IShareService ShareService
 @inject IShareTextBuilder ShareTextBuilder
 
@@ -224,7 +225,7 @@
 
 @code {
     [Parameter] public int? DayNumber { get; set; }
-    [Parameter] public List<Guess> Guesses { get; set; } = null!;
+    [Parameter] public List<GuessResult> Guesses { get; set; } = null!;
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public PlayerStats? Stats { get; set; } = null!;
 
