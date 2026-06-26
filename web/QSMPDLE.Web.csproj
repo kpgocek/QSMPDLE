@@ -32,6 +32,7 @@
   <Content Include="Infrastructure\Persistence\DB\data.db">
     <CopyToPublishDirectory>Always</CopyToPublishDirectory>
   </Content>
+	<Content Include="Infrastructure\Persistence\DB\stats.db" />
 </ItemGroup>
 
 <ItemGroup>
