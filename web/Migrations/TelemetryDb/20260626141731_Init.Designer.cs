@@ -11,8 +11,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Migrations.TelemetryDb
 {
     [DbContext(typeof(TelemetryDbContext))]
-    [Migration("20260626131051_InitialStats")]
-    partial class InitialStats
+    [Migration("20260626141731_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,8 +40,7 @@ namespace QSMPDLE.Web.Migrations.TelemetryDb
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameId")
-                        .IsUnique();
+                    b.HasIndex("GameId");
 
                     b.HasIndex("GameSessionId");
 
@@ -80,8 +79,7 @@ namespace QSMPDLE.Web.Migrations.TelemetryDb
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameId")
-                        .IsUnique();
+                    b.HasIndex("GameId");
 
                     b.ToTable("GameStats");
                 });

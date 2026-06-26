@@ -19,16 +19,20 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
     {
         if (!IsInitialized)
             throw new NullReferenceException(nameof(Key));
-
-        return await localStorage.GetItemAsync<GameState>(Key);
+        try
+        {
+            return await localStorage.GetItemAsync<GameState>(Key);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task SaveAsync(GameState state)
     {
         if (!IsInitialized)
             throw new NullReferenceException(nameof(Key));
-
-        Console.WriteLine(Key);
 
         await localStorage.SetItemAsync(Key, state);
     }

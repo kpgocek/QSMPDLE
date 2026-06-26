@@ -7,6 +7,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddGameplay(this IServiceCollection services)
     {
         services.AddScoped<IGameService, GameService>();
+        services.AddScoped<ICharacterComparer, CharacterComparer>();
         services.AddScoped<IGameStateManager, GameStateManager>();
 
         return services;

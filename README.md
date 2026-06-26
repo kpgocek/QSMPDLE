@@ -1,7 +1,9 @@
 # QSMPDLE 1.1.0
 A daily character guessing game based on QSMP2.
 
-🎮 Play now: https://www.qsmpdle.com
+🎮 Play now: https://www.qsmpdle.com 
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T4A4223GTE)
 
 <br />
 

@@ -8,9 +8,15 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 // <summary>
 // Manages the game state for different game modes (daily, practice, archival).
 // </summary>
-public class GameStateManager(IGameStateStore GameStateStore, IGameService GameService, IPlayerStatsStore PlayerStatsStore, ICharacterStore CharacterStore) : IGameStateManager
+public class GameStateManager(IGameStateStore GameStateStore, IGameService GameService, IPlayerStatsStore PlayerStatsStore, ICharacterStore CharacterStore, ICharacterComparer CharacterComparer) : IGameStateManager
 {
     public GameState GameState { get; private set; } = null!;
+
+    public async Task StartNewPracticeGameAsync(CancellationToken cancellationToken = default)
+    {
+        GameState = await GameService.StartPracticeAsync(cancellationToken);
+        await GameStateStore.SaveAsync(GameState);
+    }
 
     public async Task<LoadGameResult> LoadOrCreateAsync(GameMode mode, int? dayNumber = null, CancellationToken cancellationToken = default)
     {
@@ -19,11 +25,13 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
             dayNumber = await GameService.GetTodayDayNumberAsync(cancellationToken);
         }
 
-        // create a unique game id based on the mode and day number (if applicable)
-        var gameId = dayNumber?.ToString() ?? Guid.NewGuid().ToString();
-
-        // initialize the game state store for the specific game
-        await GameStateStore.Init($"{mode.ToString().ToLower()}-{gameId}");
+        await GameStateStore.Init(mode switch
+        {
+            GameMode.Daily => $"daily-{dayNumber}",
+            GameMode.Archive => $"archive-{dayNumber}",
+            GameMode.Practice => "practice-current",
+            _ => throw new ArgumentOutOfRangeException()
+        });
 
         var playerData = await PlayerStatsStore.LoadAsync();
         var playerId = playerData.Id;
@@ -102,12 +110,7 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
         if (GameState.GuessesMade.Any(g => g.Character.Id == characterId))
             return null;
 
-        var character = await CharacterStore.GetCharacterAsync(characterId, cancellationToken);
-
-        if (character is null)
-            return null;
-
-        var result = GameState.Game.VerifyGuess(character);
+        var result = await CharacterComparer.CompareAsync(GameState.Game.TargetId, characterId, cancellationToken);
 
         if (result is null)
             return null;
@@ -129,5 +132,11 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
 
         return result;
 
+    }
+
+    public async Task<string> GetTargetName(CancellationToken cancellationToken = default)
+    {
+        var character = await CharacterStore.GetCharacterAsync(GameState.Game.TargetId, cancellationToken);
+        return character?.Name ?? string.Empty;
     }
 }

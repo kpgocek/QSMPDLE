@@ -24,7 +24,8 @@ public sealed class GameService(ICharacterStore CharacterStore) : IGameService
 
         var game = new Game
         {
-            Target = character
+            TargetId = character.Id,
+            PortraitUrl = character.IconUrl
         };
 
         return new GameState { Game = game, GameId = Guid.NewGuid() };
@@ -47,7 +48,8 @@ public sealed class GameService(ICharacterStore CharacterStore) : IGameService
 
         return new Game
         {
-            Target = character,
+            TargetId = character.Id,
+            PortraitUrl = character.IconUrl,
             DayNumber = dayNumber
         };
     }

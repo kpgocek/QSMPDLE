@@ -2,7 +2,7 @@ namespace QSMPDLE.Web.Features.Gameplay.Models;
 
 public sealed class GuessResult
 {
-    public Character Character { get; init; } = null!;
+    public CharacterLookup Character { get; init; } = null!;
     public bool IsCorrect { get; init; }
 
     public ComparisonResult Pronouns { get; init; }

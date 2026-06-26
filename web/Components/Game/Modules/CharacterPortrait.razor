@@ -34,7 +34,7 @@
 </style>
 
 @code {
-    [Parameter] public Character Character { get; set; } = null!;
+    [Parameter] public string IconUrl { get; set; } = string.Empty;
 
     [Parameter] public int GuessesMade { get; set; }
 
@@ -42,7 +42,7 @@
     [Parameter] public bool IsFailed { get; set; }
 
     private string ImageUrl =>
-    $"/graphics/guessing/{Character?.IconUrl}/{GetImageName()}";
+    $"/graphics/guessing/{IconUrl}/{GetImageName()}";
 
     private string GetImageName()
     {

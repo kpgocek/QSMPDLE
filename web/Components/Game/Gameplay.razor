@@ -13,31 +13,31 @@
     @if (GameStateManager.GameState is not null)
     {
         <MudPaper Class="ma-4 image-wrapper" Elevation="0">
-            <CharacterPortrait Character="GameStateManager.GameState.Game.Target" GuessesMade="GameStateManager.GameState.GuessesMade.Count" IsGuessed="GameStateManager.GameState.IsWon"                           
-            IsFailed="GameStateManager.GameState.IsLost" />
+            <CharacterPortrait IconUrl="@GameStateManager.GameState.Game.PortraitUrl" GuessesMade="@GameStateManager.GameState.GuessesMade.Count" IsGuessed="@GameStateManager.GameState.IsWon"                           
+            IsFailed="@GameStateManager.GameState.IsLost" />
         </MudPaper>
     }
 
     @if (GameStateManager.GameState?.IsFinished ?? false)
     {
         <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
-            <h3>@GameStateManager.GameState.Game.Target.Name</h3>
+            <h3>@GetTargetNameAsync().Result</h3>
         </div>
     }
 
     @if (GameMode == GameMode.Practice)
     {
         <MudButton Variant="Variant.Filled" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh"
-                   OnClick="StartNewGameAsync">
+                   OnClick="NewPractice">
             New Character
         </MudButton>
     }
 
-    <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="GameStateManager.GameState?.IsFinished ?? false" />
+    <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" />
 
     <div class="guess-table-container">
-        <GuessTable Guesses="GameStateManager.GameState?.GuessesMade ?? []" />
-        <GuessCards Guesses="GameStateManager.GameState?.GuessesMade ?? []" />
+        <GuessTable Guesses="@(GameStateManager.GameState?.GuessesMade ?? [])" />
+        <GuessCards Guesses="@(GameStateManager.GameState?.GuessesMade ?? [])" />
     </div>
 
 </MudStack>
@@ -150,8 +150,6 @@
     private async Task StartNewGameAsync()
     {
         var playerStats = await StatisticsService.GetPlayerStatsAsync();
-        var lastPlayedGame = playerStats.LastPlayedDailyGameId;
-
         var loadingResult = await GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber : null);
 
         if (loadingResult == LoadGameResult.Failed)
@@ -166,12 +164,22 @@
             PlayerId = GameStateManager.GameState.PlayerId,
             GameId = GameStateManager.GameState.GameId,
             GameMode = GameMode,
-            TargetCharacterId = GameStateManager.GameState.Game.Target.Id,
+            TargetCharacterId = GameStateManager.GameState.Game.TargetId,
         });
 
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
 
         // Notify parent component of the updated game state
         await GameStateChanged.InvokeAsync(GameStateManager.GameState);
+    }
+
+    private async Task NewPractice()
+    {
+        await GameStateManager.StartNewPracticeGameAsync();
+    }
+
+    private async Task<string> GetTargetNameAsync() 
+    {
+        return await GameStateManager.GetTargetName();
     }
 }

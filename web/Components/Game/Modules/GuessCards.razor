@@ -1,6 +1,9 @@
 @using MudBlazor
 @using QSMPDLE.Web.Components.UX
 @using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Infrastructure.Persistence
+
+@inject ICharacterStore CharacterStore
 
 <div class="mobile-guesses">
 
@@ -45,24 +48,24 @@
             <div class="guess-card-header">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
                     <MudAvatar Square="true" Size="Size.Large">
-                        <MudImage Src=@CharacterImageHelper.GetHeadSrc(guess.Character) />
+                        <MudImage Src=@CharacterImageHelper.GetHeadSrc(CharacterFromId(guess.Character.Id).Result) />
                     </MudAvatar>
 
-                    <span class="guess-name">@guess.Character.Name</span>
+                    <span class="guess-name">@CharacterFromId(guess.Character.Id).Result.Name</span>
                 </MudStack>
             </div>
 
             <div class="guess-card-grid">
 
                 <GuessChip Result="guess.Pronouns">
-                    @(guess.Character.Pronouns.Contains("Any") ? "Pronouns: Any" : @DisplayList(guess.Character.Pronouns))
+                    @(CharacterFromId(CharacterFromId(guess.Character.Id).Result.Id).Result.Pronouns.Contains("Any") ? "Pronouns: Any" : @DisplayList(CharacterFromId(CharacterFromId(guess.Character.Id).Result.Id).Result.Pronouns))
                 </GuessChip>
 
                 <GuessChip Result="guess.Species">
                     @(
-                                    guess.Character.Species.Contains("Human")
+                                    CharacterFromId(CharacterFromId(guess.Character.Id).Result.Id).Result.Species.Contains("Human")
                                             ? "Human"
-                                            : @guess.Character.Species.Contains("Unknown")
+                                            : @CharacterFromId(CharacterFromId(guess.Character.Id).Result.Id).Result.Species.Contains("Unknown")
                                                 ? "Species: Unknown"
                                                 : $"Not Human"
                                     )
@@ -72,15 +75,15 @@
                 <GuessChip Result="guess.Languages">
                     <span class="chip-labels">Languages:</span>
                     @(
-                    @guess.Character.Languages > 3
+                    @CharacterFromId(CharacterFromId(guess.Character.Id).Result.Id).Result.Languages > 3
                             ? $"4+"
-                            : @guess.Character.Languages
+                            : @CharacterFromId(CharacterFromId(guess.Character.Id).Result.Id).Result.Languages
                     )
                 </GuessChip>
 
-                @if (guess.Character.Affiliations.Count > 0)
+                @if (CharacterFromId(guess.Character.Id).Result.Affiliations.Count > 0)
                 {
-                    @foreach (var affiliation in guess.Character.Affiliations)
+                    @foreach (var affiliation in CharacterFromId(guess.Character.Id).Result.Affiliations)
                     {
                         <GuessChip Result="guess.Affiliation">
                             @affiliation
@@ -97,7 +100,7 @@
 
 
                 <GuessChip Result="guess.Joined">
-                    <span class="chip-labels">Joined on</span> Day @guess.Character.JoinDayNumber
+                    <span class="chip-labels">Joined on</span> Day @CharacterFromId(guess.Character.Id).Result.JoinDayNumber
                 </GuessChip>
 
             </div>
@@ -187,5 +190,10 @@
         return values.Any()
             ? string.Join(", ", values)
             : "None";
+    }
+
+    private async Task<Character> CharacterFromId(int id)
+    {
+        return await CharacterStore.GetCharacterAsync(id) ?? throw new ArgumentException("No character with this id");
     }
 }

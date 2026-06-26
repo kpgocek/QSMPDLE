@@ -9,4 +9,5 @@ public interface ICharacterStore
     Task<Character> GetCharacterForDayAsync(int dayNumber, CancellationToken cancellationToken = default);
     Task<Character> GetRandomCharacterAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CharacterLookup>> GetLookupsAsync(CancellationToken cancellationToken = default);
+    Task<CharacterLookup?> GetLookupAsync(int id, CancellationToken cancellationToken = default);
 }

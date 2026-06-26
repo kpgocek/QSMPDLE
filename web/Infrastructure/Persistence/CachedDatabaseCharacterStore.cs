@@ -40,6 +40,13 @@ public class CachedDatabaseCharacterStore(GameplayDbContext Gameplay, IMemoryCac
         return lookups ?? [];
     }
 
+    public async Task<CharacterLookup?> GetLookupAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var lookups = await GetLookupsAsync(cancellationToken);
+
+        return lookups.FirstOrDefault(l => l.Id.Equals(id));
+    }
+
     public async Task<Character> GetCharacterForDayAsync(int dayNumber, CancellationToken cancellationToken = default)
     {
         return await Cache.GetOrCreateAsync($"daily-character-{dayNumber}", async (entry) =>

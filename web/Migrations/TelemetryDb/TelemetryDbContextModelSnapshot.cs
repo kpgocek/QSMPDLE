@@ -37,8 +37,7 @@ namespace QSMPDLE.Web.Migrations.TelemetryDb
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameId")
-                        .IsUnique();
+                    b.HasIndex("GameId");
 
                     b.HasIndex("GameSessionId");
 
@@ -77,8 +76,7 @@ namespace QSMPDLE.Web.Migrations.TelemetryDb
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameId")
-                        .IsUnique();
+                    b.HasIndex("GameId");
 
                     b.ToTable("GameStats");
                 });

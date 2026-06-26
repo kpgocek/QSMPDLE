@@ -11,12 +11,10 @@ public sealed class TelemetryDbContext(DbContextOptions<TelemetryDbContext> opti
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<GameSession>()
-            .HasIndex(x => x.GameId)
-            .IsUnique();
+            .HasIndex(x => x.GameId).IsUnique(false);
 
         modelBuilder.Entity<GameGuess>()
-            .HasIndex(x => x.GameId)
-            .IsUnique();
+            .HasIndex(x => x.GameId).IsUnique(false);
 
         base.OnModelCreating(modelBuilder);
     }

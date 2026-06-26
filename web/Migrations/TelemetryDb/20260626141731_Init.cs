@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace QSMPDLE.Web.Migrations.TelemetryDb
 {
     /// <inheritdoc />
-    public partial class InitialStats : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -56,8 +56,7 @@ namespace QSMPDLE.Web.Migrations.TelemetryDb
             migrationBuilder.CreateIndex(
                 name: "IX_GameGuess_GameId",
                 table: "GameGuess",
-                column: "GameId",
-                unique: true);
+                column: "GameId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GameGuess_GameSessionId",
@@ -67,8 +66,7 @@ namespace QSMPDLE.Web.Migrations.TelemetryDb
             migrationBuilder.CreateIndex(
                 name: "IX_GameStats_GameId",
                 table: "GameStats",
-                column: "GameId",
-                unique: true);
+                column: "GameId");
         }
 
         /// <inheritdoc />
