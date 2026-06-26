@@ -250,8 +250,5 @@ dotnet_naming_style.begins_with_i.required_suffix =
 dotnet_naming_style.begins_with_i.word_separator = 
 dotnet_naming_style.begins_with_i.capitalization = pascal_case
 
-# SYSLIB1045: Convert to 'GeneratedRegexAttribute'.
-dotnet_diagnostic.SYSLIB1045.severity = silent
-
 # IDE0305: Simplify collection initialization
 dotnet_diagnostic.IDE0305.severity = silent
