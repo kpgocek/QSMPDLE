@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace WikiScraperQSMP.Helpers;
+namespace WikiScraper.Helpers;
 
 public static class StringHelper
 {
@@ -33,10 +33,10 @@ public static class StringHelper
     {
         value = Regex.Replace(
             value,
-            @"[^A-Z ]",
+            "[^A-Z ]",
             ""
         );
 
-        return value;
+        return value.Trim();
     }
 }

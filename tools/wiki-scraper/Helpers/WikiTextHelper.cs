@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace WikiScraperQSMP.Helpers;
+namespace WikiScraper.Helpers;
 
 public static class WikiTextHelper
 {
@@ -51,21 +51,21 @@ public static class WikiTextHelper
         // Remove Read more...
         value = Regex.Replace(
             value,
-            @"{{Cotop}}|{{Colow}}|{{Collapsetop}}|{{Collapselow}}",
+            "{{Cotop}}|{{Colow}}|{{Collapsetop}}|{{Collapselow}}",
             ""
         );
 
         // Remove refs
         value = Regex.Replace(
             value,
-            @"<ref.*?>.*?</ref>",
+            "<ref.*?>.*?</ref>",
             "",
             RegexOptions.Singleline);
 
         // remove html tags
         value = Regex.Replace(
             value,
-            @"<[^>]+>",
+            "<[^>]+>",
             "");
 
         // remove clean urls
@@ -103,7 +103,7 @@ public static class WikiTextHelper
 
     public static string ToUrlPartial(this string text)
     {
-        text = Regex.Replace(text, @" ", "_");
+        text = Regex.Replace(text, " ", "_");
 
         return text.Trim();
     }

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace WikiScraperQSMP.Services;
+namespace WikiScraper.Services;
 
 public sealed class WikiApiClient(HttpClient http)
 {
@@ -9,13 +9,13 @@ public sealed class WikiApiClient(HttpClient http)
     public async Task<string> GetPageContentAsync(string pageTitle)
     {
         var url =
-            $"{ApiUrl}" +
-            $"?action=query" +
+            ApiUrl +
+            "?action=query" +
             $"&titles={Uri.EscapeDataString(pageTitle)}" +
-            $"&prop=revisions" +
-            $"&rvprop=content" +
-            $"&rvslots=main" +
-            $"&format=json";
+            "&prop=revisions" +
+            "&rvprop=content" +
+            "&rvslots=main" +
+            "&format=json";
 
         return await http.GetStringAsync(url);
     }
@@ -26,15 +26,16 @@ public sealed class WikiApiClient(HttpClient http)
 
     public async Task<string?> ResolveImageUrlAsync(string? iconName)
     {
-        if (iconName is null) return iconName;
+        if (iconName is null)
+            return iconName;
 
         var url =
-            $"{ApiUrl}" +
-            $"?action=query" +
+            ApiUrl +
+            "?action=query" +
             $"&titles=File:{Uri.EscapeDataString(iconName)}.png" +
-            $"&prop=imageinfo" +
-            $"&iiprop=url" +
-            $"&format=json";
+            "&prop=imageinfo" +
+            "&iiprop=url" +
+            "&format=json";
 
         var json =
             await http.GetStringAsync(url);

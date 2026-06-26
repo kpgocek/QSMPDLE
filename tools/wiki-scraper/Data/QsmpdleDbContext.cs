@@ -1,16 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using WikiScraperQSMP.Models;
+using WikiScraper.Models;
 
-namespace WikiScraperQSMP.Data;
+namespace WikiScraper.Data;
 
-public sealed class QsmpdleDbContext : DbContext
+public sealed class QsmpdleDbContext(DbContextOptions<QsmpdleDbContext> options) : DbContext(options)
 {
-    public QsmpdleDbContext(
-        DbContextOptions<QsmpdleDbContext> options)
-        : base(options)
-    {
-    }
-
     public DbSet<Member> Members => Set<Member>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

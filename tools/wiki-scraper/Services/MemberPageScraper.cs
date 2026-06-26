@@ -1,9 +1,8 @@
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using WikiScraperQSMP.Helpers;
-using WikiScraperQSMP.Models;
+using WikiScraper.Helpers;
+using WikiScraper.Models;
 
-namespace WikiScraperQSMP.Services;
+namespace WikiScraper.Services;
 
 public sealed class MemberPageScraper(WikiApiClient api)
 {
@@ -18,8 +17,10 @@ public sealed class MemberPageScraper(WikiApiClient api)
 
         var season2Wiki = WikiPageParser.ExtractWikiText(season2Json);
 
-        if (overviewWiki is null) return null;
-        if (season2Wiki is null) return null;
+        if (overviewWiki is null)
+            return null;
+        if (season2Wiki is null)
+            return null;
 
         var overview =
             WikiPageParser.ParseCharacterPage(overviewWiki);
@@ -62,7 +63,7 @@ public sealed class MemberPageScraper(WikiApiClient api)
                     overview.GetValueOrDefault("Username")
                 ).Name,
 
-            Aliases = new List<string>() { }
+            Aliases = new List<string>()
                 .Concat(
                     WikiPageParser.ParseAliases(
                         overview.GetValueOrDefault("Aliases")
@@ -112,9 +113,11 @@ public sealed class MemberPageScraper(WikiApiClient api)
 
     private async Task<string?> ResolveIconUrl(string? iconName, params string[] wikiTexts)
     {
-        if (!IsValidIconName(iconName)) iconName = ExtractIconFromAspects(wikiTexts);
+        if (!IsValidIconName(iconName))
+            iconName = ExtractIconFromAspects(wikiTexts);
 
-        if (string.IsNullOrWhiteSpace(iconName)) throw new InvalidOperationException("No Icon Found");
+        if (string.IsNullOrWhiteSpace(iconName))
+            throw new InvalidOperationException("No Icon Found");
 
         return await api.ResolveImageUrlAsync(iconName);
     }
@@ -137,11 +140,13 @@ public sealed class MemberPageScraper(WikiApiClient api)
                 text,
                 $@"\|icon\s+{Regex.Escape(index)}\s*=\s*([^\r\n|}}]+)");
 
-            if (!iconMatch.Success) continue;
+            if (!iconMatch.Success)
+                continue;
 
             var iconName = iconMatch.Groups[1].Value.Trim();
 
-            if (!IsValidIconName(iconName)) continue;
+            if (!IsValidIconName(iconName))
+                continue;
 
             return iconName;
         }
@@ -206,7 +211,7 @@ public sealed class MemberPageScraper(WikiApiClient api)
         return NormalizeLanguages(languages).ToList();
     }
 
-    private static IReadOnlyCollection<string> NormalizeLanguages(IEnumerable<string> languages)
+    private static string[] NormalizeLanguages(IEnumerable<string> languages)
     {
         return languages
             .SelectMany(ExpandLanguage)

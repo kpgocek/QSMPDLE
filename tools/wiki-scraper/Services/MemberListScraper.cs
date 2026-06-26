@@ -1,8 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using WikiScraperQSMP.Helpers;
 
-namespace WikiScraperQSMP.Services;
+namespace WikiScraper.Services;
 
 public sealed class MemberListScraper(WikiApiClient api)
 {
@@ -16,7 +15,8 @@ public sealed class MemberListScraper(WikiApiClient api)
         var wikiText =
             WikiPageParser.ExtractWikiText(json);
 
-        if (wikiText is null) return [];
+        if (wikiText is null)
+            return [];
 
         var start =
             wikiText.IndexOf(
@@ -29,8 +29,10 @@ public sealed class MemberListScraper(WikiApiClient api)
                 StringComparison.Ordinal);
 
         if (start < 0 || end < 0)
+        {
             throw new Exception(
                 "Members section not found.");
+        }
 
         var membersSection =
             wikiText[start..end];
@@ -41,31 +43,7 @@ public sealed class MemberListScraper(WikiApiClient api)
             .Select(x => x.Groups[1].Value.Trim())
             .Distinct()
             .Where(x => !excludedMembers.Contains(x))
-            .OrderBy(x => x)
+            .Order()
             .ToList();
-    }
-
-    private static string ExtractMembersSection(
-        string wikiText)
-    {
-        var start =
-            wikiText.IndexOf(
-                "== Members ==",
-                StringComparison.OrdinalIgnoreCase);
-
-        if (start < 0)
-            throw new Exception(
-                "Members section not found.");
-
-        var end =
-            wikiText.IndexOf(
-                "\n==",
-                start + 1,
-                StringComparison.OrdinalIgnoreCase);
-
-        if (end < 0)
-            end = wikiText.Length;
-
-        return wikiText[start..end];
     }
 }

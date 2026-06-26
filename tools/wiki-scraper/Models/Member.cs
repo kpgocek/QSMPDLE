@@ -3,7 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace WikiScraperQSMP.Models;
+namespace WikiScraper.Models;
 
 public sealed class Member
 {

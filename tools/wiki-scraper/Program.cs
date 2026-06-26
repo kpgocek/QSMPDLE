@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
-using WikiScraperQSMP.Data;
 using Microsoft.EntityFrameworkCore;
-using WikiScraperQSMP.Models;
-using WikiScraperQSMP.Services;
+using WikiScraper.Data;
+using WikiScraper.Models;
+using WikiScraper.Services;
 
 var databasePath = Path.Combine(Directory.GetCurrentDirectory(), "../../db/qsmpdle.db");
 

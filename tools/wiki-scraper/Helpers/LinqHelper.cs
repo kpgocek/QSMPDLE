@@ -1,4 +1,4 @@
-namespace WikiScraperQSMP.Helpers;
+namespace WikiScraper.Helpers;
 
 public static class LinqHelper
 {

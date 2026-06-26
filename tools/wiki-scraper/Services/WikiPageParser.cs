@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using WikiScraperQSMP.Helpers;
+using WikiScraper.Helpers;
 
-namespace WikiScraperQSMP.Services;
+namespace WikiScraper.Services;
 
 public static class WikiPageParser
 {
