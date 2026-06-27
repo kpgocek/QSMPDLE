@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using Npgsql;
 using QSMPDLE.Web.Components;
 using QSMPDLE.Web.Features.Communication;
 using QSMPDLE.Web.Features.Gameplay;
@@ -18,7 +19,23 @@ builder.Services.AddMudServices();
 builder.Services.AddBlazorBootstrap();
 
 var dbConnection = builder.Configuration.GetConnectionString("qsmpdle");
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(dbConnection));
+
+var uri = new Uri(dbConnection!);
+
+var userInfo = uri.UserInfo.Split(':');
+
+var conBuilder = new NpgsqlConnectionStringBuilder
+{
+    Host = uri.Host,
+    Port = uri.Port,
+    Database = uri.AbsolutePath.TrimStart('/'),
+    Username = userInfo[0],
+    Password = userInfo[1],
+    SslMode = SslMode.Require,
+};
+
+
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(conBuilder.ConnectionString));
 
 builder.Services.AddInfrastructure();
 
