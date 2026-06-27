@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: qsmpdle-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qsmpdle
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: .
+      dockerfile: QSMPDLE.Web/Dockerfile
+    container_name: qsmpdle-web
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=qsmpdle;Username=postgres;Password=postgres
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:

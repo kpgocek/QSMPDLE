@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using QSMPDLE.Web.Components;
 using QSMPDLE.Web.Features.Communication;
@@ -9,8 +10,6 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddServiceDefaults();
-
 builder.Services.AddLocalStorageServices();
 
 builder.Services.AddMemoryCache();
@@ -18,7 +17,8 @@ builder.Services.AddMemoryCache();
 builder.Services.AddMudServices();
 builder.Services.AddBlazorBootstrap();
 
-builder.AddNpgsqlDbContext<ApplicationDbContext>("qsmpdle");
+var dbConnection = builder.Configuration.GetConnectionString("qsmpdle");
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(dbConnection));
 
 builder.Services.AddInfrastructure();
 
@@ -35,7 +35,6 @@ builder.Services
 
 var app = builder.Build();
 
-app.MapDefaultEndpoints();
 
 if (!app.Environment.IsDevelopment())
 {
