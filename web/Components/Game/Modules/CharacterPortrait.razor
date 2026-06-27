@@ -1,7 +1,15 @@
 @using MudBlazor
 
 <MudPaper Class="portrait-frame" Elevation="0">
-    <MudImage Src="@ImageUrl" Alt="Character" ObjectFit="ObjectFit.Cover" />
+    @if(isImageLoaded)
+    {
+        <MudImage Src="@ImageUrl" Alt="Character" ObjectFit="ObjectFit.Cover" />
+    }
+    else
+    {
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="320px" Height="110px" />
+        <MudImage Src="@ImageUrl" Alt="Character" ObjectFit="ObjectFit.Cover" @onload="OnImageLoaded" Style="display:none;" />
+    }
 </MudPaper>
 
 <style>
@@ -33,7 +41,7 @@
     }
 </style>
 
-@code {
+    @code {
     [Parameter] public string IconUrl { get; set; } = string.Empty;
 
     [Parameter] public int GuessesMade { get; set; }
@@ -43,6 +51,8 @@
 
     private string ImageUrl =>
     $"/graphics/guessing/{IconUrl}/{GetImageName()}";
+
+    private bool isImageLoaded = false;
 
     private string GetImageName()
     {
@@ -58,5 +68,9 @@
         };
 
         return IsGuessed || IsFailed ? "Head.webp" : name;
+    }
+    private void OnImageLoaded(ProgressEventArgs args)
+    {
+        isImageLoaded = true;
     }
 }

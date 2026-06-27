@@ -15,7 +15,7 @@ public sealed class GameService(ICharacterStore CharacterStore) : IGameService
 
         return game is null
             ? throw new InvalidOperationException($"Cannot initialize Archival game for day #{dayNumber}.")
-            : new GameState { Game = game, GameId = Guid.NewGuid() };
+            : new GameState { Game = game, GameId = Guid.NewGuid(), GameMode = GameMode.Daily };
     }
 
     public async Task<GameState> StartPracticeAsync(CancellationToken cancellationToken = default)
@@ -28,7 +28,7 @@ public sealed class GameService(ICharacterStore CharacterStore) : IGameService
             PortraitUrl = character.IconUrl
         };
 
-        return new GameState { Game = game, GameId = Guid.NewGuid() };
+        return new GameState { Game = game, GameId = Guid.NewGuid(), GameMode = GameMode.Practice };
     }
 
     public async Task<GameState> StartArchivalAsync(int dayNumber, CancellationToken cancellationToken = default)
@@ -37,7 +37,7 @@ public sealed class GameService(ICharacterStore CharacterStore) : IGameService
 
         return game is null
             ? throw new InvalidOperationException($"Cannot initialize Archival game for day #{dayNumber}.")
-            : new GameState { Game = game, GameId = Guid.NewGuid() };
+            : new GameState { Game = game, GameId = Guid.NewGuid(), GameMode = GameMode.Archive };
     }
 
     private async Task<Game> StartGameForDayAsync(int dayNumber, CancellationToken cancellationToken = default)

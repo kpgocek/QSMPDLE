@@ -1,0 +1,59 @@
+﻿@using MudBlazor
+
+<MudPaper Class="stats-card pa-2" Style="@($"animation-delay:{Delay}ms")" Elevation="2">
+
+    <MudText Typo="Typo.caption"
+             Class="stats-title">
+        <MudIcon Icon="@Icon" Size="Size.Small" />
+        @Title
+    </MudText>
+
+    <MudText Typo="Typo.h3"
+             Align="Align.Center"
+             Class="mt-1">
+        @Value
+    </MudText>
+
+    <MudText Typo="Typo.caption" Align="Align.Center" Class="comment">@Comment</MudText>
+
+</MudPaper>
+
+<style>
+    .stats-card {
+        min-height: 120px;
+
+        flex: 1;
+
+        display: flex;
+        flex-direction: column;
+        border-radius: 0;
+
+        gap: .25rem;
+
+        opacity: 0;
+        transform: translateY(20px);
+
+        animation: reveal-card 600ms ease forwards;
+    }
+
+    .stats-title {
+        display: flex;
+        gap: .75rem;
+        align-items: center;
+        opacity: .75;
+        user-select:none;
+    }
+
+    .comment {
+        color: var(--tint);
+        user-select: none;
+    }
+</style>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Comment { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Info;
+    [Parameter] public int Delay { get; set; }
+}

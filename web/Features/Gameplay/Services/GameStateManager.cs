@@ -8,7 +8,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 // <summary>
 // Manages the game state for different game modes (daily, practice, archival).
 // </summary>
-public class GameStateManager(IGameStateStore GameStateStore, IGameService GameService, IPlayerStatsStore PlayerStatsStore, ICharacterStore CharacterStore, ICharacterComparer CharacterComparer) : IGameStateManager
+public class GameStateManager(IGameStateStore GameStateStore, IGameService GameService, IPlayerStatsStore PlayerStatsStore,
+    ICharacterStore CharacterStore, ICharacterComparer CharacterComparer) : IGameStateManager
 {
     public GameState GameState { get; private set; } = null!;
 
@@ -30,7 +31,7 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
             GameMode.Daily => $"daily-{dayNumber}",
             GameMode.Archive => $"archive-{dayNumber}",
             GameMode.Practice => "practice-current",
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException(nameof(mode))
         });
 
         var playerData = await PlayerStatsStore.LoadAsync();
@@ -40,8 +41,8 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
         {
             playerId = Guid.NewGuid();
             playerData.Id = playerId;
-            await PlayerStatsStore.SaveAsync(playerData);
 
+            await PlayerStatsStore.SaveAsync(playerData);
         }
 
         // load the game state from the store if it exists
@@ -85,25 +86,15 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
         return LoadGameResult.CreatedNew;
     }
 
-    public async Task<GuessResult> MakeGuessAsync(int characterId, CancellationToken cancellationToken = default)
+    private const int MaxGuesses = 6;
+
+    public async Task<GuessResult?> MakeGuessAsync(int characterId, CancellationToken cancellationToken = default)
     {
         if (GameState is null)
         {
             throw new InvalidOperationException("Game state is not initialized.");
         }
 
-        var guessResult = await GuessAsync(characterId, cancellationToken);
-
-        await GameStateStore.SaveAsync(GameState);
-
-        return guessResult ?? throw new InvalidOperationException("Guess result is null.");
-    }
-
-    private const int MaxGuesses = 6;
-
-
-    public async Task<GuessResult?> GuessAsync(int characterId, CancellationToken cancellationToken = default)
-    {
         if (GameState.IsFinished)
             return null;
 
@@ -130,13 +121,20 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
             GameState.IsLost = true;
         }
 
-        return result;
+        await GameStateStore.SaveAsync(GameState);
 
+        return result;
     }
 
     public async Task<string> GetTargetName(CancellationToken cancellationToken = default)
     {
         var character = await CharacterStore.GetCharacterAsync(GameState.Game.TargetId, cancellationToken);
         return character?.Name ?? string.Empty;
+    }
+
+    public async Task MarkPopupAsSeenAsync(CancellationToken cancellationToken = default)
+    {
+        GameState.SeenPopup = true;
+        await GameStateStore.SaveAsync(GameState);
     }
 }

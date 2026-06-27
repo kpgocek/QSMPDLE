@@ -7,4 +7,6 @@ public interface IGameStatsStore
     Task<GameSession> LoadOrNewAsync(Guid gameId);
 
     Task SaveAsync(GameSession stats);
+
+    Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId);
 }

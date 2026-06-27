@@ -1,5 +1,6 @@
 ﻿@using MudBlazor
 @using QSMPDLE.Web.Components.Game.Modules
+@using QSMPDLE.Web.Components.UX
 @using QSMPDLE.Web.Features.Communication.GameEvents
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Gameplay.Services
@@ -10,6 +11,20 @@
 @inject IStatisticsService StatisticsService
 
 <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
+
+    @if (GameStateManager.GameState?.IsWon ?? false)
+    {
+        <div class="daily-complete-banner">
+            You already know who it is
+        </div>
+    }
+    else if (GameStateManager.GameState?.IsLost ?? false)
+    {
+        <div class="daily-complete-banner">
+            Welp.
+        </div>
+    }
+
     @if (GameStateManager.GameState is not null)
     {
         <MudPaper Class="ma-4 image-wrapper" Elevation="0">
@@ -41,6 +56,16 @@
     </div>
 
 </MudStack>
+
+@if (!(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsWon ?? false))
+{
+    <VictoryDialog GameState="@GameStateManager.GameState" OnClose="ClosePopups" />
+}
+
+@if (!(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsLost ?? false))
+{
+    <FailureDialog GameState="@GameStateManager.GameState" OnClose="ClosePopups" />
+}
 
 <style>
     .gameplay {
@@ -115,6 +140,20 @@
             return;
         }
 
+        // Record Start at first guess made
+        if (GameStateManager.GameState.GuessesMade.Count == 1)
+        {
+            await StatisticsService.RecordGameStartedAsync(new GameStartedEvent
+            {
+                Timestamp = DateTime.UtcNow,
+                DayNumber = GameStateManager.GameState.Game.DayNumber,
+                PlayerId = GameStateManager.GameState.PlayerId,
+                GameId = GameStateManager.GameState.GameId,
+                GameMode = GameMode,
+                TargetCharacterId = GameStateManager.GameState.Game.TargetId,
+            });
+        }
+
         // Raise event to record guess result
         await StatisticsService.RecordGuessMadeAsync(new GuessMadeEvent
             {
@@ -142,6 +181,7 @@
         // Notify parent component of the updated game state
         // This allows the parent component to react to the game state change, such as showing a victory or failure popup.
         await GameStateChanged.InvokeAsync(GameStateManager.GameState);
+        await InvokeAsync(StateHasChanged);
 
         // Clear the guessed character after processing the guess
         GuessedCharacter = null;
@@ -157,16 +197,6 @@
             throw new InvalidOperationException("Cannot initiate new game.");
         }
 
-        await StatisticsService.RecordGameStartedAsync(new GameStartedEvent
-        {
-            Timestamp = DateTime.UtcNow,
-            DayNumber = GameStateManager.GameState.Game.DayNumber,
-            PlayerId = GameStateManager.GameState.PlayerId,
-            GameId = GameStateManager.GameState.GameId,
-            GameMode = GameMode,
-            TargetCharacterId = GameStateManager.GameState.Game.TargetId,
-        });
-
         await InvokeAsync(StateHasChanged);
 
         // Notify parent component of the updated game state
@@ -181,5 +211,15 @@
     private async Task<string> GetTargetNameAsync() 
     {
         return await GameStateManager.GetTargetName();
+    }
+
+    private async Task ClosePopups()
+    {
+        if (GameStateManager.GameState is null)
+            return;
+
+        await GameStateManager.MarkPopupAsSeenAsync();
+
+        await InvokeAsync(StateHasChanged);
     }
 }

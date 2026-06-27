@@ -7,10 +7,13 @@ public sealed class GameState()
     public required Guid GameId { get; set; }
     public Guid PlayerId { get; set; }
     public required Game Game { get; set; }
+    public required GameMode GameMode { get; set; }
 
     public bool IsWon { get; set; }
 
     public bool IsLost { get; set; }
+
+    public bool SeenPopup { get; set; }
 
     [JsonIgnore]
     public bool IsFinished => IsWon || IsLost;

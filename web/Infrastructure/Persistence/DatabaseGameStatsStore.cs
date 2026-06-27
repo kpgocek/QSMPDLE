@@ -3,18 +3,27 @@ using QSMPDLE.Web.Features.Statistics.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
-public sealed class DatabaseGameStatsStore(TelemetryDbContext telemetry) : IGameStatsStore
+public sealed class DatabaseGameStatsStore(ApplicationDbContext database) : IGameStatsStore
 {
+    public async Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId)
+    {
+        return await database.GameStats.Where(game => game.PlayerId.Equals(playerId)).ToListAsync();
+    }
+
     public async Task<GameSession> LoadOrNewAsync(Guid gameId)
     {
-        var stats = await telemetry.GameStats.FirstOrDefaultAsync(stats => stats.GameId == gameId);
+        var stats = await database.GameStats.FirstOrDefaultAsync(stats => stats.GameId == gameId);
 
         return stats ?? new GameSession { GameId = gameId };
     }
     public async Task SaveAsync(GameSession stats)
     {
-        telemetry.GameStats.Update(stats);
+        database.GameStats.Update(stats);
 
-        await telemetry.SaveChangesAsync();
+        await database.SaveChangesAsync();
     }
+
+
+
+
 }

@@ -1,0 +1,167 @@
+﻿@page "/stats"
+
+@using MudBlazor
+@using QSMPDLE.Web.Components.UX
+@using QSMPDLE.Web.Infrastructure.LocalStorage
+@using QSMPDLE.Web.Infrastructure.Persistence
+
+@inject IPlayerStatsStore PlayerStatsStore
+@inject IGameStatsStore GameStatsStore
+@inject ICharacterStore CharacterStore
+
+<PageTitle>Game Statistics - QSMPDLE</PageTitle>
+
+<WebPage>
+
+    <section class="mb-2">
+        <h2>
+            Statistics & Telemetry
+        </h2>
+
+        <p class="info">
+            Some interesting information about our players
+        </p>
+
+        <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Class="mb-6">
+            <strong>Data's incomplete.</strong> We only started collecting gameplay stats from the 1.1 release.
+        </MudAlert>     
+    </section>
+
+    <section class="mb-5">
+        <h3>
+            Your Personal Stats
+        </h3>
+
+    
+
+        <section class="mb-5">
+            <h4>
+                Daily Mode
+            </h4>
+
+            <MudGrid>
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="Played" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
+                              Value="@($"{DailyGamesPlayed}")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="Won" Delay="200" Icon="@Icons.Material.Filled.EmojiEvents"
+                              Value="@($"{DailyGamesWon}")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="Win Rate" Delay="300" Icon="@Icons.Material.Filled.LocalFireDepartment"
+                              Value="@($"{DailyWinRate:0}%")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="Best Streak" Delay="400" Icon="@Icons.Material.Filled.BarChart"
+                              Value="@($"{LongestStreak}")"/>
+                </MudItem>
+            </MudGrid>
+
+        </section>
+
+        <section class="mb-5">
+            <h4>
+                Practice Mode
+            </h4>
+
+            <MudGrid>
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="Started" Delay="150" Icon="@Icons.Material.Filled.PlayArrow"
+                              Value="@($"{PracticeGamesStarted}")" Comment="Yes, even skipped ones"/>
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="Finished" Delay="250" Icon="@Icons.Material.Filled.CheckCircle"
+                              Value="@($"{PracticeGamesFinished}")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="Won" Delay="350" Icon="@Icons.Material.Filled.WorkspacePremium"
+                              Value="@($"{PracticeGamesWon}")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="Win Rate" Delay="450" Icon="@Icons.Material.Filled.BarChart"
+                              Value="@($"{AllPracticeWinRate:0}%")" Comment="@($"{FinishedPracticeWinRate:0}% of finished games")" />
+                </MudItem>
+            </MudGrid>
+        
+        </section>
+    </section>
+
+    <section class="mb-5">
+        <h3>
+            Global Stats (W.I.P.)
+        </h3>
+    </section>
+
+</WebPage>
+
+@code {
+
+    // Player Daily Stats
+    private Guid PlayerId { get; set; }
+
+    private int DailyGamesPlayed { get; set; }
+    private int DailyGamesWon { get; set; }
+    private int LongestStreak { get; set; }
+
+    private double DailyWinRate { get; set; }
+
+    private int[] GuessDistribution { get; set; } = [];
+
+    // Player Practice Stats
+    private int PracticeGamesStarted { get; set; }
+    private int PracticeGamesFinished { get; set; }
+    private int PracticeGamesWon { get; set; }
+
+    private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) / (double) PracticeGamesFinished;
+    private double AllPracticeWinRate => PracticeGamesStarted == 0 ? 0 : (PracticeGamesWon * 100) / (double)PracticeGamesStarted;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        if (firstRender)
+        {
+            await CollectPlayerDataAsync();
+            await CollectGlobalDataAsync();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CollectPlayerDataAsync()
+    {
+        var stats = await PlayerStatsStore.LoadAsync();
+        PlayerId = stats.Id;
+        DailyGamesPlayed = stats.GamesPlayed;
+        DailyGamesWon = stats.GamesWon;
+        LongestStreak = stats.MaxStreak;
+
+        DailyWinRate = stats.WinRate;
+
+        GuessDistribution = stats.GuessDistribution;
+    }
+
+    private async Task CollectGlobalDataAsync() 
+    {
+        if (PlayerId == Guid.Empty) return;
+
+        var gameStats = await GameStatsStore.GetPlayerGames(PlayerId);
+
+        var practiceGames = gameStats.Where(game => game.Mode.Equals(GameMode.Practice)).Distinct();
+
+        PracticeGamesStarted = practiceGames.Count();
+
+        var finishedPracticeGames = practiceGames.Where(game => game.FinishedOnUtc is not null);
+
+        PracticeGamesFinished = finishedPracticeGames.Count();
+
+        PracticeGamesWon = finishedPracticeGames.Where(game => game.IsWon == true).Count();
+    }
+}

@@ -14,27 +14,27 @@
 
   <ItemGroup>
 	<!-- Blazor & UI-->
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.4.6" />
     <PackageReference Include="Blazor.Bootstrap" Version="3.5.0" />
     <PackageReference Include="Blazor.LocalStorage" Version="10.0.0" />
 
 	<!-- EF Core & SQLite -->
 	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
 	<PackageReference Include="MudBlazor" Version="9.5.0" />
+	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
 
 	<!-- Analyzers -->
 	<PackageReference Include="Roslynator.Analyzers" Version="4.15.0" />
 	<PackageReference Include="Roslynator.Formatting.Analyzers" Version="4.15.0" />
   </ItemGroup>
 
-<ItemGroup>
-  <Content Include="Infrastructure\Persistence\DB\data.db">
-    <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-  </Content>
-</ItemGroup>
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
 
-<ItemGroup>
-  <Folder Include="Migrations\TelemetryDb\" />
-</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\aspire\QSMPDLE.ServiceDefaults\QSMPDLE.ServiceDefaults.csproj" />
+  </ItemGroup>
+	
 </Project>

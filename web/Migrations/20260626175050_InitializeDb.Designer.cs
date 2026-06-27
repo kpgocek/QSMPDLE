@@ -4,74 +4,81 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QSMPDLE.Web.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace QSMPDLE.Web.Migrations
 {
-    [DbContext(typeof(GameplayDbContext))]
-    [Migration("20260625110546_InitialCreate")]
-    partial class InitialCreate
+    [DbContext(typeof(ApplicationDbContext))]
+    [Migration("20260626175050_InitializeDb")]
+    partial class InitializeDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            modelBuilder.Entity("QSMPDLE.Web.Features.Characters.Models.Character", b =>
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("QSMPDLE.Web.Features.Gameplay.Models.Character", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AffiliationsJson")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("affiliations");
 
                     b.Property<string>("AliasesJson")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("aliases");
 
                     b.Property<string>("IconUrl")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("icon_url");
 
                     b.Property<int?>("JoinDayNumber")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("join_day_number");
 
                     b.Property<int>("Languages")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("languages");
 
                     b.Property<string>("MinecraftUsername")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("minecraft_username");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("name");
 
                     b.Property<string>("PageUrl")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("page_url");
 
                     b.Property<string>("PronounsJson")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("pronouns");
 
                     b.Property<string>("SpeciesJson")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("species");
 
                     b.HasKey("Id");
@@ -79,19 +86,21 @@ namespace QSMPDLE.Web.Migrations
                     b.ToTable("Characters");
                 });
 
-            modelBuilder.Entity("QSMPDLE.Web.Features.DailySelection.Models.DailyGame", b =>
+            modelBuilder.Entity("QSMPDLE.Web.Features.Gameplay.Models.DailyGame", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<int>("CharacterId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("character_id");
 
                     b.Property<DateOnly>("Date")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("date")
                         .HasColumnName("date");
 
                     b.HasKey("Id");
@@ -108,21 +117,25 @@ namespace QSMPDLE.Web.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("GameSessionId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<int>("GuessOrder")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<int>("GuessedCharacterId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("GameId");
 
                     b.HasIndex("GameSessionId");
 
@@ -133,40 +146,44 @@ namespace QSMPDLE.Web.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int?>("DailyNumber")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<DateTimeOffset?>("FinishedOnUtc")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsWon")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("Mode")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("StartedOnUtc")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("TargetCharacterId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("GameId");
 
                     b.ToTable("GameStats");
                 });
 
-            modelBuilder.Entity("QSMPDLE.Web.Features.DailySelection.Models.DailyGame", b =>
+            modelBuilder.Entity("QSMPDLE.Web.Features.Gameplay.Models.DailyGame", b =>
                 {
-                    b.HasOne("QSMPDLE.Web.Features.Characters.Models.Character", "Character")
+                    b.HasOne("QSMPDLE.Web.Features.Gameplay.Models.Character", "Character")
                         .WithMany()
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)

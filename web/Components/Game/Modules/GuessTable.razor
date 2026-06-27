@@ -35,7 +35,7 @@
 
             @foreach (var guess in Guesses)
             {
-                <tr class="answer-row">
+                <tr class="answer-row @(guess == Guesses.Last() ? "new-row" : "")">
                     <td class="medium-cell">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                             <MudAvatar Square="true" Size="Size.Large">
@@ -254,6 +254,10 @@
         font-size: 1.1rem;
         font-weight: 500;
         letter-spacing: .02em;
+    }
+
+    .new-row {
+        animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
     }
 </style>
 

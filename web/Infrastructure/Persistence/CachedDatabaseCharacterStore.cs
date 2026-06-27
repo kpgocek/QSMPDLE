@@ -4,7 +4,7 @@ using QSMPDLE.Web.Features.Gameplay.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
-public class CachedDatabaseCharacterStore(GameplayDbContext Gameplay, IMemoryCache Cache) : ICharacterStore
+public class CachedDatabaseCharacterStore(ApplicationDbContext Gameplay, IMemoryCache Cache) : ICharacterStore
 {
     public async Task<IReadOnlyList<Character>> GetCharactersAsync(CancellationToken cancellationToken = default)
     {

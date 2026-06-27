@@ -1,38 +1,16 @@
 @page "/practice"
 @using QSMPDLE.Web.Components.Game
-@using QSMPDLE.Web.Components.UX
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Statistics.Models
 @using QSMPDLE.Web.Features.Statistics.Services
 
 @inject IStatisticsService StatisticsService
 
+<PageTitle>Practice Mode - QSMPDLE</PageTitle>
+
 <h2>Training Grounds</h2>
 
-@if (IsGameWon)
-{
-    <div class="daily-complete-banner">
-        You already know who it is
-    </div>
-}
-else if (IsGameLost)
-{
-    <div class="daily-complete-banner">
-        Welp.
-    </div>
-}
-
 <Gameplay GameMode="GameMode.Practice" GameStateChanged="OnGameStateChange" />
-
-@if (ShowVictoryPopup)
-{
-    <VictoryDialog Guesses="@Guesses" OnClose="CloseVictoryPopup" />
-}
-
-@if (ShowFailurePopup)
-{
-    <FailureDialog OnClose="CloseFailurePopup" />
-}
 
 <style>
     h2 {
@@ -41,28 +19,13 @@ else if (IsGameLost)
 </style>
 
 @code {
-    private bool IsGameWon;
-    private bool IsGameLost;
-
-    private bool ShowVictoryPopup;
-    private bool ShowFailurePopup;
-
     private List<GuessResult> Guesses = null!;
     private GameSession Stats = null!;
 
     private async Task OnGameStateChange(GameState gameState)
     {
-        IsGameLost = gameState.IsLost;
-        IsGameWon = gameState.IsWon;
-
         Guesses = gameState.GuessesMade;
-
-        ShowVictoryPopup = gameState.IsWon;
-        ShowFailurePopup = gameState.IsLost;
 
         Stats = await StatisticsService.GetGameStatsAsync(gameState.GameId);
     }
-
-    private void CloseVictoryPopup() => ShowVictoryPopup = false;
-    private void CloseFailurePopup() => ShowFailurePopup = false;
 }

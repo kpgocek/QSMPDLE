@@ -61,16 +61,12 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 
             ArgumentNullException.ThrowIfNull(playerStats);
 
+            playerStats.GamesPlayed++;
             playerStats.GuessDistribution[eventData.GuessCount - 1]++;
 
-            playerStats.GamesPlayed++;
-
-            if (eventData.DayNumber - playerStats.LastCompletedDayNumber == 1)
+            if (eventData.IsWon && eventData.DayNumber - playerStats.LastCompletedDayNumber == 1)
             {
-                if (eventData.IsWon)
-                {
-                    playerStats.CurrentStreak++;
-                }
+                playerStats.CurrentStreak++;
             }
             else
             {

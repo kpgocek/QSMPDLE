@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using QSMPDLE.Web.Components;
 using QSMPDLE.Web.Features.Communication;
@@ -10,17 +9,16 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 builder.Services.AddLocalStorageServices();
 
 builder.Services.AddMemoryCache();
 
 builder.Services.AddMudServices();
+builder.Services.AddBlazorBootstrap();
 
-var dataDbPath = Path.Combine(builder.Environment.ContentRootPath, builder.Configuration["Database:DataPath"]!);
-var statsDbPath = Path.Combine(builder.Environment.ContentRootPath, builder.Configuration["Database:StatsPath"]!);
-
-builder.Services.AddDbContext<GameplayDbContext>(options => options.UseSqlite($"Data Source={dataDbPath}"));
-builder.Services.AddDbContext<TelemetryDbContext>(options => options.UseSqlite($"Data Source={statsDbPath}"));
+builder.AddNpgsqlDbContext<ApplicationDbContext>("qsmpdle");
 
 builder.Services.AddInfrastructure();
 
@@ -36,6 +34,8 @@ builder.Services
     .AddInteractiveServerComponents(options => options.DetailedErrors = true);
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 if (!app.Environment.IsDevelopment())
 {

@@ -9,12 +9,7 @@ public static class DatabaseMigrationExtensions
         using var scope = app.Services.CreateScope();
 
         await scope.ServiceProvider
-            .GetRequiredService<GameplayDbContext>()
-            .Database
-            .MigrateAsync();
-
-        await scope.ServiceProvider
-            .GetRequiredService<TelemetryDbContext>()
+            .GetRequiredService<ApplicationDbContext>()
             .Database
             .MigrateAsync();
     }

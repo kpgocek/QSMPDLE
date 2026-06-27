@@ -224,10 +224,13 @@
 </style>
 
 @code {
-    [Parameter] public int? DayNumber { get; set; }
-    [Parameter] public List<GuessResult> Guesses { get; set; } = null!;
+    [Parameter] public GameState GameState { get; set; } = null!;
+
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public PlayerStats? Stats { get; set; } = null!;
+
+    private int? DayNumber => GameState.Game.DayNumber;
+    private IReadOnlyList<GuessResult> Guesses => GameState.GuessesMade;
 
     private async Task Share()
     {
