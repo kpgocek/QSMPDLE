@@ -10,6 +10,7 @@
     <NuGetAudit>True</NuGetAudit>
     <NuGetAuditMode>all</NuGetAuditMode>
     <NuGetAuditLevel>moderate</NuGetAuditLevel>
+    <UserSecretsId>df25ea81-75bc-4426-8875-5fe2836fa84d</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

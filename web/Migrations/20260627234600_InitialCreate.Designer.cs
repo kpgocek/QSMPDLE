@@ -12,8 +12,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260626175050_InitializeDb")]
-    partial class InitializeDb
+    [Migration("20260627234600_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

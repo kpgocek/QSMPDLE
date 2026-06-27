@@ -18,24 +18,16 @@ builder.Services.AddMemoryCache();
 builder.Services.AddMudServices();
 builder.Services.AddBlazorBootstrap();
 
-var dbConnection = builder.Configuration.GetConnectionString("qsmpdle");
-
-var uri = new Uri(dbConnection!);
-
-var userInfo = uri.UserInfo.Split(':');
-
-var conBuilder = new NpgsqlConnectionStringBuilder
+var connectionString = new NpgsqlConnectionStringBuilder
 {
-    Host = uri.Host,
-    Port = uri.Port,
-    Database = uri.AbsolutePath.TrimStart('/'),
-    Username = userInfo[0],
-    Password = userInfo[1],
-    SslMode = SslMode.Require,
-};
+    Host = builder.Configuration["PGHOST"],
+    Port = int.Parse(builder.Configuration["PGPORT"]!),
+    Database = builder.Configuration["PGDATABASE"],
+    Username = builder.Configuration["PGUSER"],
+    Password = builder.Configuration["PGPASSWORD"]
+}.ConnectionString;
 
-
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(conBuilder.ConnectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddInfrastructure();
 
