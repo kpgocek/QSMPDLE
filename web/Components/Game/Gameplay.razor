@@ -11,44 +11,60 @@
 @inject IStatisticsService StatisticsService
 
 <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
-
-    @if (GameStateManager.GameState?.IsWon ?? false)
+    @if (!IsGameLoaded)
     {
-        <div class="daily-complete-banner">
-            You already know who it is
-        </div>
-    }
-    else if (GameStateManager.GameState?.IsLost ?? false)
-    {
-        <div class="daily-complete-banner">
-            Welp.
-        </div>
-    }
 
-    @if (GameStateManager.GameState is not null)
+        <MudPaper Class="ma-4 image-wrapper" Elevation="0">
+            <MudPaper Style="padding: .5rem; border: 0.125rem solid var(--primary-black); box-shadow: 0 0 0 0.125rem var(--black), 0 1rem 2rem var(--shadow); border-radius: 0;"
+            Elevation="0">
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="320px" Width="320px" />
+            </MudPaper>
+        </MudPaper>
+
+        <div class="answer-reveal" >
+            <h3><MudSkeleton SkeletonType="SkeletonType.Text" Width="4rem" Height="2.5rem" /></h3>
+        </div>
+
+        @if (GameMode == GameMode.Practice)
+        {
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="16rem" Height="3rem" />
+        }
+
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="24.25rem" Height="3rem" />
+    }
+    else
     {
         <MudPaper Class="ma-4 image-wrapper" Elevation="0">
-            <CharacterPortrait IconUrl="@GameStateManager.GameState.Game.PortraitUrl" GuessesMade="@GameStateManager.GameState.GuessesMade.Count" IsGuessed="@GameStateManager.GameState.IsWon"                           
-            IsFailed="@GameStateManager.GameState.IsLost" />
+            <CharacterPortrait 
+            IconUrl="@(GameStateManager.GameState?.Game.PortraitUrl ?? string.Empty)" 
+            GuessesMade="@(GameStateManager.GameState?.GuessesMade.Count ?? 0)" 
+            IsGuessed="@(GameStateManager.GameState?.IsWon ?? false)"
+            IsFailed="@(GameStateManager.GameState?.IsLost ?? false)" />
         </MudPaper>
-    }
 
-    @if (GameStateManager.GameState?.IsFinished ?? false)
-    {
-        <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
-            <h3>@GetTargetNameAsync().Result</h3>
-        </div>
-    }
+        @if (GameStateManager.GameState?.IsFinished ?? false)
+        {
+            <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
+                <h3>@GetTargetNameAsync().Result</h3>
+            </div>
+        }
+        else
+        {
+            <div class="answer-reveal" >
+                <h3>???</h3>
+            </div>
+        }
 
-    @if (GameMode == GameMode.Practice)
-    {
-        <MudButton Variant="Variant.Filled" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh"
-                   OnClick="NewPractice">
-            New Character
-        </MudButton>
-    }
+        @if (GameMode == GameMode.Practice)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh" OnClick="NewPractice">
+                New Character
+            </MudButton>
+        }
 
-    <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" />
+        <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" />
+
+        }
 
     <div class="guess-table-container">
         <GuessTable Guesses="@(GameStateManager.GameState?.GuessesMade ?? [])" />
@@ -56,6 +72,8 @@
     </div>
 
 </MudStack>
+
+
 
 @if (!(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsWon ?? false))
 {
@@ -66,6 +84,7 @@
 {
     <FailureDialog GameState="@GameStateManager.GameState" OnClose="ClosePopups" />
 }
+
 
 <style>
     .gameplay {
@@ -116,7 +135,11 @@
     [Parameter]
     public EventCallback<GameState> GameStateChanged { get; set; }
 
+    [Parameter] 
+    public EventCallback GameLoaded { get; set; }
+
     private CharacterLookup? GuessedCharacter;
+    private bool IsGameLoaded = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -197,10 +220,13 @@
             throw new InvalidOperationException("Cannot initiate new game.");
         }
 
-        await InvokeAsync(StateHasChanged);
-
         // Notify parent component of the updated game state
         await GameStateChanged.InvokeAsync(GameStateManager.GameState);
+
+        IsGameLoaded = true;
+        await GameLoaded.InvokeAsync();
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task NewPractice()

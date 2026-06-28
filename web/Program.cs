@@ -27,6 +27,13 @@ var connectionString = new NpgsqlConnectionStringBuilder
     Password = builder.Configuration["PGPASSWORD"]
 }.ConnectionString;
 
+
+System.Diagnostics.Debug.WriteLine($"PGHOST = {builder.Configuration["PGHOST"]}");
+System.Diagnostics.Debug.WriteLine($"PGPORT = {builder.Configuration["PGPORT"]}");
+System.Diagnostics.Debug.WriteLine($"PGDATABASE = {builder.Configuration["PGDATABASE"]}");
+System.Diagnostics.Debug.WriteLine($"PGUSER = {builder.Configuration["PGUSER"]}");
+System.Diagnostics.Debug.WriteLine($"PGPASSWORD = {builder.Configuration["PGPASSWORD"]}");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddInfrastructure();

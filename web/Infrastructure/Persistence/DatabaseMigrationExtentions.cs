@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
@@ -8,9 +9,11 @@ public static class DatabaseMigrationExtensions
     {
         using var scope = app.Services.CreateScope();
 
-        await scope.ServiceProvider
-            .GetRequiredService<ApplicationDbContext>()
-            .Database
-            .MigrateAsync();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        Debug.WriteLine(db.Database.ProviderName);
+        Debug.WriteLine(db.Database.GetConnectionString());
+
+        await db.Database.MigrateAsync();
     }
 }

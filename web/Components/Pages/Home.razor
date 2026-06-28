@@ -1,4 +1,5 @@
 @page "/"
+@using MudBlazor
 @using QSMPDLE.Web.Components.Game
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Statistics.Services
@@ -7,9 +8,16 @@
 
 <PageTitle>Daily Game - QSMPDLE</PageTitle>
 
-<h2>DAILY CHARACTER<span class="separator">|</span>#@DailyNumber.ToString("00")</h2>
+@if (!IsGameLoaded)
+{
+    <h2><MudSkeleton SkeletonType="SkeletonType.Text" Width="25rem" Height="2.375rem" /></h2>
+}
+else 
+{
+    <h2>DAILY CHARACTER<span class="separator">|</span>#@DailyNumber.ToString("00")</h2>
+}
 
-<Gameplay GameMode="GameMode.Daily" GameStateChanged="OnGameStateChange" />
+<Gameplay GameMode="GameMode.Daily" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
 
 <style>
     h2 {
@@ -23,10 +31,16 @@
 
 @code {
     private int DailyNumber = 0;
+    private bool IsGameLoaded = false;
 
     private async Task OnGameStateChange(GameState gameState)
     {
         DailyNumber = gameState.Game.DayNumber ?? 0;
+    }
+
+    private async Task OnGameLoaded()
+    {
+        IsGameLoaded = true;
     }
 }
 

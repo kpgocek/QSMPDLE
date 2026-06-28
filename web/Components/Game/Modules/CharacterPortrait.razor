@@ -1,15 +1,7 @@
 @using MudBlazor
 
 <MudPaper Class="portrait-frame" Elevation="0">
-    @if(isImageLoaded)
-    {
-        <MudImage Src="@ImageUrl" Alt="Character" ObjectFit="ObjectFit.Cover" />
-    }
-    else
-    {
-        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="320px" Height="110px" />
-        <MudImage Src="@ImageUrl" Alt="Character" ObjectFit="ObjectFit.Cover" @onload="OnImageLoaded" Style="display:none;" />
-    }
+    <MudImage Src="@ImageUrl" Alt="Character" ObjectFit="ObjectFit.Cover" />
 </MudPaper>
 
 <style>
