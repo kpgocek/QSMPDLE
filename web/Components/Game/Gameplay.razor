@@ -212,8 +212,13 @@
 
     private async Task StartNewGameAsync()
     {
-        var playerStats = await StatisticsService.GetPlayerStatsAsync();
-        var loadingResult = await GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber : null);
+        var playerStatsTask = StatisticsService.GetPlayerStatsAsync();
+        var gameLoadingTask = GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber : null);
+
+        Task.WaitAll(playerStatsTask, gameLoadingTask);
+
+        var playerStats = playerStatsTask.Result;
+        var loadingResult = gameLoadingTask.Result;
 
         if (loadingResult == LoadGameResult.Failed)
         {

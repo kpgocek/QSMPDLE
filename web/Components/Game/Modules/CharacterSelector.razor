@@ -148,9 +148,11 @@
             return;
 
         Value = character;
-        await ValueChanged.InvokeAsync(character);
 
-        await OnGuessConfirmed.InvokeAsync();
+        var valueChangedTask = ValueChanged.InvokeAsync(character);
+        var guessConfirmedTask = OnGuessConfirmed.InvokeAsync();
+
+        Task.WaitAll(valueChangedTask, guessConfirmedTask);
 
         SearchText = "";
     }
@@ -163,9 +165,11 @@
             return;
 
         Value = character;
-        await ValueChanged.InvokeAsync(character);
+        
+        var valueChangedTask = ValueChanged.InvokeAsync(character);
+        var guessConfirmedTask = OnGuessConfirmed.InvokeAsync();
 
-        await OnGuessConfirmed.InvokeAsync();
+        Task.WaitAll(valueChangedTask, guessConfirmedTask);
 
         SearchText = "";
     }

@@ -51,7 +51,7 @@
         </h3>
         
         
-        <section class="mb-3">
+        <section class="mb-5">
 
             <MudImage Src="" />
 
@@ -155,10 +155,14 @@
 
         if (firstRender)
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
             var playerDataTask = CollectPlayerDataAsync();
             var globalDataTask = CollectGlobalDataAsync();
 
             Task.WaitAll(playerDataTask, globalDataTask);
+
+            System.Diagnostics.Debug.WriteLine(sw.ElapsedMilliseconds);
 
             await InvokeAsync(StateHasChanged);
         }
