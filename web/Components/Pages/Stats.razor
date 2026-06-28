@@ -126,8 +126,8 @@
 
 @code {
     // Global Stats
-    private int TotalPlayers { get; set; }
-    private int TotalGamesPlayed { get; set; }
+    private long TotalPlayers { get; set; }
+    private long TotalGamesPlayed { get; set; }
     private double GlobalWinRate { get; set; }
 
     // Player Daily Stats
@@ -191,6 +191,13 @@
 
     private async Task CollectGlobalDataAsync()
     {
-        
+        var globalData = await GameStatsStore.GetGlobalStatsAsync();
+
+        TotalPlayers = globalData.TotalPlayers;
+
+        TotalGamesPlayed = globalData.TotalGames;
+
+        GlobalWinRate = globalData.WinRate;
+
     }
 }
