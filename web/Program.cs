@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using Npgsql;
@@ -52,6 +53,12 @@ builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents(options => options.DetailedErrors = true);
 
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(
+        new DirectoryInfo("/app/keys"))
+    .SetApplicationName("QSMPDLE");
+
 var app = builder.Build();
 
 
@@ -64,6 +71,8 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
 app.UseStaticFiles();
+
+app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
