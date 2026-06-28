@@ -23,6 +23,21 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             .HasIndex(x => x.Date)
             .IsUnique();
 
+        modelBuilder.Entity<GlobalStatsView>(view =>
+        {
+            view.HasNoKey();
+            view.ToView("global_stats");
+
+            view.Property(x => x.TotalGames)
+                .HasColumnName("total_games");
+
+            view.Property(x => x.TotalPlayers)
+                .HasColumnName("total_players");
+
+            view.Property(x => x.TotalWins)
+                .HasColumnName("total_wins");
+        });
+
         base.OnModelCreating(modelBuilder);
     }
 }

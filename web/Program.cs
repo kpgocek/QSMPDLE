@@ -8,12 +8,15 @@ using QSMPDLE.Web.Features.Sharing;
 using QSMPDLE.Web.Features.Statistics;
 using QSMPDLE.Web.Infrastructure;
 using QSMPDLE.Web.Infrastructure.Persistence;
+using QSMPDLE.Web.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddLocalStorageServices();
 
 builder.Services.AddMemoryCache();
+
+builder.Services.AddHostedService<StatisticsRefreshWorker>();
 
 builder.Services.AddMudServices();
 builder.Services.AddBlazorBootstrap();

@@ -24,15 +24,38 @@
 
         <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Class="mb-6">
             <strong>Data's incomplete.</strong> We only started collecting gameplay stats from the 1.1 release.
-        </MudAlert>     
+        </MudAlert>  
+        
+        <MudGrid>
+            <MudItem xs="6" sm="3" Style="display:flex;">
+                <StatCard Title="Players" Delay="100" Icon="@Icons.Material.Filled.PeopleAlt"
+                          Value="@($"{TotalPlayers}")" />
+            </MudItem>
+
+            <MudItem xs="6" sm="3" Style="display:flex;">
+                <StatCard Title="Total Games Played" Delay="200" Icon="@Icons.Material.Filled.EmojiEvents"
+                          Value="@($"{TotalGamesPlayed}")" />
+            </MudItem>
+
+            <MudItem xs="6" sm="3" Style="display:flex;">
+                <StatCard Title="Global Win Rate" Delay="300" Icon="@Icons.Material.Filled.LocalFireDepartment"
+                          Value="@($"{GlobalWinRate:0}%")" />
+            </MudItem>
+        </MudGrid>
+
     </section>
 
     <section class="mb-5">
         <h3>
             Your Personal Stats
         </h3>
+        
+        
+        <section class="mb-3">
 
-    
+            <MudImage Src="" />
+
+        </section>
 
         <section class="mb-5">
             <h4>
@@ -102,6 +125,10 @@
 </WebPage>
 
 @code {
+    // Global Stats
+    private int TotalPlayers { get; set; }
+    private int TotalGamesPlayed { get; set; }
+    private double GlobalWinRate { get; set; }
 
     // Player Daily Stats
     private Guid PlayerId { get; set; }
@@ -128,8 +155,10 @@
 
         if (firstRender)
         {
-            await CollectPlayerDataAsync();
-            await CollectGlobalDataAsync();
+            var playerDataTask = CollectPlayerDataAsync();
+            var globalDataTask = CollectGlobalDataAsync();
+
+            Task.WaitAll(playerDataTask, globalDataTask);
 
             await InvokeAsync(StateHasChanged);
         }
@@ -146,11 +175,6 @@
         DailyWinRate = stats.WinRate;
 
         GuessDistribution = stats.GuessDistribution;
-    }
-
-    private async Task CollectGlobalDataAsync() 
-    {
-        if (PlayerId == Guid.Empty) return;
 
         var gameStats = await GameStatsStore.GetPlayerGames(PlayerId);
 
@@ -163,5 +187,10 @@
         PracticeGamesFinished = finishedPracticeGames.Count();
 
         PracticeGamesWon = finishedPracticeGames.Where(game => game.IsWon == true).Count();
+    }
+
+    private async Task CollectGlobalDataAsync()
+    {
+        
     }
 }

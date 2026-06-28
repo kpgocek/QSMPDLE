@@ -23,6 +23,13 @@ public sealed class DatabaseGameStatsStore(ApplicationDbContext database) : IGam
         await database.SaveChangesAsync();
     }
 
+    public async Task<GlobalStatsView> GetGlobalStatsAsync()
+    {
+        return await database.Set<GlobalStatsView>()
+            .AsNoTracking()
+            .SingleAsync();
+    }
+
 
 
 

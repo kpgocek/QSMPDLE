@@ -187,7 +187,7 @@
             });
 
 
-        if (result.IsCorrect)
+        if (result.IsCorrect || GameStateManager.GameState.GuessesMade.Count > 6)
         {
             await StatisticsService.RecordGameFinishedAsync(new GameFinishedEvent
             {
