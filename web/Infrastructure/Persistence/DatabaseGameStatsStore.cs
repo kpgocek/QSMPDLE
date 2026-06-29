@@ -12,12 +12,19 @@ public sealed class DatabaseGameStatsStore(ApplicationDbContext database) : IGam
 
     public async Task<GameSession> LoadOrNewAsync(Guid gameId)
     {
-        var stats = await database.GameStats.FirstOrDefaultAsync(stats => stats.GameId == gameId);
+        var stats = await database.GameStats
+            .Include(stats => stats.Guesses)
+            .FirstOrDefaultAsync(stats => stats.GameId == gameId);
 
         return stats ?? new GameSession { GameId = gameId };
     }
     public async Task SaveAsync(GameSession stats)
     {
+        if (stats.PlayerId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Cannot save game stats without a valid player id.");
+        }
+
         database.GameStats.Update(stats);
 
         await database.SaveChangesAsync();

@@ -2,7 +2,9 @@ namespace QSMPDLE.Web.Features.Statistics.Models;
 
 public sealed class PlayerStats
 {
-    public int Version { get; set; } = 2;
+    public const int CurrentVersion = 2;
+
+    public int Version { get; set; } = CurrentVersion;
 
     public Guid Id { get; set; } = Guid.NewGuid();
 

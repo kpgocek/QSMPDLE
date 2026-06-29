@@ -175,7 +175,10 @@ namespace QSMPDLE.Web.Migrations
 
                     b.HasIndex("GameId");
 
-                    b.ToTable("GameStats");
+                    b.ToTable("GameStats", t =>
+                        {
+                            t.HasCheckConstraint("CK_GameStats_PlayerId_NotEmpty", "\"PlayerId\" <> '00000000-0000-0000-0000-000000000000'::uuid");
+                        });
                 });
 
             modelBuilder.Entity("QSMPDLE.Web.Features.Gameplay.Models.DailyGame", b =>

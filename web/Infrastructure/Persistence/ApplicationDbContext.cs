@@ -13,8 +13,14 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<GameSession>()
-            .HasIndex(x => x.GameId).IsUnique(false);
+        modelBuilder.Entity<GameSession>(entity =>
+        {
+            entity.HasIndex(x => x.GameId).IsUnique(false);
+
+            entity.ToTable(table => table.HasCheckConstraint(
+                "CK_GameStats_PlayerId_NotEmpty",
+                "\"PlayerId\" <> '00000000-0000-0000-0000-000000000000'::uuid"));
+        });
 
         modelBuilder.Entity<GameGuess>()
             .HasIndex(x => x.GameId).IsUnique(false);

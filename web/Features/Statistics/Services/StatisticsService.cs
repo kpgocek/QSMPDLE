@@ -10,6 +10,8 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 {
     public async Task RecordGameStartedAsync(GameStartedEvent eventData)
     {
+        EnsureValidPlayerId(eventData.PlayerId);
+
         var gameStats = await GetGameStatsAsync(eventData.GameId);
 
         ArgumentNullException.ThrowIfNull(gameStats);
@@ -36,20 +38,26 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 
     public async Task RecordGuessMadeAsync(GuessMadeEvent eventData)
     {
+        EnsureValidPlayerId(eventData.PlayerId);
+
         var gameStats = await GetGameStatsAsync(eventData.GameId);
 
         ArgumentNullException.ThrowIfNull(gameStats);
 
+        gameStats.PlayerId = eventData.PlayerId;
         gameStats.AddGuess(eventData.GuessedCharacterId);
 
         await SaveGameStatsAsync(gameStats);
     }
     public async Task RecordGameFinishedAsync(GameFinishedEvent eventData)
     {
+        EnsureValidPlayerId(eventData.PlayerId);
+
         var gameStats = await GetGameStatsAsync(eventData.GameId);
 
         ArgumentNullException.ThrowIfNull(gameStats);
 
+        gameStats.PlayerId = eventData.PlayerId;
         gameStats.FinishedOnUtc = eventData.Timestamp;
         gameStats.IsWon = eventData.IsWon;
 
@@ -57,6 +65,9 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 
         if (eventData.GameMode == GameMode.Daily)
         {
+            var dayNumber = eventData.DayNumber
+                ?? throw new InvalidOperationException("Cannot record daily statistics without a day number.");
+
             var playerStats = await GetPlayerStatsAsync();
 
             ArgumentNullException.ThrowIfNull(playerStats);
@@ -64,9 +75,20 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
             playerStats.GamesPlayed++;
             playerStats.GuessDistribution[eventData.GuessCount - 1]++;
 
-            if (eventData.IsWon && eventData.DayNumber - playerStats.LastCompletedDayNumber == 1)
+            if (eventData.IsWon)
             {
-                playerStats.CurrentStreak++;
+                playerStats.GamesWon++;
+
+                if (playerStats.LastCompletedDayNumber is null || dayNumber - playerStats.LastCompletedDayNumber == 1)
+                {
+                    playerStats.CurrentStreak++;
+                }
+                else if (dayNumber != playerStats.LastCompletedDayNumber)
+                {
+                    playerStats.CurrentStreak = 1;
+                }
+
+                playerStats.LastCompletedDayNumber = dayNumber;
             }
             else
             {
@@ -87,4 +109,12 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 
     public async Task<PlayerStats> GetPlayerStatsAsync() => await PlayerStatsStore.LoadAsync();
     private async Task SavePlayerStatsAsync(PlayerStats playerStats) => await PlayerStatsStore.SaveAsync(playerStats);
+
+    private static void EnsureValidPlayerId(Guid playerId)
+    {
+        if (playerId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Cannot record telemetry without a valid player id.");
+        }
+    }
 }

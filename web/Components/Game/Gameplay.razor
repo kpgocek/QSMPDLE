@@ -6,7 +6,6 @@
 @using QSMPDLE.Web.Features.Gameplay.Services
 @using QSMPDLE.Web.Features.Statistics.Services
 
-@inject IGameService GameService
 @inject IGameStateManager GameStateManager
 @inject IStatisticsService StatisticsService
 
@@ -187,7 +186,7 @@
             });
 
 
-        if (result.IsCorrect || GameStateManager.GameState.GuessesMade.Count > 6)
+        if (GameStateManager.GameState.IsFinished)
         {
             await StatisticsService.RecordGameFinishedAsync(new GameFinishedEvent
             {
@@ -212,13 +211,7 @@
 
     private async Task StartNewGameAsync()
     {
-        var playerStatsTask = StatisticsService.GetPlayerStatsAsync();
-        var gameLoadingTask = GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber : null);
-
-        Task.WaitAll(playerStatsTask, gameLoadingTask);
-
-        var playerStats = playerStatsTask.Result;
-        var loadingResult = gameLoadingTask.Result;
+        var loadingResult = await GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber : null);
 
         if (loadingResult == LoadGameResult.Failed)
         {
@@ -237,6 +230,8 @@
     private async Task NewPractice()
     {
         await GameStateManager.StartNewPracticeGameAsync();
+        await GameStateChanged.InvokeAsync(GameStateManager.GameState);
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task<string> GetTargetNameAsync() 
