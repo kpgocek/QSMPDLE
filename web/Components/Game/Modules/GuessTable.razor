@@ -167,21 +167,27 @@
 
     .header-with-icon .mud-icon-root {
         position: relative;
-        top: -1px;
+        top: -.0625rem;
     }
 
     .answer-row {
         user-select: none;
-        border: 0.125rem solid var(--primary-black);
-        box-shadow:
-            0 0 0 0.125rem var(--black),
-            0 .125rem .5rem var(--shadow);
-        background: linear-gradient(to right, var(--primary-black) 44%, var(--shadow) 100%);
+        border: 0.125rem solid var(--panel-edge);
+        background: linear-gradient(90deg, var(--panel-strong), var(--panel));
+        box-shadow: inset 0 0 0 .0625rem var(--black);
+        transition:
+            border-color 160ms ease,
+            background-color 160ms ease;
+    }
+
+    .answer-row:hover {
+        border-color: var(--line-strong);
     }
 
     .empty-row {
         user-select: none;
-        background: var(--primary-black);
+        border: 0.125rem solid var(--line);
+        background: hsla(var(--primary-hsl), 0.1);
     }
 
     .small-cell {
@@ -198,7 +204,7 @@
 
     .placeholder-avatar {
         background: rgba(255, 255, 255, .08);
-        border: 1px solid rgba(255, 255, 255, .15);
+        border: .0625rem solid rgba(255, 255, 255, .15);
         opacity: .4;
     }
 
@@ -222,8 +228,9 @@
 
     .guess-card {
         background:
-            linear-gradient(to top left, var(--primary-black) 15%, var(--tint) 150%);
-        border: 1px solid var(--ghost);
+            linear-gradient(to top left, var(--panel-strong), var(--panel));
+        border: .125rem solid var(--panel-edge);
+        box-shadow: inset 0 0 0 .0625rem var(--black);
 
         border-radius: .5rem;
 
@@ -234,7 +241,8 @@
 
     .placeholder-card {
         background:
-            linear-gradient(to top left, var(--primary-black) 15%, var(--tint) 150%);
+            linear-gradient(to top left, var(--surface), hsla(var(--primary-hsl), 0.08));
+        border: .125rem solid var(--line);
 
         border-radius: .5rem;
 

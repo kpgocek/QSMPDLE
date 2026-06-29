@@ -8,16 +8,16 @@
     .portrait-frame {
         position: relative;
         padding: .5rem;
-        width: min(320px, 82vw);
+        width: min(20rem, 82vw);
         aspect-ratio: 1;
 
-        border: 0.125rem solid var(--primary-black);
+        border: 0.125rem solid var(--line-strong);
 
-        box-shadow:
-            0 0 0 0.125rem var(--black),
-            0 1rem 2rem var(--shadow);
+        box-shadow: var(--soft-shadow);
 
         border-radius: 0;
+        overflow: hidden;
+        animation: soft-pulse 4s ease-in-out infinite;
     }
 
     .portrait-image {
@@ -26,6 +26,7 @@
         height: 100%;
         object-fit: cover;
         image-rendering: pixelated;
+        border-radius: 0;
     }
 
     .portrait-frame::after {
@@ -35,10 +36,8 @@
         inset: 0;
 
         backdrop-filter: brightness(1.125);
-        background:
-            linear-gradient(to top right, var(--shadow) 50%,
-                var(--tint) 100%);
-        opacity: 0.325;
+        background: linear-gradient(to top right, transparent 45%, var(--tint) 120%);
+        opacity: 0.28;
 
     }
 </style>

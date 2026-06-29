@@ -25,4 +25,15 @@
     --shadow: hsla(var(--black-hsl), 0.2);
     --ghost: hsla(var(--white-hsl), 0.3);
     --tint: hsla(var(--primary-hsl), 0.5);
+
+    --surface: hsla(var(--primary-hsl), 0.10);
+    --surface-strong: hsla(var(--primary-hsl), 0.12);
+    --surface-muted: hsla(var(--white-hsl), 0.06);
+    --panel: hsla(var(--primary-hsl), 0.18);
+    --panel-strong: hsla(var(--primary-hsl), 0.28);
+    --panel-edge: hsla(var(--primary-hsl), 0.62);
+    --line: hsla(var(--white-hsl), 0.16);
+    --line-strong: hsla(var(--primary-hsl), 0.42);
+    --soft-shadow: 0 0.75rem 2rem hsla(var(--black-hsl), 0.18);
+    --focus-ring: 0 0 0 0.2rem hsla(var(--primary-hsl), 0.28);
 }

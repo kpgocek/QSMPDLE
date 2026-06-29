@@ -2,7 +2,7 @@
     display: none;
 }
 
-@media (max-width: 1088px) {
+@media (max-width: 68rem) {
 
     .mobile-guesses {
         display: flex;
@@ -12,25 +12,25 @@
 }
 
 .opacity-1 {
-    opacity: 0.1;
+    opacity: 1.00;
 }
 
 .opacity-2 {
-    opacity: 0.2;
+    opacity: 0.75;
 }
 
 .opacity-3 {
-    opacity: 0.4;
+    opacity: 0.55;
 }
 
 .opacity-4 {
-    opacity: 0.6;
+    opacity: 0.32;
 }
 
 .opacity-5 {
-    opacity: 0.8;
+    opacity: 0.20;
 }
 
 .opacity-6 {
-    opacity: 1;
+    opacity: 0.14;
 }

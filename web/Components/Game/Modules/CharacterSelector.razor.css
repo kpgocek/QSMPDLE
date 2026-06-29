@@ -1,4 +1,4 @@
-@media (max-width: 1088px) {
+@media (max-width: 68rem) {
     .selection-area {
         width: min(100%, 24rem);
     }

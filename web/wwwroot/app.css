@@ -46,7 +46,9 @@ body {
 
     min-height: 100vh;
 
-    background: linear-gradient(to bottom, var(--background) 30%, var(--primary-black) 90%);
+    background:
+        radial-gradient(circle at 50% 0, var(--surface-strong), transparent 28rem),
+        linear-gradient(to bottom, var(--background) 0%, var(--black) 100%);
     color: var(--text);
 }
 
@@ -103,5 +105,56 @@ h4 {
     background-clip: text;
     color: transparent;
     position: relative;
-    top: -1px;
+    top: -.0625rem;
+}
+
+.mud-paper {
+    background-color: var(--surface-muted);
+    color: var(--text);
+    border: .0625rem solid var(--line);
+    box-shadow: none;
+}
+
+.mud-button-root {
+    border-radius: .5rem;
+    text-transform: none;
+    font-weight: 700;
+    transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        color 160ms ease;
+}
+
+.mud-button-root:hover {
+    filter: brightness(1.05);
+}
+
+.mud-button-filled-primary {
+    background: var(--primary);
+    color: var(--black);
+    box-shadow: none;
+}
+
+.mud-button-filled-default {
+    background: var(--surface);
+    color: var(--white);
+    border: .0625rem solid var(--line);
+    box-shadow: none;
+}
+
+.mud-chip {
+    border-radius: .45rem;
+    box-shadow: none;
+    font-weight: 700;
+}
+
+.mud-chip-filled {
+    border: .0625rem solid rgba(255, 255, 255, .12);
+}
+
+.mud-popover,
+.mud-menu {
+    background: var(--black);
+    border: .0625rem solid var(--line);
+    box-shadow: var(--soft-shadow);
 }

@@ -1,13 +1,13 @@
-# QSMPDLE 1.1.0
+# QSMPDLE 1.2
 A daily character guessing game based on QSMP2.
 
-🎮 Play now: https://www.qsmpdle.com 
+🎮 Play now: https://www.qsmpdle.com
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T4A4223GTE)
 
 <br />
 
-![Gameplay GIF](./docs/table.png)
+![Gameplay Screenshot](./docs/table.png)
 
 ### Features
 - [x] Daily Mode
@@ -15,8 +15,11 @@ A daily character guessing game based on QSMP2.
 - [x] Character Profiles
 - [x] Local Statistics
 - [x] Global Statistics
-- [ ] Animations
-
+- [x] Anonymous Gameplay Analytics
+- [x] Responsive Mobile Layout
+- [x] Optimized Image Loading
+- [x] Offline Progress Persistence
+- [ ] Advanced Animations
 
 ### Built with
 
@@ -27,6 +30,27 @@ A daily character guessing game based on QSMP2.
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-forestgreen)
 
 <br />
+
+## Features
+
+- Daily challenges with one character per day
+- Practice mode with random characters
+- Progressive portrait reveal system
+- Anonymous gameplay statistics
+- Local progress and streak tracking
+- Mobile-first responsive design
+- Fast image loading and browser caching
+- Smooth, non-blocking game interactions
+- Share results to social platforms
+- Character profiles and lore information
+
+## Privacy
+
+QSMPDLE does not require accounts or collect personal information such as names, emails, passwords, or payment details.
+
+Anonymous gameplay statistics are collected solely to improve balancing, understand player behavior, and monitor the health of the game.
+
+Game progress and personal statistics are stored locally in your browser.
 
 ## Disclaimer
 

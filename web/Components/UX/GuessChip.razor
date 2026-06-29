@@ -1,26 +1,31 @@
-@using BlazorBootstrap
 @using MudBlazor
 @using QSMPDLE.Web.Features.Gameplay.Models
 
 <MudChip T="string" Color="@CssHelper.ToColor(Result)" Variant="Variant.Filled" Size="Size.Medium">
     <span>@ChildContent</span>
-    @if (Icon != IconName.None)
+    @if (Icon is not null)
     {
-        <Icon Name="@Icon" class="ml-2" />
+        <MudIcon Icon="@Icon" Size="Size.Small" Class="guess-chip-icon" />
     }
 </MudChip>
+
+<style>
+    .guess-chip-icon {
+        margin-inline-start: .35em;
+    }
+</style>
 
 @code {
     [Parameter] public ComparisonResult Result { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
-    private IconName Icon => Result switch
+    private string? Icon => Result switch
     {
-        ComparisonResult.Earlier => IconName.ArrowLeft,
-        ComparisonResult.Later => IconName.ArrowRight,
-        ComparisonResult.More => IconName.ArrowUp,
-        ComparisonResult.Less => IconName.ArrowDown,
-        _ => IconName.None
+        ComparisonResult.Earlier => Icons.Material.Filled.ArrowBack,
+        ComparisonResult.Later => Icons.Material.Filled.ArrowForward,
+        ComparisonResult.More => Icons.Material.Filled.ArrowUpward,
+        ComparisonResult.Less => Icons.Material.Filled.ArrowDownward,
+        _ => null
     };
 }

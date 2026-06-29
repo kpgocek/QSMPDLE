@@ -1,4 +1,4 @@
-@media (max-width: 1088px) {
+@media (max-width: 68rem) {
     .logo {
         font-size: clamp(3rem, 10vw, 6rem);
     }
@@ -11,5 +11,10 @@
 
     .links a span {
         display: none;
+    }
+
+    .separator {
+        color: var(--ghost);
+        margin-inline: 0.125rem;
     }
 }

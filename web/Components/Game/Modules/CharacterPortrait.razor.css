@@ -1,7 +1,7 @@
-@media (max-width: 1088px) {
+@media (max-width: 68rem) {
 
     .member-portrait {
-        width: min(80vw, 512px);
+        width: min(80vw, 32rem);
         height: auto;
     }
 }

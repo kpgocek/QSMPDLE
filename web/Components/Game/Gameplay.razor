@@ -13,11 +13,9 @@
     @if (!IsGameLoaded)
     {
 
-        <MudPaper Class="ma-4 image-wrapper" Elevation="0">
-            <MudPaper Style="padding: .5rem; border: 0.125rem solid var(--primary-black); box-shadow: 0 0 0 0.125rem var(--black), 0 1rem 2rem var(--shadow); border-radius: 0;"
-            Elevation="0">
-                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="min(320px, 82vw)" Width="min(320px, 82vw)" />
-            </MudPaper>
+        <MudPaper Style="padding: .5rem; border: 0.125rem solid var(--line-strong); box-shadow: var(--soft-shadow); border-radius: .75rem;"
+                  Elevation="0" Height="min(20rem, 82vw);" Width="min(20rem, 82vw);">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100%" Width="100%" />
         </MudPaper>
 
         <div class="answer-reveal" >
@@ -33,14 +31,11 @@
     }
     else
     {
-        <MudPaper Class="ma-4 image-wrapper" Elevation="0">
-            <CharacterPortrait 
+        <CharacterPortrait 
             IconUrl="@(GameStateManager.GameState?.Game.PortraitUrl ?? string.Empty)" 
             GuessesMade="@(GameStateManager.GameState?.GuessesMade.Count ?? 0)" 
             IsGuessed="@(GameStateManager.GameState?.IsWon ?? false)"
             IsFailed="@(GameStateManager.GameState?.IsLost ?? false)" />
-        </MudPaper>
-
         @if (GameStateManager.GameState?.IsFinished ?? false)
         {
             <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
@@ -49,9 +44,7 @@
         }
         else
         {
-            <div class="answer-reveal" >
-                <h3>???</h3>
-            </div>
+            <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" IsBusy="@_isGuessing" />
         }
 
         @if (GameMode == GameMode.Practice)
@@ -60,8 +53,6 @@
                 New Character
             </MudButton>
         }
-
-        <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" IsBusy="@_isGuessing" />
 
         }
 
@@ -88,6 +79,7 @@
 <style>
     .gameplay {
         position: relative;
+        margin-top: 1.25rem;
     }
 
     .gameplay::before {
@@ -95,16 +87,14 @@
         position: absolute;
         inset: 0;
 
-        background: radial-gradient(ellipse at center,
-                rgba(0, 140, 255, .12),
-                transparent 70%);
+        background: radial-gradient(ellipse at center, var(--surface), transparent 70%);
 
         z-index: -1;
     }
 
     .guess-table-container {
         width: 100%;
-        max-width: 1200px;
+        max-width: 75rem;
     }
 
     .answer-reveal {

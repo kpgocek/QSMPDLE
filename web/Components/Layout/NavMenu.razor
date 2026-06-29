@@ -84,12 +84,17 @@
         align-items: center;
         gap: .25em;
 
-        transition: .15s ease;
+        padding: .125rem .4rem;
+        border-radius: .25rem;
+        transition:
+            color 160ms ease,
+            background-color 160ms ease;
     }
 
     .links a:hover,
     .links a.active {
         color: var(--white);
+        background-color: var(--surface);
     }
 
     .separator {

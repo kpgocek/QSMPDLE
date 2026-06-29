@@ -2,7 +2,7 @@
     display: none;
 }
 
-@media (max-width: 1088px) {
+@media (max-width: 68rem) {
     .example-wrapper {
         margin-bottom: 2rem;
     }

@@ -1,5 +1,4 @@
 @page "/privacy"
-@using BlazorBootstrap
 @using MudBlazor
 
 <PageTitle>Privacy Policy - QSMPDLE</PageTitle>
@@ -15,7 +14,7 @@
     </p>
 
     <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Class="mb-6">
-        <strong>TL;DR:</strong> No accounts. No tracking. No ads. No creepy stuff.
+        <strong>TL;DR:</strong> No accounts. No ads. QSMPDLE stores local progress in your browser and anonymous gameplay statistics on the server.
     </MudAlert>
 
     <section class="mb-5">
@@ -24,33 +23,25 @@
         </h3>
 
         <p>
-            QSMPDLE does not collect personal information.
+            QSMPDLE does not ask for personal information.
         </p>
 
         <p>
             No accounts.<br />
             No sign-ups.<br />
-            No tracking.<br />
+            No advertising trackers.<br />
             No ads.
         </p>
 
         <p>
-            I do not know who you are. I do not know what your streak is. I do not know how many guesses you have
-            left.<br />
-            What I do have are a very particular set of characters. Characters I have collected from a very
-            dedicated Fandom page. Characters that make me a nightmare for people who only watched the first
-            season.<br />
-
-            If you close this page now, that'll be the end of it. You won't look at them any more. You'll not be
-            tempted to guess.<br />
-
-            But if you start guessing... I can tell you this: You wiill take care of your streak. You will discover
-            who you haven't watched before. And you will finally remember the name of that one specific, dangerous
-            egg.
+            The app does generate a random player id in your browser so daily streaks,
+            game restoration, and statistics can work. That id is not connected to a
+            name, email address, account, or login.
         </p>
 
         <p>
-            Your progress stays on your device.
+            Some gameplay events are sent to the server so global and per-player game
+            statistics can be calculated reliably.
         </p>
     </section>
 
@@ -60,28 +51,20 @@
         </h3>
 
         <p>
-            A small amount of information is stored in your browser so the game can
-            remember things between visits:
+            QSMPDLE stores a small amount of information in your browser so the game can
+            restore progress between visits:
         </p>
 
-        <ul style="list-style: none;">
-            <li>
-                <Icon Name="IconName.Check" /> Current game progress
-            </li>
-            <li>
-                <Icon Name="IconName.Check" /> Daily streaks
-            </li>
-            <li>
-                <Icon Name="IconName.Check" /> Personal statistics
-            </li>
-            <li>
-                <Icon Name="IconName.Check" /> Display preferences (if you all decide you need a blazing Light Mode)
-            </li>
+        <ul>
+            <li>current daily, archive, or practice game state;</li>
+            <li>guesses already made in an unfinished game;</li>
+            <li>whether the win/loss popup was already seen;</li>
+            <li>a random player id;</li>
+            <li>daily statistics such as played games, wins, streaks, and guess distribution.</li>
         </ul>
 
         <p class="mt-3">
-            This information stays on your device and is not sent to me.
-            If you clear your browser data, the game forgets it too.
+            If you clear your browser data, QSMPDLE loses this local state too.
         </p>
     </section>
 
@@ -92,33 +75,41 @@
 
         <p>
             The server receives normal technical requests needed to display the website.
+            It also stores anonymous gameplay records used for statistics and game reliability.
         </p>
 
         <p>
-            QSMPDLE does <strong>not</strong> store:
+            Stored gameplay records may include:
         </p>
 
-        <ul style="list-style: none;">
-            <li>
-                <Icon Name="IconName.X" /> Your guesses
-            </li>
-            <li>
-                <Icon Name="IconName.X" /> Your streaks
-            </li>
-            <li>
-                <Icon Name="IconName.X" /> Your statistics
-            </li>
-            <li>
-                <Icon Name="IconName.X" /> Player profiles
-            </li>
-            <li>
-                <Icon Name="IconName.X" /> Accounts
-            </li>
+        <ul>
+            <li>the random player id generated in your browser;</li>
+            <li>a random game id;</li>
+            <li>game mode, daily number, and target character id;</li>
+            <li>guess character ids and guess order;</li>
+            <li>game start and finish timestamps;</li>
+            <li>whether the game was won and how many guesses it took.</li>
         </ul>
 
         <p class="mt-3">
-            As far as the server is concerned, visitors are simply anonymous requests
-            asking for a webpage.
+            QSMPDLE does not store account profiles, names, email addresses, passwords,
+            or payment information, because the app does not ask for them.
+        </p>
+    </section>
+
+    <section class="mb-5">
+        <h3>
+            Why Store Gameplay Statistics?
+        </h3>
+
+        <p>
+            Statistics are stored so the app can count games played and won exactly once,
+            calculate streaks and guess distributions, show practice stats, and build
+            aggregate global stats.
+        </p>
+
+        <p>
+            These records are intentionally minimal and gameplay-focused.
         </p>
     </section>
 
@@ -128,8 +119,9 @@
         </h3>
 
         <p>
-            QSMPDLE may use essential cookies or browser storage features required
-            for the game to function correctly.
+            QSMPDLE uses browser storage for essential game state and player statistics.
+            The app may also use essential cookies or framework storage required for the
+            site to function correctly.
         </p>
 
         <p>
@@ -156,6 +148,12 @@
         <p>
             These services may process technical information necessary to deliver
             and secure the website.
+        </p>
+
+        <p>
+            If you choose to share results, QSMPDLE may open a share target such as X,
+            Telegram, or Reddit with the share text you selected. Those services are
+            separate from QSMPDLE and are governed by their own policies.
         </p>
     </section>
 
@@ -196,9 +194,10 @@
 
     .story-box {
         padding: 2rem;
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: .75rem;
+        background: var(--panel);
+        border: .125rem solid var(--panel-edge);
+        box-shadow: inset 0 0 0 .0625rem var(--black);
     }
 
     .story-box p:last-child {

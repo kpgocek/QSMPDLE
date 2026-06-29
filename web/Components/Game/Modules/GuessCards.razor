@@ -112,24 +112,33 @@
         padding: 1rem;
 
         background:
-            linear-gradient(to top left, var(--primary-black) 50%, var(--tint) 200%);
+            linear-gradient(to top left, var(--panel-strong), var(--panel));
 
         backdrop-filter: blur(1rem);
 
-        border-radius: 0;
-        border-inline: none;
-        border-block: .125rem solid var(--shadow);
+        border-radius: .75rem;
+        border: .125rem solid var(--panel-edge);
+        box-shadow: inset 0 0 0 .0625rem var(--black);
+        transition:
+            border-color 160ms ease;
+    }
+
+    .guess-card:hover {
+        border-color: var(--line-strong);
     }
 
     .placeholder-card {
         opacity: 0.5;
+        background:
+            linear-gradient(to top left, var(--surface), hsla(var(--primary-hsl), 0.08));
+        border-color: var(--line);
     }
 
     .guess-card-grid,
     .placeholder-card-grid {
         display: grid;
 
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 
         gap: .5rem;
 
@@ -147,8 +156,8 @@
         height: 5rem;
 
         image-rendering: pixelated;
-        background: var(--ghost);
-        border: 1px solid var(--ghost);
+        background: var(--surface-muted);
+        border: .0625rem solid var(--line);
     }
 
     .placeholder-avatar {
