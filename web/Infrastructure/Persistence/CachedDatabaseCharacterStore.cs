@@ -10,8 +10,7 @@ public class CachedDatabaseCharacterStore(ApplicationDbContext Gameplay, IMemory
     {
         var characters = await Cache.GetOrCreateAsync("qsmpdle-characters", async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow =
-                TimeSpan.FromHours(12);
+            entry.Priority = CacheItemPriority.NeverRemove;
 
             return await Gameplay.Characters.AsNoTracking().ToListAsync(cancellationToken);
         }) ?? throw new InvalidOperationException();
@@ -30,7 +29,7 @@ public class CachedDatabaseCharacterStore(ApplicationDbContext Gameplay, IMemory
     {
         var lookups = await Cache.GetOrCreateAsync<List<CharacterLookup>>("qsmpdle-character-lookups", async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
+            entry.Priority = CacheItemPriority.NeverRemove;
 
             var characters = await GetCharactersAsync(cancellationToken);
 
@@ -54,19 +53,31 @@ public class CachedDatabaseCharacterStore(ApplicationDbContext Gameplay, IMemory
             entry.AbsoluteExpirationRelativeToNow =
                     TimeSpan.FromDays(1);
 
-            var character = await Gameplay.DailyGames
+            var characterId = await Gameplay.DailyGames
+                    .AsNoTracking()
                     .Where(x => x.Id == dayNumber)
-                    .Select(x => x.Character)
-                    .SingleAsync(cancellationToken);
+                    .Select(x => (int?)x.Character.Id)
+                    .SingleOrDefaultAsync(cancellationToken);
 
-            if (character is not null)
-                return character;
+            if (characterId is not null)
+            {
+                var character = await GetCharacterAsync(characterId.Value, cancellationToken);
+                if (character is not null)
+                {
+                    return character;
+                }
+            }
+
+            var characters = await GetCharactersAsync(cancellationToken);
+            if (characters.Count == 0)
+            {
+                throw new InvalidOperationException("Cannot start a game without characters.");
+            }
 
             var random = new Random(dayNumber);
-            var index = random.Next(Gameplay.Characters.Count());
+            var index = random.Next(characters.Count);
 
-            return Gameplay.Characters.ToList().ElementAt(index);
-
+            return characters[index];
 
         }) ?? throw new InvalidOperationException();
     }

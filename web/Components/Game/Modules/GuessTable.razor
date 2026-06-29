@@ -35,50 +35,51 @@
 
             @foreach (var guess in Guesses)
             {
+                var character = GetCharacter(guess.Character.Id);
+
+                if (character is null)
+                {
+                    continue;
+                }
+
                 <tr class="answer-row @(guess == Guesses.Last() ? "new-row" : "")">
                     <td class="medium-cell">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                             <MudAvatar Square="true" Size="Size.Large">
-                                <MudImage Src="@CharacterImageHelper.GetHeadSrc(CharacterFromId(guess.Character.Id).Result)" />
+                                <MudImage Src="@CharacterImageHelper.GetHeadSrc(character)" />
                             </MudAvatar>
-                            <span>@CharacterFromId(guess.Character.Id).Result.Name</span>
+                            <span>@character.Name</span>
                         </MudStack>
                     </td>
 
                     <td class="small-cell">
                         <GuessChip Result="guess.Pronouns">
-                            @DisplayList(@CharacterFromId(guess.Character.Id).Result.Pronouns)
+                            @DisplayList(character.Pronouns)
                         </GuessChip>
                     </td>
 
                     <td class="medium-cell">
                         <GuessChip Result="guess.Species">
-                            @(CharacterFromId(guess.Character.Id).Result.Species.Contains("Human")
-                                ? @DisplayList(CharacterFromId(guess.Character.Id).Result.Species)
-                                : @CharacterFromId(guess.Character.Id).Result.Species.Contains("Unknown")
-                                    ? @DisplayList(CharacterFromId(guess.Character.Id).Result.Species)
-                                    : $"Not Human ({@DisplayList(CharacterFromId(guess.Character.Id).Result.Species)})")
+                            @FormatSpecies(character)
                         </GuessChip>
 
                     </td>
 
                     <td class="small-cell">
                         <GuessChip Result="guess.Languages">
-                            @(@CharacterFromId(guess.Character.Id).Result.Languages > 3
-                                ? $"4+ ({@CharacterFromId(guess.Character.Id).Result.Languages})"
-                                : @CharacterFromId(guess.Character.Id).Result.Languages)
+                            @(character.Languages > 3 ? $"4+ ({character.Languages})" : character.Languages)
                         </GuessChip>
                     </td>
 
                     <td class="large-cell">
                         <GuessChip Result="guess.Affiliation">
-                            @DisplayList(@CharacterFromId(guess.Character.Id).Result.Affiliations)
+                            @DisplayList(character.Affiliations)
                         </GuessChip>
                     </td>
 
                     <td class="small-cell">
                         <GuessChip Result="guess.Joined">
-                            Day @CharacterFromId(guess.Character.Id).Result.JoinDayNumber
+                            Day @character.JoinDayNumber
                         </GuessChip>
                     </td>
                 </tr>
@@ -268,6 +269,13 @@
     [Parameter]
     public int MaxGuesses { get; set; } = 6;
 
+    private Dictionary<int, Character> CharactersById { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        CharactersById = (await CharacterStore.GetCharactersAsync()).ToDictionary(character => character.Id);
+    }
+
     private static string DisplayList(IEnumerable<string> values)
     {
         return values.Any()
@@ -275,8 +283,15 @@
             : "None";
     }
 
-    private async Task<Character> CharacterFromId(int id)
+    private Character? GetCharacter(int id)
     {
-        return await CharacterStore.GetCharacterAsync(id) ?? throw new ArgumentException("No character with this id");
+        return CharactersById.GetValueOrDefault(id);
     }
+
+    private static string FormatSpecies(Character character) =>
+        character.Species.Contains("Human")
+            ? DisplayList(character.Species)
+            : character.Species.Contains("Unknown")
+                ? DisplayList(character.Species)
+                : $"Not Human ({DisplayList(character.Species)})";
 }

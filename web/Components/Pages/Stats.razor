@@ -151,18 +151,12 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        base.OnAfterRender(firstRender);
-
         if (firstRender)
         {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-
             var playerDataTask = CollectPlayerDataAsync();
             var globalDataTask = CollectGlobalDataAsync();
 
-            Task.WaitAll(playerDataTask, globalDataTask);
-
-            System.Diagnostics.Debug.WriteLine(sw.ElapsedMilliseconds);
+            await Task.WhenAll(playerDataTask, globalDataTask);
 
             await InvokeAsync(StateHasChanged);
         }

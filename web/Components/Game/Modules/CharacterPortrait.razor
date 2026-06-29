@@ -1,13 +1,15 @@
 @using MudBlazor
 
 <MudPaper Class="portrait-frame" Elevation="0">
-    <MudImage Src="@ImageUrl" Alt="Character" ObjectFit="ObjectFit.Cover" />
+    <img src="@ImageUrl" alt="Character" class="portrait-image" width="320" height="320" loading="eager" decoding="async" fetchpriority="high" />
 </MudPaper>
 
 <style>
     .portrait-frame {
         position: relative;
         padding: .5rem;
+        width: min(320px, 82vw);
+        aspect-ratio: 1;
 
         border: 0.125rem solid var(--primary-black);
 
@@ -16,6 +18,14 @@
             0 1rem 2rem var(--shadow);
 
         border-radius: 0;
+    }
+
+    .portrait-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        image-rendering: pixelated;
     }
 
     .portrait-frame::after {
@@ -44,8 +54,6 @@
     private string ImageUrl =>
     $"/graphics/guessing/{IconUrl}/{GetImageName()}";
 
-    private bool isImageLoaded = false;
-
     private string GetImageName()
     {
         var name = GuessesMade switch
@@ -60,9 +68,5 @@
         };
 
         return IsGuessed || IsFailed ? "Head.webp" : name;
-    }
-    private void OnImageLoaded(ProgressEventArgs args)
-    {
-        isImageLoaded = true;
     }
 }

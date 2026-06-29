@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 using MudBlazor.Services;
 using Npgsql;
 using QSMPDLE.Web.Components;
@@ -31,12 +32,6 @@ var connectionString = new NpgsqlConnectionStringBuilder
 }.ConnectionString;
 
 
-System.Diagnostics.Debug.WriteLine($"PGHOST = {builder.Configuration["PGHOST"]}");
-System.Diagnostics.Debug.WriteLine($"PGPORT = {builder.Configuration["PGPORT"]}");
-System.Diagnostics.Debug.WriteLine($"PGDATABASE = {builder.Configuration["PGDATABASE"]}");
-System.Diagnostics.Debug.WriteLine($"PGUSER = {builder.Configuration["PGUSER"]}");
-System.Diagnostics.Debug.WriteLine($"PGPASSWORD = {builder.Configuration["PGPASSWORD"]}");
-
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddInfrastructure();
@@ -63,7 +58,21 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        var extension = Path.GetExtension(context.File.Name);
+        if (IsBrowserCacheableAsset(extension))
+        {
+            context.Context.Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue
+            {
+                Public = true,
+                MaxAge = TimeSpan.FromDays(30)
+            };
+        }
+    }
+});
 
 app.UseAntiforgery();
 
@@ -72,3 +81,16 @@ app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 await app.MigrateDatabasesAsync();
 
 app.Run();
+
+static bool IsBrowserCacheableAsset(string extension) =>
+    extension.Equals(".webp", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".gif", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".woff2", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".ttf", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".css", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".js", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".br", StringComparison.OrdinalIgnoreCase)
+    || extension.Equals(".gz", StringComparison.OrdinalIgnoreCase);

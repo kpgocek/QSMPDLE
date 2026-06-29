@@ -12,4 +12,5 @@ public interface IGameStateManager
     Task<string> GetTargetName(CancellationToken cancellationToken = default);
 
     Task MarkPopupAsSeenAsync(CancellationToken cancellationToken = default);
+    Task MarkStatsRecordedAsync(CancellationToken cancellationToken = default);
 }

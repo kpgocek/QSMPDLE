@@ -10,9 +10,10 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
     private string Key { get; set; } = string.Empty;
 
     // Assign the key for the game state store, which will be used to store and retrieve the game state from local storage.
-    public async Task Init(string key)
+    public Task Init(string key)
     {
         Key = string.Concat(KeyPrefix, key);
+        return Task.CompletedTask;
     }
 
     public async Task<GameState?> GetAsync()

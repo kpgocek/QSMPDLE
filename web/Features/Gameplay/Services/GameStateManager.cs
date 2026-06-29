@@ -134,6 +134,12 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
         await GameStateStore.SaveAsync(GameState);
     }
 
+    public async Task MarkStatsRecordedAsync(CancellationToken cancellationToken = default)
+    {
+        GameState.StatsRecorded = true;
+        await GameStateStore.SaveAsync(GameState);
+    }
+
     private async Task<Guid> GetPlayerIdAsync()
     {
         var playerData = await PlayerStatsStore.LoadAsync();

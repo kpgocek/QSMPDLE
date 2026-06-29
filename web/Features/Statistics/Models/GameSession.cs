@@ -22,10 +22,16 @@ public sealed class GameSession
 
     public ICollection<GameGuess> Guesses { get; set; } = [];
 
-    internal void AddGuess(int guessedCharacterId) => Guesses.Add(new GameGuess
+    internal void AddGuess(int guessedCharacterId)
     {
-        GameId = GameId,
-        GuessOrder = Guesses.Count,
-        GuessedCharacterId = guessedCharacterId
-    });
+        if (Guesses.Any(guess => guess.GuessedCharacterId == guessedCharacterId))
+            return;
+
+        Guesses.Add(new GameGuess
+        {
+            GameId = GameId,
+            GuessOrder = Guesses.Count,
+            GuessedCharacterId = guessedCharacterId
+        });
+    }
 }

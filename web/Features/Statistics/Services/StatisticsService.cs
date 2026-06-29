@@ -57,6 +57,9 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 
         ArgumentNullException.ThrowIfNull(gameStats);
 
+        if (gameStats.FinishedOnUtc.HasValue)
+            return;
+
         gameStats.PlayerId = eventData.PlayerId;
         gameStats.FinishedOnUtc = eventData.Timestamp;
         gameStats.IsWon = eventData.IsWon;
@@ -73,7 +76,9 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
             ArgumentNullException.ThrowIfNull(playerStats);
 
             playerStats.GamesPlayed++;
-            playerStats.GuessDistribution[eventData.GuessCount - 1]++;
+
+            var distributionIndex = Math.Clamp(eventData.GuessCount - 1, 0, playerStats.GuessDistribution.Length - 1);
+            playerStats.GuessDistribution[distributionIndex]++;
 
             if (eventData.IsWon)
             {
