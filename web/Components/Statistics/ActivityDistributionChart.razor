@@ -1,0 +1,32 @@
+@using QSMPDLE.Web.Features.Statistics.Models
+@using MudBlazor
+@using ApexCharts
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-4">Player Activity Distribution</MudText>
+
+    @if (Data == null || !Data.Any())
+    {
+        <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available</MudText>
+    }
+    else
+    {
+        <ApexChart TItem="PlayerActivityDistributionData"
+                   Title=""
+                   Height="300">
+
+            <ApexPointSeries TItem="PlayerActivityDistributionData"
+                             Items="Data"
+                             Name="Players"
+                             SeriesType="SeriesType.Bar"
+                             XValue="@(e => e.Bucket)"
+                             YAggregate="@(e => e.Sum(x => x.PlayerCount))"
+                             OrderBy="@(e => e.X)" />
+        </ApexChart>
+    }
+</MudPaper>
+
+@code {
+    [Parameter]
+    public PlayerActivityDistributionData[]? Data { get; set; }
+}

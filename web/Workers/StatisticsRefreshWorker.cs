@@ -4,7 +4,7 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Workers;
 
 public class StatisticsRefreshWorker(
-    IServiceProvider services)
+    IDbContextFactory<ApplicationDbContext> dbContextFactory)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(
@@ -12,10 +12,7 @@ public class StatisticsRefreshWorker(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = services.CreateScope();
-
-            var db = scope.ServiceProvider
-                .GetRequiredService<ApplicationDbContext>();
+            await using var db = await dbContextFactory.CreateDbContextAsync(stoppingToken);
 
             await db.Database.ExecuteSqlRawAsync(
                 "REFRESH MATERIALIZED VIEW global_stats;",

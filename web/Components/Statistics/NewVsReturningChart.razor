@@ -1,0 +1,42 @@
+@using QSMPDLE.Web.Features.Statistics.Models
+@using MudBlazor
+@using ApexCharts
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-4">New vs Returning Players</MudText>
+
+    @if (Data == null || !Data.Any())
+    {
+        <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available</MudText>
+    }
+    else
+    {
+        <ApexChart TItem="NewVsReturningPlayersData"
+                   Title=""
+                   Height="300">
+
+            <ApexPointSeries TItem="NewVsReturningPlayersData"
+                             Items="Data"
+                             Name="New Players"
+                             SeriesType="SeriesType.Line"
+                             Color="#2196F3"
+                             XValue="@(e => e.Date.ToString("MMM dd"))"
+                             YAggregate="@(e => e.Sum(x => x.NewPlayers))"
+                             OrderBy="@(e => e.X)" />
+
+            <ApexPointSeries TItem="NewVsReturningPlayersData"
+                             Items="Data"
+                             Name="Returning Players"
+                             SeriesType="SeriesType.Line"
+                             Color="#4CAF50"
+                             XValue="@(e => e.Date.ToString("MMM dd"))"
+                             YAggregate="@(e => e.Sum(x => x.ReturningPlayers))"
+                             OrderBy="@(e => e.X)" />
+        </ApexChart>
+    }
+</MudPaper>
+
+@code {
+    [Parameter]
+    public List<NewVsReturningPlayersData>? Data { get; set; }
+}

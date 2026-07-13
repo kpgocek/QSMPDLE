@@ -7,9 +7,8 @@ public static class DatabaseMigrationExtensions
 {
     public static async Task MigrateDatabasesAsync(this WebApplication app)
     {
-        using var scope = app.Services.CreateScope();
-
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var dbContextFactory = app.Services.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+        await using var db = await dbContextFactory.CreateDbContextAsync();
 
         Debug.WriteLine(db.Database.ProviderName);
         Debug.WriteLine(db.Database.GetConnectionString());

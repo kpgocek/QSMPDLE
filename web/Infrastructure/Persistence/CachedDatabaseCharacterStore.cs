@@ -4,7 +4,9 @@ using QSMPDLE.Web.Features.Gameplay.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
-public class CachedDatabaseCharacterStore(ApplicationDbContext Gameplay, IMemoryCache Cache) : ICharacterStore
+public class CachedDatabaseCharacterStore(
+    IDbContextFactory<ApplicationDbContext> DbContextFactory,
+    IMemoryCache Cache) : ICharacterStore
 {
     public async Task<IReadOnlyList<Character>> GetCharactersAsync(CancellationToken cancellationToken = default)
     {
@@ -12,7 +14,9 @@ public class CachedDatabaseCharacterStore(ApplicationDbContext Gameplay, IMemory
         {
             entry.Priority = CacheItemPriority.NeverRemove;
 
-            return await Gameplay.Characters.AsNoTracking().ToListAsync(cancellationToken);
+            await using var gameplay = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            return await gameplay.Characters.AsNoTracking().ToListAsync(cancellationToken);
         }) ?? throw new InvalidOperationException();
 
         return characters.AsReadOnly();
@@ -48,12 +52,14 @@ public class CachedDatabaseCharacterStore(ApplicationDbContext Gameplay, IMemory
 
     public async Task<Character> GetCharacterForDayAsync(int dayNumber, CancellationToken cancellationToken = default)
     {
-        return await Cache.GetOrCreateAsync($"daily-character-{dayNumber}", async (entry) =>
+        return await Cache.GetOrCreateAsync($"daily-character-{dayNumber}", async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow =
                     TimeSpan.FromDays(1);
 
-            var characterId = await Gameplay.DailyGames
+            await using var gameplay = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var characterId = await gameplay.DailyGames
                     .AsNoTracking()
                     .Where(x => x.Id == dayNumber)
                     .Select(x => (int?)x.Character.Id)

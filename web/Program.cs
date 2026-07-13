@@ -32,7 +32,7 @@ var connectionString = new NpgsqlConnectionStringBuilder
 }.ConnectionString;
 
 
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddInfrastructure();
 

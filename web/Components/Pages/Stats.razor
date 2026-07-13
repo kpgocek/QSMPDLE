@@ -2,6 +2,8 @@
 
 @using MudBlazor
 @using QSMPDLE.Web.Components.UX
+@using QSMPDLE.Web.Components.Statistics
+@using QSMPDLE.Web.Features.Statistics.Models
 @using QSMPDLE.Web.Infrastructure.LocalStorage
 @using QSMPDLE.Web.Infrastructure.Persistence
 
@@ -117,6 +119,86 @@
     </section>
 
     <section class="mb-5">
+        <h3>Player Activity</h3>
+
+        <div class="mb-4">
+            <MudButtonGroup Color="MudBlazor.Color.Primary" Variant="Variant.Outlined">
+                <MudButton OnClick="@(() => OnTimeRangeChanged(7))"
+                           Disabled="@loadingActivity"
+                           Variant="@(selectedDays == 7 ? Variant.Filled : Variant.Outlined)">
+                    Last 7 Days
+                </MudButton>
+                <MudButton OnClick="@(() => OnTimeRangeChanged(30))"
+                           Disabled="@loadingActivity"
+                           Variant="@(selectedDays == 30 ? Variant.Filled : Variant.Outlined)">
+                    Last 30 Days
+                </MudButton>
+                <MudButton OnClick="@(() => OnTimeRangeChanged(0))"
+                           Disabled="@loadingActivity"
+                           Variant="@(selectedDays == 0 ? Variant.Filled : Variant.Outlined)">
+                    All Time
+                </MudButton>
+            </MudButtonGroup>
+        </div>
+
+        @if (loadingActivity)
+        {
+            <MudProgressLinear Color="MudBlazor.Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else
+        {
+            <DailyActivePlayersChart Data="@dauData" />
+            <NewVsReturningChart Data="@newVsReturningData" />
+            <ActivityDistributionChart Data="@activityDistribution" />
+
+            <MudGrid Class="mt-4">
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Average Games Per Player" Delay="500" Icon="@Icons.Material.Filled.Calculate"
+                              Value="@(gamesPerPlayer != null ? $"{gamesPerPlayer.Average:0.0}" : "-")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Median Games Per Player" Delay="600" Icon="@Icons.Material.Filled.Functions"
+                              Value="@(gamesPerPlayer != null ? $"{gamesPerPlayer.Median:0}" : "-")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Maximum Games Per Player" Delay="700" Icon="@Icons.Material.Filled.EmojiEvents"
+                              Value="@(gamesPerPlayer != null ? $"{gamesPerPlayer.Maximum}" : "-")" />
+                </MudItem>
+            </MudGrid>
+        }
+    </section>
+
+    <section class="mb-5">
+        <h3>Player Retention</h3>
+        <p class="info mb-4">
+            Percentage of players who returned to play exactly N days after their first game
+        </p>
+
+        @if (loadingRetention)
+        {
+            <MudProgressLinear Color="MudBlazor.Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="6" sm="6" Style="display:flex;">
+                    <StatCard Title="D1 Retention" Delay="800" Icon="@Icons.Material.Filled.TrendingUp"
+                              Value="@(retention != null ? $"{retention.D1Retention:0.0}%" : "-")" 
+                              Comment="Returned after 1 day" />
+                </MudItem>
+
+                <MudItem xs="6" sm="6" Style="display:flex;">
+                    <StatCard Title="D7 Retention" Delay="900" Icon="@Icons.Material.Filled.ShowChart"
+                              Value="@(retention != null ? $"{retention.D7Retention:0.0}%" : "-")" 
+                              Comment="Returned after 7 days" />
+                </MudItem>
+            </MudGrid>
+        }
+    </section>
+
+    <section class="mb-5">
         <h3>
             Global Stats (W.I.P.)
         </h3>
@@ -149,17 +231,39 @@
     private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) / (double) PracticeGamesFinished;
     private double AllPracticeWinRate => PracticeGamesStarted == 0 ? 0 : (PracticeGamesWon * 100) / (double)PracticeGamesStarted;
 
+    // Player Activity Data
+    private List<DailyActivePlayersData>? dauData;
+    private List<NewVsReturningPlayersData>? newVsReturningData;
+    private PlayerActivityDistributionData[]? activityDistribution;
+    private GamesPerPlayerStats? gamesPerPlayer;
+    private RetentionStats? retention;
+
+    private int selectedDays = 7;
+    private bool loadingActivity = true;
+    private bool loadingRetention = true;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender)
         {
-            var playerDataTask = CollectPlayerDataAsync();
-            var globalDataTask = CollectGlobalDataAsync();
-
-            await Task.WhenAll(playerDataTask, globalDataTask);
-
-            await InvokeAsync(StateHasChanged);
+            return;
         }
+
+        Console.WriteLine("START Player");
+        await CollectPlayerDataAsync();
+        Console.WriteLine("END Player");
+
+        Console.WriteLine("START Global");
+        await CollectGlobalDataAsync();
+        Console.WriteLine("END Global");
+
+        Console.WriteLine("START Activity");
+        await CollectPlayerActivityDataAsync();
+        Console.WriteLine("END Activity");
+
+        Console.WriteLine("START Retention");
+        await CollectRetentionDataAsync();
+        Console.WriteLine("END Retention");
     }
 
     private async Task CollectPlayerDataAsync()
@@ -197,5 +301,72 @@
 
         GlobalWinRate = globalData.WinRate;
 
+    }
+
+    private async Task CollectPlayerActivityDataAsync()
+    {
+        try
+        {
+            loadingActivity = true;
+
+            var from = CalculateFromDate(selectedDays);
+
+            dauData = await GameStatsStore.GetDailyActivePlayersAsync(from);
+            newVsReturningData = await GameStatsStore.GetNewVsReturningPlayersAsync(from);
+            activityDistribution = await GameStatsStore.GetPlayerActivityDistributionAsync();
+            gamesPerPlayer = await GameStatsStore.GetGamesPerPlayerStatsAsync();
+        }
+        finally
+        {
+            loadingActivity = false;
+        }
+    }
+
+    private async Task CollectRetentionDataAsync()
+    {
+        try
+        {
+            loadingRetention = true;
+
+            retention = await GameStatsStore.GetRetentionStatsAsync();
+        }
+        finally
+        {
+            loadingRetention = false;
+        }
+    }
+
+    private async Task OnTimeRangeChanged(int days)
+    {
+        if (loadingActivity)
+        {
+            return;
+        }
+
+        try
+        {
+            loadingActivity = true;
+            selectedDays = days;
+            await InvokeAsync(StateHasChanged);
+
+            var from = CalculateFromDate(days);
+
+            dauData = await GameStatsStore.GetDailyActivePlayersAsync(from);
+            newVsReturningData = await GameStatsStore.GetNewVsReturningPlayersAsync(from);
+        }
+        finally
+        {
+            loadingActivity = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static DateOnly? CalculateFromDate(int days)
+    {
+        if (days == 0) return null; // All time
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Corrected off-by-one: Last 7 days = Today - 6, Last 30 days = Today - 29
+        return days == 7 ? today.AddDays(-6) : today.AddDays(-29);
     }
 }

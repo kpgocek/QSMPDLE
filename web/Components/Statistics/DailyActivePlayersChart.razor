@@ -1,0 +1,32 @@
+@using QSMPDLE.Web.Features.Statistics.Models
+@using MudBlazor
+@using ApexCharts
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-4">Daily Active Players</MudText>
+
+    @if (Data == null || !Data.Any())
+    {
+        <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available</MudText>
+    }
+    else
+    {
+        <ApexChart TItem="DailyActivePlayersData"
+                   Title=""
+                   Height="300">
+
+            <ApexPointSeries TItem="DailyActivePlayersData"
+                             Items="Data"
+                             Name="Active Players"
+                             SeriesType="SeriesType.Line"
+                             XValue="@(e => e.Date.ToString("MMM dd"))"
+                             YAggregate="@(e => e.Sum(x => x.PlayerCount))"
+                             OrderBy="@(e => e.X)" />
+        </ApexChart>
+    }
+</MudPaper>
+
+@code {
+    [Parameter]
+    public List<DailyActivePlayersData>? Data { get; set; }
+}
