@@ -295,12 +295,14 @@
     {
         var globalData = await GameStatsStore.GetGlobalStatsAsync();
 
+        Console.WriteLine(
+            $"GLOBAL DATA: Players={globalData.TotalPlayers}, " +
+            $"Games={globalData.TotalGames}, " +
+            $"Wins={globalData.TotalWins}");
+
         TotalPlayers = globalData.TotalPlayers;
-
         TotalGamesPlayed = globalData.TotalGames;
-
         GlobalWinRate = globalData.WinRate;
-
     }
 
     private async Task CollectPlayerActivityDataAsync()
@@ -315,6 +317,14 @@
             newVsReturningData = await GameStatsStore.GetNewVsReturningPlayersAsync(from);
             activityDistribution = await GameStatsStore.GetPlayerActivityDistributionAsync();
             gamesPerPlayer = await GameStatsStore.GetGamesPerPlayerStatsAsync();
+
+            Console.WriteLine($"DAU COUNT: {dauData?.Count}");
+            Console.WriteLine($"NEW/RETURNING COUNT: {newVsReturningData?.Count}");
+            Console.WriteLine($"DISTRIBUTION COUNT: {activityDistribution?.Length}");
+            Console.WriteLine(
+                $"GAMES/PLAYER: Avg={gamesPerPlayer?.Average}, " +
+                $"Median={gamesPerPlayer?.Median}, " +
+                $"Max={gamesPerPlayer?.Maximum}");
         }
         finally
         {
@@ -329,6 +339,10 @@
             loadingRetention = true;
 
             retention = await GameStatsStore.GetRetentionStatsAsync();
+
+            Console.WriteLine(
+                $"RETENTION: D1={retention?.D1Retention}, " +
+                $"D7={retention?.D7Retention}");
         }
         finally
         {
