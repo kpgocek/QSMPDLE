@@ -10,6 +10,7 @@
 @inject IPlayerStatsStore PlayerStatsStore
 @inject IGameStatsStore GameStatsStore
 @inject ICharacterStore CharacterStore
+@inject ILogger<Stats> Logger
 
 <PageTitle>Game Statistics - QSMPDLE</PageTitle>
 
@@ -228,7 +229,7 @@
     private int PracticeGamesFinished { get; set; }
     private int PracticeGamesWon { get; set; }
 
-    private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) / (double) PracticeGamesFinished;
+    private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) / (double)PracticeGamesFinished;
     private double AllPracticeWinRate => PracticeGamesStarted == 0 ? 0 : (PracticeGamesWon * 100) / (double)PracticeGamesStarted;
 
     // Player Activity Data
@@ -241,31 +242,28 @@
     private int selectedDays = 7;
     private bool loadingActivity = true;
     private bool loadingRetention = true;
+    private bool initialLoadCompleted;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
+        if (!firstRender || initialLoadCompleted)
         {
             return;
         }
 
-        Console.WriteLine("START Player");
-        await CollectPlayerDataAsync();
-        Console.WriteLine("END Player");
+        try
+        {
+            await ExecuteWithDiagnosticsAsync(nameof(CollectGlobalDataAsync), CollectGlobalDataAsync);
+            await ExecuteWithDiagnosticsAsync(nameof(CollectPlayerActivityDataAsync), CollectPlayerActivityDataAsync);
+            await ExecuteWithDiagnosticsAsync(nameof(CollectRetentionDataAsync), CollectRetentionDataAsync);
+            await ExecuteWithDiagnosticsAsync(nameof(CollectPlayerDataAsync), CollectPlayerDataAsync);
 
-        Console.WriteLine("START Global");
-        await CollectGlobalDataAsync();
-        Console.WriteLine("END Global");
-
-        Console.WriteLine("START Activity");
-        await CollectPlayerActivityDataAsync();
-        Console.WriteLine("END Activity");
-
-        Console.WriteLine("START Retention");
-        await CollectRetentionDataAsync();
-        Console.WriteLine("END Retention");
-
-        await InvokeAsync(StateHasChanged);
+            initialLoadCompleted = true;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task CollectPlayerDataAsync()
@@ -290,17 +288,12 @@
 
         PracticeGamesFinished = finishedPracticeGames.Count();
 
-        PracticeGamesWon = finishedPracticeGames.Where(game => game.IsWon == true).Count();
+        PracticeGamesWon = finishedPracticeGames.Count(game => game.IsWon);
     }
 
     private async Task CollectGlobalDataAsync()
     {
         var globalData = await GameStatsStore.GetGlobalStatsAsync();
-
-        Console.WriteLine(
-            $"GLOBAL DATA: Players={globalData.TotalPlayers}, " +
-            $"Games={globalData.TotalGames}, " +
-            $"Wins={globalData.TotalWins}");
 
         TotalPlayers = globalData.TotalPlayers;
         TotalGamesPlayed = globalData.TotalGames;
@@ -309,24 +302,13 @@
 
     private async Task CollectPlayerActivityDataAsync()
     {
+        loadingActivity = true;
+
         try
         {
-            loadingActivity = true;
-
-            var from = CalculateFromDate(selectedDays);
-
-            dauData = await GameStatsStore.GetDailyActivePlayersAsync(from);
-            newVsReturningData = await GameStatsStore.GetNewVsReturningPlayersAsync(from);
+            await LoadRangeDependentActivityDataAsync(selectedDays);
             activityDistribution = await GameStatsStore.GetPlayerActivityDistributionAsync();
             gamesPerPlayer = await GameStatsStore.GetGamesPerPlayerStatsAsync();
-
-            Console.WriteLine($"DAU COUNT: {dauData?.Count}");
-            Console.WriteLine($"NEW/RETURNING COUNT: {newVsReturningData?.Count}");
-            Console.WriteLine($"DISTRIBUTION COUNT: {activityDistribution?.Length}");
-            Console.WriteLine(
-                $"GAMES/PLAYER: Avg={gamesPerPlayer?.Average}, " +
-                $"Median={gamesPerPlayer?.Median}, " +
-                $"Max={gamesPerPlayer?.Maximum}");
         }
         finally
         {
@@ -336,15 +318,11 @@
 
     private async Task CollectRetentionDataAsync()
     {
+        loadingRetention = true;
+
         try
         {
-            loadingRetention = true;
-
             retention = await GameStatsStore.GetRetentionStatsAsync();
-
-            Console.WriteLine(
-                $"RETENTION: D1={retention?.D1Retention}, " +
-                $"D7={retention?.D7Retention}");
         }
         finally
         {
@@ -359,30 +337,57 @@
             return;
         }
 
-        try
+        await ExecuteWithDiagnosticsAsync($"{nameof(OnTimeRangeChanged)}:{days}", async () =>
         {
             loadingActivity = true;
             selectedDays = days;
             await InvokeAsync(StateHasChanged);
 
-            var from = CalculateFromDate(days);
+            try
+            {
+                await LoadRangeDependentActivityDataAsync(days);
+            }
+            finally
+            {
+                loadingActivity = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+    }
 
-            dauData = await GameStatsStore.GetDailyActivePlayersAsync(from);
-            newVsReturningData = await GameStatsStore.GetNewVsReturningPlayersAsync(from);
+    private async Task LoadRangeDependentActivityDataAsync(int days)
+    {
+        var from = CalculateFromDate(days);
+
+        dauData = await GameStatsStore.GetDailyActivePlayersAsync(from);
+        newVsReturningData = await GameStatsStore.GetNewVsReturningPlayersAsync(from);
+    }
+
+    private async Task ExecuteWithDiagnosticsAsync(string operationName, Func<Task> operation)
+    {
+        Logger.LogInformation("Stats load {Operation} START", operationName);
+
+        try
+        {
+            await operation();
+            Logger.LogInformation("Stats load {Operation} SUCCESS", operationName);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Stats load {Operation} FAILED", operationName);
+            throw;
         }
         finally
         {
-            loadingActivity = false;
-            await InvokeAsync(StateHasChanged);
+            Logger.LogInformation("Stats load {Operation} END", operationName);
         }
     }
 
     private static DateOnly? CalculateFromDate(int days)
     {
-        if (days == 0) return null; // All time
+        if (days == 0) return null;
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        // Corrected off-by-one: Last 7 days = Today - 6, Last 30 days = Today - 29
         return days == 7 ? today.AddDays(-6) : today.AddDays(-29);
     }
 }
