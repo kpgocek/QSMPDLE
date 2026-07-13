@@ -12,6 +12,7 @@
     else
     {
         <ApexChart TItem="NewVsReturningPlayersData"
+                   Options="_chartOptions"
                    Title=""
                    Height="300">
 
@@ -37,6 +38,14 @@
 </MudPaper>
 
 @code {
+    private readonly ApexChartOptions<NewVsReturningPlayersData> _chartOptions = new()
+    {
+        Blazor = new ApexChartsBlazorOptions
+        {
+            JavascriptPath = "/vendors/Blazor-ApexCharts/js/blazor-apexcharts.js?ver=4"
+        }
+    };
+
     [Parameter]
     public List<NewVsReturningPlayersData>? Data { get; set; }
 }
