@@ -1,41 +1,61 @@
-@using QSMPDLE.Web.Features.Statistics.Models
 @using MudBlazor
-@using ApexCharts
+@using QSMPDLE.Web.Features.Statistics.Models
+@using QSMPDLE.Web.Themes
+
+@inject ThemeService Themes;
 
 <MudPaper Class="pa-4 mb-4" Elevation="2">
     <MudText Typo="Typo.h6" Class="mb-4">Player Activity Distribution</MudText>
 
-    @if (Data == null || !Data.Any())
+    @if (ChartData == null || !ChartData.Any())
     {
         <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available</MudText>
     }
     else
     {
-        <ApexChart TItem="PlayerActivityDistributionData"
-                   Options="_chartOptions"
-                   Title=""
-                   Height="300">
-
-            <ApexPointSeries TItem="PlayerActivityDistributionData"
-                             Items="Data"
-                             Name="Players"
-                             SeriesType="SeriesType.Bar"
-                             XValue="@(e => e.Bucket)"
-                             YAggregate="@(e => e.Sum(x => x.PlayerCount))"
-                             OrderBy="@(e => e.X)" />
-        </ApexChart>
+        <MudChart ChartType="ChartType.Pie" ChartSeries="@Series" ChartLabels="@DateLabels" ChartOptions="@Options"
+                  Width="100%" Height="300px" @bind-SelectedIndex="@Index" MatchBoundsToSize="true">
+        </MudChart>
     }
 </MudPaper>
 
 @code {
-    private readonly ApexChartOptions<PlayerActivityDistributionData> _chartOptions = new()
-    {
-        Blazor = new ApexChartsBlazorOptions
-        {
-            JavascriptPath = "/vendors/Blazor-ApexCharts/js/blazor-apexcharts.js?ver=4"
-        }
-    };
 
     [Parameter]
-    public PlayerActivityDistributionData[]? Data { get; set; }
+    public PlayerActivityDistributionData[]? ChartData { get; set; }
+
+    private int Index = -1;
+    private PieChartOptions Options = new PieChartOptions();
+
+    private string[] DateLabels = [];
+
+    private List<ChartSeries<int>> Series = [];
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        if (ChartData is null)
+            throw new NullReferenceException(nameof(DailyActivePlayersData));
+
+        Series.Add(new ChartSeries<int>() { Name = "New Players", Data = ChartData.Select(x => x.PlayerCount).ToArray() });
+        DateLabels = ChartData.Select(x => x.Bucket).ToArray();
+
+        var palette = Themes.CurrentTheme.PaletteDark;
+
+        Options.ChartPalette = [
+            palette.Primary.ToString(),
+            palette.Secondary.ToString(),
+            palette.Success.ToString(),
+            palette.Warning.ToString(),
+            palette.PrimaryLighten,
+            palette.SuccessLighten,
+            palette.WarningLighten,
+            palette.SecondaryLighten,
+            palette.PrimaryDarken,
+            palette.SuccessDarken,
+            palette.WarningDarken,
+            palette.SecondaryDarken
+        ];
+    }
 }

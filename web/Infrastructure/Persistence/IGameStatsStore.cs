@@ -21,4 +21,8 @@ public interface IGameStatsStore
     Task<GamesPerPlayerStats> GetGamesPerPlayerStatsAsync();
 
     Task<RetentionStats> GetRetentionStatsAsync();
+
+    Task<GlobalCharacterStats> GetGlobalCharacterStatsAsync();
+
+    Task<PlayerCharacterStats> GetPlayerCharacterStatsAsync(Guid playerId);
 }

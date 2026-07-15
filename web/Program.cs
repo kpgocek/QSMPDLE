@@ -9,6 +9,7 @@ using QSMPDLE.Web.Features.Sharing;
 using QSMPDLE.Web.Features.Statistics;
 using QSMPDLE.Web.Infrastructure;
 using QSMPDLE.Web.Infrastructure.Persistence;
+using QSMPDLE.Web.Themes;
 using QSMPDLE.Web.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,8 @@ builder.Services.AddHostedService<StatisticsRefreshWorker>();
 
 builder.Services.AddMudServices();
 builder.Services.AddBlazorBootstrap();
+
+builder.Services.AddScoped<ThemeService>();
 
 var connectionString = new NpgsqlConnectionStringBuilder
 {

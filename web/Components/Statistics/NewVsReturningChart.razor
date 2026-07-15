@@ -1,51 +1,73 @@
-@using QSMPDLE.Web.Features.Statistics.Models
 @using MudBlazor
-@using ApexCharts
+@using MudBlazor.Charts
+@using QSMPDLE.Web.Features.Statistics.Models
+
+@using QSMPDLE.Web.Themes
+
+@inject ThemeService Themes;
 
 <MudPaper Class="pa-4 mb-4" Elevation="2">
     <MudText Typo="Typo.h6" Class="mb-4">New vs Returning Players</MudText>
 
-    @if (Data == null || !Data.Any())
+    @if (ChartData == null || !ChartData.Any())
     {
         <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available</MudText>
     }
     else
     {
-        <ApexChart TItem="NewVsReturningPlayersData"
-                   Options="_chartOptions"
-                   Title=""
-                   Height="300">
-
-            <ApexPointSeries TItem="NewVsReturningPlayersData"
-                             Items="Data"
-                             Name="New Players"
-                             SeriesType="SeriesType.Line"
-                             Color="#2196F3"
-                             XValue="@(e => e.Date.ToString("MMM dd"))"
-                             YAggregate="@(e => e.Sum(x => x.NewPlayers))"
-                             OrderBy="@(e => e.X)" />
-
-            <ApexPointSeries TItem="NewVsReturningPlayersData"
-                             Items="Data"
-                             Name="Returning Players"
-                             SeriesType="SeriesType.Line"
-                             Color="#4CAF50"
-                             XValue="@(e => e.Date.ToString("MMM dd"))"
-                             YAggregate="@(e => e.Sum(x => x.ReturningPlayers))"
-                             OrderBy="@(e => e.X)" />
-        </ApexChart>
+        <MudChart ChartType="ChartType.Line" ChartSeries="@Series" ChartLabels="@DateLabels" ChartOptions="@Options"
+                  Width="100%" Height="300px" @bind-SelectedIndex="@Index" MatchBoundsToSize="true">
+        </MudChart>
     }
 </MudPaper>
 
-@code {
-    private readonly ApexChartOptions<NewVsReturningPlayersData> _chartOptions = new()
+    @code {
+    [Parameter]
+    public List<NewVsReturningPlayersData>? ChartData { get; set; }
+
+    private int Index = -1;
+    private LineChartOptions Options = new LineChartOptions()
     {
-        Blazor = new ApexChartsBlazorOptions
-        {
-            JavascriptPath = "/vendors/Blazor-ApexCharts/js/blazor-apexcharts.js?ver=4"
-        }
+        XAxisTitle = "Days",
+        InterpolationOption = InterpolationOption.NaturalSpline,
     };
 
-    [Parameter]
-    public List<NewVsReturningPlayersData>? Data { get; set; }
+    private string[] DateLabels = [];
+
+    private List<ChartSeries<long>> Series = [];
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        if (ChartData is null)
+            throw new NullReferenceException(nameof(DailyActivePlayersData));
+
+        Series.Add(new ChartSeries<long>() { Name = "New Players", Data = ChartData.Select(x => x.NewPlayers).ToArray() });
+        Series.Add(new ChartSeries<long>() { Name = "Returning Players", Data = ChartData.Select(x => x.ReturningPlayers).ToArray() });
+        DateLabels = ChartData.Select(x => x.Date.ToShortDateString()).ToArray();
+
+        Options.SeriesDisplayOverrides = new Dictionary<IChartSeries, SeriesDisplayOverride>()
+        {
+            { Series[0], new SeriesDisplayOverride() },
+            { Series[1], new SeriesDisplayOverride() }
+        };
+
+        var palette = Themes.CurrentTheme.PaletteDark;
+
+        Options.ChartPalette = [
+            palette.Primary.ToString(),
+            palette.Secondary.ToString(),
+            palette.Success.ToString(),
+            palette.Warning.ToString(),
+            palette.PrimaryLighten,
+            palette.SuccessLighten,
+            palette.WarningLighten,
+            palette.SecondaryLighten,
+            palette.PrimaryDarken,
+            palette.SuccessDarken,
+            palette.WarningDarken,
+            palette.SecondaryDarken
+        ];
+    }
 }

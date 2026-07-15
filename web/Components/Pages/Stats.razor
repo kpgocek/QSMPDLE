@@ -148,9 +148,9 @@
         }
         else
         {
-            <DailyActivePlayersChart Data="@dauData" />
-            <NewVsReturningChart Data="@newVsReturningData" />
-            <ActivityDistributionChart Data="@activityDistribution" />
+            <DailyActivePlayersChart ChartData="@dauData" />
+            <NewVsReturningChart ChartData="@newVsReturningData" />
+            <ActivityDistributionChart ChartData="@activityDistribution" />
 
             <MudGrid Class="mt-4">
                 <MudItem xs="6" sm="4" Style="display:flex;">
@@ -184,30 +184,120 @@
         else
         {
             <MudGrid>
-                <MudItem xs="6" sm="6" Style="display:flex;">
+                <MudItem xs="6" sm="3" Style="display:flex;">
                     <StatCard Title="D1 Retention" Delay="800" Icon="@Icons.Material.Filled.TrendingUp"
                               Value="@(retention != null ? $"{retention.D1Retention:0.0}%" : "-")" 
                               Comment="Returned after 1 day" />
                 </MudItem>
 
-                <MudItem xs="6" sm="6" Style="display:flex;">
+                <MudItem xs="6" sm="3" Style="display:flex;">
                     <StatCard Title="D7 Retention" Delay="900" Icon="@Icons.Material.Filled.ShowChart"
                               Value="@(retention != null ? $"{retention.D7Retention:0.0}%" : "-")" 
                               Comment="Returned after 7 days" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="D14 Retention" Delay="1000" Icon="@Icons.Material.Filled.ShowChart"
+                              Value="@(retention != null ? $"{retention.D14Retention:0.0}%" : "-")" 
+                              Comment="Returned after 14 days" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="D30 Retention" Delay="1100" Icon="@Icons.Material.Filled.ShowChart"
+                              Value="@(retention != null ? $"{retention.D30Retention:0.0}%" : "-")" 
+                              Comment="Returned after 30 days" />
                 </MudItem>
             </MudGrid>
         }
     </section>
 
     <section class="mb-5">
-        <h3>
-            Global Stats (W.I.P.)
-        </h3>
+        <h3>Your Character Stats</h3>
+        <p class="info mb-4">Characters you've interacted with the most</p>
+
+        @if (loadingCharacterStats)
+        {
+            <MudProgressLinear Color="MudBlazor.Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else if (playerCharacterStats != null)
+        {
+            <MudGrid>
+                <MudItem xs="12" sm="6" Style="display:flex;">
+                    <StatCard Title="Most Guessed (Wrong)" Delay="200"
+                              Icon="@Icons.Material.Filled.QuestionMark"
+                              Value="@(playerCharacterStats.MostGuessedCharacterName ?? "-")"
+                              Comment="@(playerCharacterStats.MostGuessedCount > 0 ? $"Guessed {playerCharacterStats.MostGuessedCount}× as wrong answer" : null)" />
+                </MudItem>
+                <MudItem xs="12" sm="6" Style="display:flex;">
+                    <StatCard Title="Most Correctly Guessed" Delay="300"
+                              Icon="@Icons.Material.Filled.CheckCircle"
+                              Value="@(playerCharacterStats.MostCorrectlyGuessedCharacterName ?? "-")"
+                              Comment="@(playerCharacterStats.MostCorrectlyGuessedCount > 0 ? $"Was the answer {playerCharacterStats.MostCorrectlyGuessedCount}× in won games" : null)" />
+                </MudItem>
+            </MudGrid>
+        }
+    </section>
+
+    <section class="mb-5">
+        <h3>Global Character Insights</h3>
+        <p class="info mb-4">Community patterns around characters — top 3 per time window</p>
+
+        @if (loadingGlobalCharacterStats)
+        {
+            <MudProgressLinear Color="MudBlazor.Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else if (globalCharacterStats != null)
+        {
+            <MudExpansionPanels MultiExpansion="true">
+                <MudExpansionPanel Text="🤔 Most Confusing — guessed most often as the wrong answer">
+                    @CharacterTop3Table(globalCharacterStats.MostConfusing, "Times guessed (wrong)")
+                </MudExpansionPanel>
+                <MudExpansionPanel Text="✅ Easiest to Guess — most frequent winning answer">
+                    @CharacterTop3Table(globalCharacterStats.Easiest, "Times as winning answer")
+                </MudExpansionPanel>
+                <MudExpansionPanel Text="💡 The Indicator — guess that led to a win on the very next guess">
+                    @CharacterTop3Table(globalCharacterStats.TheIndicator, "Times as winning indicator")
+                </MudExpansionPanel>
+                <MudExpansionPanel Text="🚀 The Opener — most popular first guess in winning games">
+                    @CharacterTop3Table(globalCharacterStats.TheOpener, "Times as winning opener")
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
     </section>
 
 </WebPage>
 
 @code {
+    private RenderFragment CharacterTop3Table(CharacterWindowStats stats, string countLabel) =>
+        @<div>
+            @foreach (var window in new[] {
+                (Label: "Yesterday", Entries: stats.Yesterday),
+                (Label: "Past 7 Days", Entries: stats.PastWeek),
+                (Label: "Past 30 Days", Entries: stats.PastMonth)
+            })
+            {
+                <div class="mb-2">
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">@window.Label</MudText>
+                    @if (!window.Entries.Any())
+                    {
+                        <span class="mud-text-secondary">No data</span>
+                    }
+                    else
+                    {
+                        @foreach (var entry in window.Entries)
+                        {
+                            <MudChip T="string" Size="Size.Small" Class="mr-1 mb-1">
+                                <MudAvatar Style="width:20px;height:20px;margin-right:4px;" Square="true">
+                                    <MudImage Src="@($"/graphics/mini-heads/{entry.CharacterName}.webp")" />
+                                </MudAvatar>
+                                @entry.CharacterName (@entry.Count)
+                            </MudChip>
+                        }
+                    }
+                </div>
+            }
+        </div>;
+
     // Global Stats
     private long TotalPlayers { get; set; }
     private long TotalGamesPlayed { get; set; }
@@ -239,9 +329,15 @@
     private GamesPerPlayerStats? gamesPerPlayer;
     private RetentionStats? retention;
 
+    // Character Stats
+    private PlayerCharacterStats? playerCharacterStats;
+    private GlobalCharacterStats? globalCharacterStats;
+
     private int selectedDays = 7;
     private bool loadingActivity = true;
     private bool loadingRetention = true;
+    private bool loadingCharacterStats = true;
+    private bool loadingGlobalCharacterStats = true;
     private bool initialLoadCompleted;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -257,6 +353,7 @@
             await ExecuteWithDiagnosticsAsync(nameof(CollectPlayerActivityDataAsync), CollectPlayerActivityDataAsync);
             await ExecuteWithDiagnosticsAsync(nameof(CollectRetentionDataAsync), CollectRetentionDataAsync);
             await ExecuteWithDiagnosticsAsync(nameof(CollectPlayerDataAsync), CollectPlayerDataAsync);
+            await ExecuteWithDiagnosticsAsync(nameof(CollectGlobalCharacterStatsAsync), CollectGlobalCharacterStatsAsync);
 
             initialLoadCompleted = true;
         }
@@ -289,6 +386,33 @@
         PracticeGamesFinished = finishedPracticeGames.Count();
 
         PracticeGamesWon = finishedPracticeGames.Count(game => game.IsWon);
+
+        loadingCharacterStats = true;
+        try
+        {
+            if (PlayerId != Guid.Empty)
+            {
+                var rawPlayerCharStats = await GameStatsStore.GetPlayerCharacterStatsAsync(PlayerId);
+                var lookups = await CharacterStore.GetLookupsAsync();
+                playerCharacterStats = new PlayerCharacterStats
+                {
+                    MostGuessedCharacterId = rawPlayerCharStats.MostGuessedCharacterId,
+                    MostGuessedCharacterName = rawPlayerCharStats.MostGuessedCharacterId.HasValue
+                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostGuessedCharacterId.Value)?.Name ?? rawPlayerCharStats.MostGuessedCharacterId.Value.ToString())
+                        : null,
+                    MostGuessedCount = rawPlayerCharStats.MostGuessedCount,
+                    MostCorrectlyGuessedCharacterId = rawPlayerCharStats.MostCorrectlyGuessedCharacterId,
+                    MostCorrectlyGuessedCharacterName = rawPlayerCharStats.MostCorrectlyGuessedCharacterId.HasValue
+                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value)?.Name ?? rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value.ToString())
+                        : null,
+                    MostCorrectlyGuessedCount = rawPlayerCharStats.MostCorrectlyGuessedCount,
+                };
+            }
+        }
+        finally
+        {
+            loadingCharacterStats = false;
+        }
     }
 
     private async Task CollectGlobalDataAsync()
@@ -327,6 +451,55 @@
         finally
         {
             loadingRetention = false;
+        }
+    }
+
+    private async Task CollectGlobalCharacterStatsAsync()
+    {
+        loadingGlobalCharacterStats = true;
+
+        try
+        {
+            var raw = await GameStatsStore.GetGlobalCharacterStatsAsync();
+            var lookups = await CharacterStore.GetLookupsAsync();
+
+            IReadOnlyList<CharacterStatEntry> Resolve(IReadOnlyList<CharacterStatEntry> entries) =>
+                entries.Select(e => e with
+                {
+                    CharacterName = lookups.FirstOrDefault(l => l.Id == e.CharacterId)?.Name ?? e.CharacterId.ToString()
+                }).ToList();
+
+            globalCharacterStats = new GlobalCharacterStats
+            {
+                MostConfusing = new CharacterWindowStats
+                {
+                    Yesterday = Resolve(raw.MostConfusing.Yesterday),
+                    PastWeek = Resolve(raw.MostConfusing.PastWeek),
+                    PastMonth = Resolve(raw.MostConfusing.PastMonth),
+                },
+                Easiest = new CharacterWindowStats
+                {
+                    Yesterday = Resolve(raw.Easiest.Yesterday),
+                    PastWeek = Resolve(raw.Easiest.PastWeek),
+                    PastMonth = Resolve(raw.Easiest.PastMonth),
+                },
+                TheIndicator = new CharacterWindowStats
+                {
+                    Yesterday = Resolve(raw.TheIndicator.Yesterday),
+                    PastWeek = Resolve(raw.TheIndicator.PastWeek),
+                    PastMonth = Resolve(raw.TheIndicator.PastMonth),
+                },
+                TheOpener = new CharacterWindowStats
+                {
+                    Yesterday = Resolve(raw.TheOpener.Yesterday),
+                    PastWeek = Resolve(raw.TheOpener.PastWeek),
+                    PastMonth = Resolve(raw.TheOpener.PastMonth),
+                },
+            };
+        }
+        finally
+        {
+            loadingGlobalCharacterStats = false;
         }
     }
 

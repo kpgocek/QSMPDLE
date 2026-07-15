@@ -2,11 +2,13 @@
 @using BlazorBootstrap
 @using QSMPDLE.Web.Themes
 
+@inject ThemeService Themes
+
 @inherits LayoutComponentBase
 
 <MudPopoverProvider />
 <MudBreakpointProvider />
-<MudThemeProvider Theme="@QsmpdleTheme.Theme" IsDarkMode="true" />
+<MudThemeProvider Theme="@Themes.CurrentTheme" IsDarkMode="@Themes.IsDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
