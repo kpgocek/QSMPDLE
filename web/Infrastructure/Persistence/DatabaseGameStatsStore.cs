@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using QSMPDLE.Web.Features.Statistics.Models;
 using QSMPDLE.Web.Features.Gameplay.Models;
+using QSMPDLE.Web.Features.Statistics.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
@@ -266,7 +266,7 @@ public sealed class DatabaseGameStatsStore(
                     "PlayerId",
                     DATE(MIN("StartedOnUtc" AT TIME ZONE 'UTC')) as "CohortDate"
                 FROM "GameStats"
-                WHERE "PlayerId" != '00000000-0000-0000-000000000000'
+                WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
                   AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 GROUP BY "PlayerId"
             ),
