@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QSMPDLE.Web.Features.Statistics.Models;
+using QSMPDLE.Web.Features.Gameplay.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
@@ -10,9 +11,12 @@ public sealed class DatabaseGameStatsStore(
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
         return await database.GameStats
             .AsNoTracking()
             .Where(game => game.PlayerId.Equals(playerId))
+            .Where(game => !(game.Mode == GameMode.Daily && DateOnly.FromDateTime(game.StartedOnUtc.UtcDateTime) == today))
             .ToListAsync();
     }
 
@@ -46,9 +50,23 @@ public sealed class DatabaseGameStatsStore(
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
-        return await database.Set<GlobalStatsView>()
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var query = database.GameStats
             .AsNoTracking()
-            .SingleAsync();
+            .Where(g => g.PlayerId != Guid.Empty)
+            .Where(g => !(g.Mode == GameMode.Daily && DateOnly.FromDateTime(g.StartedOnUtc.UtcDateTime) == today));
+
+        var totalGames = await query.CountAsync();
+        var totalPlayers = await query.Select(g => g.PlayerId).Distinct().CountAsync();
+        var totalWins = await query.CountAsync(g => g.IsWon);
+
+        return new GlobalStatsView
+        {
+            TotalGames = totalGames,
+            TotalPlayers = totalPlayers,
+            TotalWins = totalWins
+        };
     }
 
     public async Task<List<DailyActivePlayersData>> GetDailyActivePlayersAsync(DateOnly? from)
@@ -64,6 +82,11 @@ public sealed class DatabaseGameStatsStore(
             var fromDateTime = from.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             query = query.Where(g => g.StartedOnUtc >= fromDateTime);
         }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Exclude the current daily game (today's daily) from all stats
+        query = query.Where(g => !(g.Mode == GameMode.Daily && DateOnly.FromDateTime(g.StartedOnUtc.UtcDateTime) == today));
 
         return await query
             .GroupBy(g => DateOnly.FromDateTime(g.StartedOnUtc.UtcDateTime))
@@ -91,6 +114,7 @@ public sealed class DatabaseGameStatsStore(
                         DATE(MIN("StartedOnUtc" AT TIME ZONE 'UTC')) as "FirstGameDate"
                     FROM "GameStats"
                     WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
+                      AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                     GROUP BY "PlayerId"
                 ),
                 DailyActivity AS (
@@ -102,6 +126,7 @@ public sealed class DatabaseGameStatsStore(
                     INNER JOIN PlayerFirstGame pfg ON gs."PlayerId" = pfg."PlayerId"
                     WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') >= {0}::date
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
                 SELECT 
                     "ActivityDate" as "Date",
@@ -132,6 +157,7 @@ public sealed class DatabaseGameStatsStore(
                         DATE(MIN("StartedOnUtc" AT TIME ZONE 'UTC')) as "FirstGameDate"
                     FROM "GameStats"
                     WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
+                      AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                     GROUP BY "PlayerId"
                 ),
                 DailyActivity AS (
@@ -142,6 +168,7 @@ public sealed class DatabaseGameStatsStore(
                     FROM "GameStats" gs
                     INNER JOIN PlayerFirstGame pfg ON gs."PlayerId" = pfg."PlayerId"
                     WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
                 SELECT 
                     "ActivityDate" as "Date",
@@ -169,9 +196,12 @@ public sealed class DatabaseGameStatsStore(
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
         var playerGameCounts = await database.GameStats
             .AsNoTracking()
             .Where(g => g.PlayerId != Guid.Empty)
+            .Where(g => !(g.Mode == GameMode.Daily && DateOnly.FromDateTime(g.StartedOnUtc.UtcDateTime) == today))
             .GroupBy(g => g.PlayerId)
             .Select(g => new { PlayerId = g.Key, GameCount = g.Count() })
             .ToListAsync();
@@ -204,6 +234,7 @@ public sealed class DatabaseGameStatsStore(
                     COUNT(*) as "GameCount"
                 FROM "GameStats"
                 WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
+                  AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 GROUP BY "PlayerId"
             )
             SELECT 
@@ -235,7 +266,8 @@ public sealed class DatabaseGameStatsStore(
                     "PlayerId",
                     DATE(MIN("StartedOnUtc" AT TIME ZONE 'UTC')) as "CohortDate"
                 FROM "GameStats"
-                WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
+                WHERE "PlayerId" != '00000000-0000-0000-000000000000'
+                  AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 GROUP BY "PlayerId"
             ),
             EligibleForD1 AS (
@@ -250,6 +282,7 @@ public sealed class DatabaseGameStatsStore(
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '1 day'
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
             ),
             EligibleForD7 AS (
@@ -264,6 +297,7 @@ public sealed class DatabaseGameStatsStore(
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '7 days'
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
             ),
             EligibleForD14 AS (
@@ -278,6 +312,7 @@ public sealed class DatabaseGameStatsStore(
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '14 days'
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
             ),
             EligibleForD30 AS (
@@ -292,6 +327,7 @@ public sealed class DatabaseGameStatsStore(
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '30 days'
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
             )
             SELECT 
@@ -401,9 +437,11 @@ public sealed class DatabaseGameStatsStore(
             LIMIT 3
             """;
 
-        var yesterdayFilter = "DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '1 day'";
-        var weekFilter = "DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '7 days'";
-        var monthFilter = "DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '30 days'";
+        var exclusion = "AND NOT (gs.\"Mode\" = 0 AND DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)";
+
+        var yesterdayFilter = $"DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '1 day' {exclusion}";
+        var weekFilter = $"DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '7 days' {exclusion}";
+        var monthFilter = $"DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '30 days' {exclusion}";
 
         async Task<List<CharacterStatEntryRaw>> RunQuery(string sqlTemplate, string dateFilter)
         {
@@ -462,6 +500,7 @@ public sealed class DatabaseGameStatsStore(
             INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
             WHERE gs."PlayerId" = {0}
               AND gg."GuessedCharacterId" != gs."TargetCharacterId"
+              AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
             GROUP BY gg."GuessedCharacterId"
             ORDER BY "Count" DESC
             LIMIT 1
@@ -475,6 +514,7 @@ public sealed class DatabaseGameStatsStore(
             FROM "GameStats" gs
             WHERE gs."PlayerId" = {0}
               AND gs."IsWon" = TRUE
+              AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
             GROUP BY gs."TargetCharacterId"
             ORDER BY "Count" DESC
             LIMIT 1
