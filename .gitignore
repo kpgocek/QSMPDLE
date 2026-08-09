@@ -5,7 +5,7 @@
 
 # dotenv files
 .env
-
+.continue/.env
 
 
 # User-specific files

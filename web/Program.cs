@@ -6,6 +6,8 @@ using QSMPDLE.Web.Components;
 using QSMPDLE.Web.Features.Communication;
 using QSMPDLE.Web.Features.Gameplay;
 using QSMPDLE.Web.Features.Sharing;
+using QSMPDLE.Web.Features.Sitemap;
+using QSMPDLE.Web.Features.Sitemap.Services;
 using QSMPDLE.Web.Features.Statistics;
 using QSMPDLE.Web.Infrastructure;
 using QSMPDLE.Web.Infrastructure.Persistence;
@@ -17,6 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddLocalStorageServices();
 
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ISitemapService, SitemapService>();
 
 builder.Services.AddHostedService<StatisticsRefreshWorker>();
 
@@ -80,6 +83,8 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+
+app.MapSitemap();
 
 await app.MigrateDatabasesAsync();
 
