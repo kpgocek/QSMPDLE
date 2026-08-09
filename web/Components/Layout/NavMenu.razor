@@ -1,5 +1,8 @@
 ﻿@using BlazorBootstrap
+@using MudBlazor
+@using QSMPDLE.Web.Components.UX.Dialogs
 @inject NavigationManager Nav
+@inject IDialogService DialogService
 
 <header class="topbar">
     <div class="topbar-container" id="game-top">
@@ -19,11 +22,21 @@
 
             <span class="separator">•</span>
 
+            @* <NavLink href="/archive">
+                Archive
+            </NavLink>
+
+            <span class="separator">•</span> *@
+
             <NavLink href="/how-to-play">
                 How to Play
             </NavLink>
 
+            @* <span class="separator">•</span>
 
+            <button type="button" class="nav-profile-btn" @onclick="OpenProfile">
+                Profile
+            </button> *@
 
         </nav>
 
@@ -101,4 +114,43 @@
         color: var(--ghost);
         margin-inline: 0.75rem;
     }
+
+    .nav-profile-btn {
+        background: none;
+        border: none;
+        font: inherit;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        cursor: pointer;
+        color: var(--ghost);
+
+        display: flex;
+        align-items: center;
+        gap: .25em;
+
+        padding: .125rem .4rem;
+        border-radius: .25rem;
+        transition:
+            color 160ms ease,
+            background-color 160ms ease;
+    }
+
+    .nav-profile-btn:hover {
+        color: var(--white);
+        background-color: var(--surface);
+    }
 </style>
+
+@code {
+    private async Task OpenProfile()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseOnEscapeKey = true,
+        };
+
+        await DialogService.ShowAsync<PlayerProfileDialog>("Player Profile", options);
+    }
+}
