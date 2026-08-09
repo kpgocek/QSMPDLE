@@ -12,7 +12,9 @@
 
 <MudDialog Class="pop-up pt-0">
     <DialogActions>
-        <MudButton OnClick="Close"><MudIcon Icon="@Icons.Material.Filled.Close" /></MudButton>
+        <MudButton OnClick="Close">
+            <MudIcon Icon="@Icons.Material.Filled.Close" />
+        </MudButton>
     </DialogActions>
     <TitleContent>
         <h2>Player Stats</h2>
@@ -46,16 +48,20 @@
             else
             {
                 <div class="d-flex justify-space-between gap-4 mt-4">
-                    <MudCard Class="w-50" Style="border-radius: 0;">
+                    <MudCard Class="w-50">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <span class="d-flex"><MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1"/>Most Guessed (Wrong)</span>
+                                <span class="d-flex">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1" />Most Guessed
+                                    (Wrong)
+                                </span>
                                 <h3>@(playerCharacterStats.MostGuessedCharacterName ?? "-")</h3>
                             </CardHeaderContent>
                             <CardHeaderAvatar>
                                 @if (playerCharacterStats.MostGuessedIconUrl is not null)
                                 {
-                                    <MudImage Src="@($"/graphics/guessing/{playerCharacterStats.MostGuessedIconUrl}/Head.webp")" Height="80" />
+                                    <MudImage Src="@($"/graphics/guessing/{playerCharacterStats.MostGuessedIconUrl}/Head.webp")"
+                                              Height="80" />
                                 }
                             </CardHeaderAvatar>
                         </MudCardHeader>
@@ -69,39 +75,44 @@
                         </MudCardContent>
                     </MudCard>
 
-                    
-                    <MudCard Class="w-50" Style="border-radius: 0;">
+
+                    <MudCard Class="w-50">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <span class="d-flex"><MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1"/>Most Correctly Guessed</span>
+                                <span class="d-flex">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1" />Most
+                                    Correctly Guessed
+                                </span>
                                 <h3>@(playerCharacterStats.MostCorrectlyGuessedCharacterName ?? "-")</h3>
                             </CardHeaderContent>
                             <CardHeaderAvatar>
-                                    @if (playerCharacterStats.MostCorrectlyGuessedIconUrl is not null)
+                                @if (playerCharacterStats.MostCorrectlyGuessedIconUrl is not null)
                                 {
-                                    <MudImage Src="@($"/graphics/guessing/{playerCharacterStats.MostCorrectlyGuessedIconUrl}/Head.webp")" Height="80" />
+                                    <MudImage
+                                    Src="@($"/graphics/guessing/{playerCharacterStats.MostCorrectlyGuessedIconUrl}/Head.webp")"
+                                    Height="80" />
                                 }
                             </CardHeaderAvatar>
                         </MudCardHeader>
-                           
+
                         <MudCardContent Class="pt-0">
-                                @if (playerCharacterStats.MostCorrectlyGuessedCount > 0)
-                                {
-                                    <MudText Color="MudBlazor.Color.Secondary">
-                                        Correctly identified @(playerCharacterStats.MostCorrectlyGuessedCount)× as the answer
-                                    </MudText>
-                                }
-                            </MudCardContent>
-                        </MudCard>
-                   </div>
+                            @if (playerCharacterStats.MostCorrectlyGuessedCount > 0)
+                            {
+                                <MudText Color="MudBlazor.Color.Secondary">
+                                    Correctly identified @(playerCharacterStats.MostCorrectlyGuessedCount)× as the answer
+                                </MudText>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </div>
             }
 
             <MudGrid Class="mt-2">
-                
-                
+
+
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Daily Games" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
-                                Value="@($"{DailyGamesPlayed}")" />
+                              Value="@($"{DailyGamesPlayed}")" />
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
@@ -120,23 +131,23 @@
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Daily Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
-                                Value="@($"{DailyGamesWon}")" />
+                              Value="@($"{DailyGamesWon}")" />
                 </MudItem>
-               
+
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Practice Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
                               Value="@($"{PracticeGamesWon}")" />
                 </MudItem>
-                
+
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Best Streak" Delay="300" Icon="@Icons.Material.Filled.WorkspacePremium"
-                                Value="@($"{LongestStreak}")" />
+                              Value="@($"{LongestStreak}")" />
                 </MudItem>
 
 
 
 
-                
+
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Daily Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
                               Value="@($"{DailyWinRate:0}%")" />
@@ -144,8 +155,7 @@
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Practice Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
-                              Value="@($"{FinishedPracticeWinRate:0}%")"
-                              Comment="@($"{AllPracticeWinRate:0}% of all started")" />
+                              Value="@($"{FinishedPracticeWinRate:0}%")" Comment="@($"{AllPracticeWinRate:0}% of all started")" />
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
@@ -153,7 +163,7 @@
                               Value="@(DailyGamesWon > 0 ? $"{AvgGuessesPerDailyWin:0.0}" : "-")"
                               Comment="The lower, the better" />
                 </MudItem>
-                
+
             </MudGrid>
 
             @if (DailyGamesWon > 0)
@@ -161,7 +171,7 @@
                 <MudDivider />
 
                 <section class="mt-5">
-                    <GuessDistributionChart Distribution="@GuessDistributionAsDoubles" Title="Your Guess Distribution"/>
+                    <GuessDistributionChart Distribution="@GuessDistributionAsDoubles" Title="Your Guess Distribution" />
                 </section>
             }
         }
@@ -171,7 +181,7 @@
 <style>
     .pop-up {
         border-radius: 0;
-        background: 
+        background:
             radial-gradient(circle at 50% 0, var(--surface-strong), transparent 64rem), var(--black);
     }
 </style>
@@ -205,8 +215,10 @@
     private int PracticeGamesFinished { get; set; }
     private int PracticeGamesWon { get; set; }
 
-    private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) / (double)PracticeGamesFinished;
-    private double AllPracticeWinRate => PracticeGamesStarted == 0 ? 0 : (PracticeGamesWon * 100) / (double)PracticeGamesStarted;
+    private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) /
+(double)PracticeGamesFinished;
+    private double AllPracticeWinRate => PracticeGamesStarted == 0 ? 0 : (PracticeGamesWon * 100) /
+(double)PracticeGamesStarted;
 
     // Global comparison
     private GlobalStatsView? globalStats;
@@ -289,7 +301,8 @@
                 {
                     MostGuessedCharacterId = rawPlayerCharStats.MostGuessedCharacterId,
                     MostGuessedCharacterName = rawPlayerCharStats.MostGuessedCharacterId.HasValue
-                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostGuessedCharacterId.Value)?.Name ?? rawPlayerCharStats.MostGuessedCharacterId.Value.ToString())
+                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostGuessedCharacterId.Value)?.Name ??
+rawPlayerCharStats.MostGuessedCharacterId.Value.ToString())
                         : null,
                     MostGuessedIconUrl = rawPlayerCharStats.MostGuessedCharacterId.HasValue
                         ? lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostGuessedCharacterId.Value)?.CharacterIconUrl
@@ -297,7 +310,8 @@
                     MostGuessedCount = rawPlayerCharStats.MostGuessedCount,
                     MostCorrectlyGuessedCharacterId = rawPlayerCharStats.MostCorrectlyGuessedCharacterId,
                     MostCorrectlyGuessedCharacterName = rawPlayerCharStats.MostCorrectlyGuessedCharacterId.HasValue
-                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value)?.Name ?? rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value.ToString())
+                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value)?.Name ??
+rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value.ToString())
                         : null,
                     MostCorrectlyGuessedIconUrl = rawPlayerCharStats.MostCorrectlyGuessedCharacterId.HasValue
                         ? lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value)?.CharacterIconUrl

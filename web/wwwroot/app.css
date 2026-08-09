@@ -31,6 +31,11 @@
     font-display: swap;
 }
 
+html:root {
+    --mud-default-borderradius: 0 !important;
+    --bs-border-radius: 0 !important;
+}
+
 * {
     margin: 0;
     padding: 0;

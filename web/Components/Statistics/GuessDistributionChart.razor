@@ -4,8 +4,10 @@
 
 @inject ThemeService Themes;
 
-<MudPaper Class="pa-4 mb-4" Elevation="2" Style="border-radius: 0;">
-    <MudText Typo="Typo.h6" Class="mb-4 d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.BarChart" Class="mr-1" />@Title</MudText>
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-4 d-flex align-center">
+        <MudIcon Icon="@Icons.Material.Filled.BarChart" Class="mr-1" />@Title
+    </MudText>
 
     @if (Distribution == null || Distribution.All(x => x == 0))
     {

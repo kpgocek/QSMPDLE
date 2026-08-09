@@ -14,7 +14,7 @@
     @if (!IsGameLoaded)
     {
 
-        <MudPaper Style="padding: .5rem; border: 0.125rem solid var(--line-strong); box-shadow: var(--soft-shadow); border-radius: 0;"
+        <MudPaper Style="padding: .5rem; border: 0.125rem solid var(--line-strong); box-shadow: var(--soft-shadow);"
                   Elevation="0" Height="min(20rem, 82vw);" Width="min(20rem, 82vw);">
             <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100%" Width="100%" />
         </MudPaper>
@@ -29,10 +29,10 @@
     else
     {
         <CharacterPortrait IconUrl="@(GameStateManager.GameState?.Game.PortraitUrl ?? string.Empty)"
-            GuessesMade="@(GameStateManager.GameState?.GuessesMade.Count ?? 0)"
-            IsGuessed="@(GameStateManager.GameState?.IsWon ?? false)"
-            IsFailed="@(GameStateManager.GameState?.IsLost ?? false)" />
-        
+                           GuessesMade="@(GameStateManager.GameState?.GuessesMade.Count ?? 0)"
+                           IsGuessed="@(GameStateManager.GameState?.IsWon ?? false)"
+                           IsFailed="@(GameStateManager.GameState?.IsLost ?? false)" />
+
         @if (GameStateManager.GameState?.IsFinished ?? false)
         {
             <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
@@ -41,17 +41,19 @@
         }
         else
         {
-            <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess" IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" IsBusy="@_isGuessing" />
+            <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess"
+                               IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" IsBusy="@_isGuessing" />
         }
 
         @if (GameMode == GameMode.Practice)
         {
-            <MudButton Variant="Variant.Filled" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh" OnClick="NewPractice">
+            <MudButton Variant="Variant.Filled" Color="Color.Default" StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="NewPractice">
                 New Character
             </MudButton>
         }
 
-        }
+    }
 
     <div class="guess-table-container">
         <GuessTable Guesses="@(GameStateManager.GameState?.GuessesMade ?? [])" />
@@ -121,7 +123,7 @@
     [Parameter]
     public EventCallback<GameState> GameStateChanged { get; set; }
 
-    [Parameter] 
+    [Parameter]
     public EventCallback GameLoaded { get; set; }
 
     private CharacterLookup? GuessedCharacter;
@@ -139,7 +141,8 @@
 
     public async Task Guess(CharacterLookup? _ = null)
     {
-        if (_isGuessing || GameStateManager.GameState is null || GameStateManager.GameState.IsFinished || GuessedCharacter is null)
+        if (_isGuessing || GameStateManager.GameState is null || GameStateManager.GameState.IsFinished || GuessedCharacter is
+null)
             return;
 
         _isGuessing = true;
@@ -193,7 +196,8 @@
 
     private async Task StartNewGameAsync()
     {
-        var loadingResult = await GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber : null);
+        var loadingResult = await GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber
+: null);
 
         if (loadingResult == LoadGameResult.Failed)
         {

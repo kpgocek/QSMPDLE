@@ -25,8 +25,8 @@
 
         <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Class="mb-6">
             <strong>Data's incomplete.</strong> We only started collecting gameplay stats from the 1.1 release.
-        </MudAlert>  
-        
+        </MudAlert>
+
         <MudGrid>
             <MudItem xs="6" sm="3" Style="display:flex;">
                 <StatCard Title="Players" Delay="100" Icon="@Icons.Material.Filled.PeopleAlt"
@@ -72,7 +72,8 @@
             </MudButtonGroup>
         </div>
 
-        <GuessDistributionChart Distribution="@GlobalGuessDistributionData" Title="@($"Global Guess Distribution ({globalDistributionMode})")" />
+        <GuessDistributionChart Distribution="@GlobalGuessDistributionData"
+                                Title="@($"Global Guess Distribution ({globalDistributionMode})")" />
     </section>
 
     <section class="mb-5">
@@ -80,18 +81,15 @@
 
         <div class="mb-4">
             <MudButtonGroup Color="MudBlazor.Color.Primary" Variant="Variant.Outlined">
-                <MudButton OnClick="@(() => OnTimeRangeChanged(7))"
-                           Disabled="@loadingActivity"
+                <MudButton OnClick="@(() => OnTimeRangeChanged(7))" Disabled="@loadingActivity"
                            Variant="@(selectedDays == 7 ? Variant.Filled : Variant.Outlined)">
                     Last 7 Days
                 </MudButton>
-                <MudButton OnClick="@(() => OnTimeRangeChanged(30))"
-                           Disabled="@loadingActivity"
+                <MudButton OnClick="@(() => OnTimeRangeChanged(30))" Disabled="@loadingActivity"
                            Variant="@(selectedDays == 30 ? Variant.Filled : Variant.Outlined)">
                     Last 30 Days
                 </MudButton>
-                <MudButton OnClick="@(() => OnTimeRangeChanged(0))"
-                           Disabled="@loadingActivity"
+                <MudButton OnClick="@(() => OnTimeRangeChanged(0))" Disabled="@loadingActivity"
                            Variant="@(selectedDays == 0 ? Variant.Filled : Variant.Outlined)">
                     All Time
                 </MudButton>
@@ -136,50 +134,48 @@
         }
         else
         {
-            <p class="info">
+            <p class="info mb-1">
                 Day-N retention (DN): players who returned on day N after their first game<br />
             </p>
 
-            <MudGrid Class="mb-5">
-                <MudItem xs="6" sm="3" Style="display:flex;">
+            <MudGrid Class="mb-3">
+                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="D1 Retention" Delay="800" Icon="@Icons.Material.Filled.TrendingUp"
-                              Value="@(retention != null ? $"{retention.D1Retention:0.0}%" : "-")" 
-                              Comment="Returned on day 1" />
+                              Value="@(retention != null ? $"{retention.D1Retention:0.0}%" : "-")" Comment="Returned on day 1" />
                 </MudItem>
 
-                <MudItem xs="6" sm="3" Style="display:flex;">
+                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="D7 Retention" Delay="900" Icon="@Icons.Material.Filled.ShowChart"
-                              Value="@(retention != null ? $"{retention.D7Retention:0.0}%" : "-")" 
-                              Comment="Returned on day 7" />
+                              Value="@(retention != null ? $"{retention.D7Retention:0.0}%" : "-")" Comment="Returned on day 7" />
                 </MudItem>
 
-                <MudItem xs="6" sm="3" Style="display:flex;">
+                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="D30 Retention" Delay="1000" Icon="@Icons.Material.Filled.ShowChart"
-                              Value="@(retention != null ? $"{retention.D30Retention:0.0}%" : "-")" 
+                              Value="@(retention != null ? $"{retention.D30Retention:0.0}%" : "-")"
                               Comment="Returned on day 30" />
                 </MudItem>
             </MudGrid>
 
-            <p class="info">
+            <p class="info mb-1">
                 Rolling retention(DN+): players who returned on or after day N
             </p>
 
-            <MudGrid Class="mb-5">
-                <MudItem xs="6" sm="3" Style="display:flex;">
+            <MudGrid Class="mb-3">
+                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="D1+ Retention" Delay="1100" Icon="@Icons.Material.Filled.TrendingUp"
-                              Value="@(retention != null ? $"{retention.D1PlusRetention:0.0}%" : "-")" 
+                              Value="@(retention != null ? $"{retention.D1PlusRetention:0.0}%" : "-")"
                               Comment="Returned on or after day 1" />
                 </MudItem>
 
-                <MudItem xs="6" sm="3" Style="display:flex;">
+                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="D7+ Retention" Delay="1200" Icon="@Icons.Material.Filled.ShowChart"
-                              Value="@(retention != null ? $"{retention.D7PlusRetention:0.0}%" : "-")" 
+                              Value="@(retention != null ? $"{retention.D7PlusRetention:0.0}%" : "-")"
                               Comment="Returned on or after day 7" />
                 </MudItem>
 
-                <MudItem xs="6" sm="3" Style="display:flex;">
+                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="D30+ Retention" Delay="1300" Icon="@Icons.Material.Filled.ShowChart"
-                              Value="@(retention != null ? $"{retention.D30PlusRetention:0.0}%" : "-")" 
+                              Value="@(retention != null ? $"{retention.D30PlusRetention:0.0}%" : "-")"
                               Comment="Returned on or after day 30" />
                 </MudItem>
             </MudGrid>
@@ -197,7 +193,7 @@
         else if (globalCharacterStats != null)
         {
             <div class="mb-4">
-                <MudButtonGroup Color="MudBlazor.Color.Primary" Variant="Variant.Outlined">
+                <MudButtonGroup Color="MudBlazor.Color.Primary" Variant="Variant.Outlined" Style="border-radius:0;">
                     <MudButton OnClick="@(() => globalCharacterWindow = "AllTime")"
                                Variant="@(globalCharacterWindow == "AllTime" ? Variant.Filled : Variant.Outlined)">
                         All Time
@@ -214,71 +210,57 @@
             </div>
 
             <MudGrid>
-                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
-                    <MudCard Style="width:100%;">
+                <MudItem xs="9" sm="6" Style="display:flex;">
+                    <MudCard Style="width:100%;border-radius:0;">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <MudText Typo="Typo.h6">🤔 Most Confusing</MudText>
+                                <h5>🧱 Hardest to Guess</h5>
+                                <small>Required the most guesses on average</small>
                             </CardHeaderContent>
                         </MudCardHeader>
                         <MudCardContent>
-                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Guessed most often as the wrong answer</MudText>
-                            @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.MostConfusing))
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-
-                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
-                    <MudCard Style="width:100%;">
-                        <MudCardHeader>
-                            <CardHeaderContent>
-                                <MudText Typo="Typo.h6">✅ Easiest to Guess</MudText>
-                            </CardHeaderContent>
-                        </MudCardHeader>
-                        <MudCardContent>
-                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Most frequent winning answer</MudText>
-                            @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.Easiest))
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-
-                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
-                    <MudCard Style="width:100%;">
-                        <MudCardHeader>
-                            <CardHeaderContent>
-                                <MudText Typo="Typo.h6">🧱 Hardest to Guess</MudText>
-                            </CardHeaderContent>
-                        </MudCardHeader>
-                        <MudCardContent>
-                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Required the most guesses on average</MudText>
                             @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.Hardest))
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
 
-                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
-                    <MudCard Style="width:100%;">
+                <MudItem xs="9" sm="6" Style="display:flex;border-radius:0;">
+                    <MudCard Style="width:100%;border-radius:0;">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <MudText Typo="Typo.h6">💡 The Indicator</MudText>
+                                <h5>🤔 Most Confusing</h5>
+                                <small>Guessed most often as the wrong answer</small>
                             </CardHeaderContent>
                         </MudCardHeader>
                         <MudCardContent>
-                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Guess that led to a win on the very next guess</MudText>
+                            @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.MostConfusing))
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="9" sm="6" Style="display:flex;">
+                    <MudCard Style="width:100%;border-radius:0;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <h5>💡 The Indicator</h5>
+                                <small>Guess that led to a win on the very next guess</small>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
                             @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.TheIndicator))
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
 
-                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
-                    <MudCard Style="width:100%;">
+                <MudItem xs="9" sm="6" Style="display:flex;">
+                    <MudCard Style="width:100%;border-radius:0;">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <MudText Typo="Typo.h6">🚀 The Opener</MudText>
+                                <h5>🚀 The Opener</h5>
+                                <small>Most popular first guess in winning games</small>
                             </CardHeaderContent>
                         </MudCardHeader>
                         <MudCardContent>
-                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Most popular first guess in winning games</MudText>
                             @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.TheOpener))
                         </MudCardContent>
                     </MudCard>
@@ -458,32 +440,32 @@
                 MostConfusing = new CharacterWindowStats
                 {
                     PastTwoWeeks = Resolve(raw.MostConfusing.PastTwoWeeks),
-                    PastMonth    = Resolve(raw.MostConfusing.PastMonth),
-                    AllTime      = Resolve(raw.MostConfusing.AllTime),
+                    PastMonth = Resolve(raw.MostConfusing.PastMonth),
+                    AllTime = Resolve(raw.MostConfusing.AllTime),
                 },
                 Easiest = new CharacterWindowStats
                 {
                     PastTwoWeeks = Resolve(raw.Easiest.PastTwoWeeks),
-                    PastMonth    = Resolve(raw.Easiest.PastMonth),
-                    AllTime      = Resolve(raw.Easiest.AllTime),
+                    PastMonth = Resolve(raw.Easiest.PastMonth),
+                    AllTime = Resolve(raw.Easiest.AllTime),
                 },
                 Hardest = new CharacterWindowStats
                 {
                     PastTwoWeeks = Resolve(raw.Hardest.PastTwoWeeks),
-                    PastMonth    = Resolve(raw.Hardest.PastMonth),
-                    AllTime      = Resolve(raw.Hardest.AllTime),
+                    PastMonth = Resolve(raw.Hardest.PastMonth),
+                    AllTime = Resolve(raw.Hardest.AllTime),
                 },
                 TheIndicator = new CharacterWindowStats
                 {
                     PastTwoWeeks = Resolve(raw.TheIndicator.PastTwoWeeks),
-                    PastMonth    = Resolve(raw.TheIndicator.PastMonth),
-                    AllTime      = Resolve(raw.TheIndicator.AllTime),
+                    PastMonth = Resolve(raw.TheIndicator.PastMonth),
+                    AllTime = Resolve(raw.TheIndicator.AllTime),
                 },
                 TheOpener = new CharacterWindowStats
                 {
                     PastTwoWeeks = Resolve(raw.TheOpener.PastTwoWeeks),
-                    PastMonth    = Resolve(raw.TheOpener.PastMonth),
-                    AllTime      = Resolve(raw.TheOpener.AllTime),
+                    PastMonth = Resolve(raw.TheOpener.PastMonth),
+                    AllTime = Resolve(raw.TheOpener.AllTime),
                 },
             };
         }
