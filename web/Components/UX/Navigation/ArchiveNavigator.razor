@@ -1,0 +1,122 @@
+@using MudBlazor
+@inject NavigationManager NavigationManager
+
+<div class="archive-navigator">
+    <MudIconButton 
+        Icon="@Icons.Material.Filled.ArrowBack" 
+        OnClick="NavigateToPrevious"
+        Disabled="@(CurrentDay <= 1)"
+        aria-label="Previous day" />
+
+    <MudMenu Icon="@Icons.Material.Filled.CalendarMonth">
+
+        <MudPaper Class="pa-2">
+
+            <MudDatePicker PickerVariant="PickerVariant.Static"
+                           Date="@SelectedDate"
+                           DateChanged="OnDateSelected"
+                           MinDate="@MinDate"
+                           MaxDate="@MaxDate"
+                           AutoClose="true"
+                           AdditionalDateClassesFunc="GetDateClasses" />
+
+        </MudPaper>
+
+    </MudMenu>
+
+    <MudIconButton 
+        Icon="@Icons.Material.Filled.ArrowForward" 
+        OnClick="NavigateToNext"
+        Disabled="@(CurrentDay >= MaxDay)"
+        aria-label="Next day" />
+</div>
+
+<style>
+    .archive-navigator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+
+    .archive-completed button {
+        background: var(--success);
+        color: white;
+    }
+
+    .archive-current button {
+        background: var(--accent);
+        color: white;
+        font-weight: bold;
+    }
+
+    .archive-available button {
+        border: 1px solid var(--tint);
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int CurrentDay { get; set; }
+
+    [Parameter]
+    public int MaxDay { get; set; }
+
+    [Parameter]
+    public DateOnly FirstDay { get; set; }
+
+
+    private DateTime? SelectedDate => FirstDay.AddDays(CurrentDay - 1).ToDateTime(TimeOnly.MinValue);
+
+    private DateTime MinDate => FirstDay.ToDateTime(TimeOnly.MinValue);
+
+    private DateTime MaxDate => FirstDay.AddDays(MaxDay - 1).ToDateTime(TimeOnly.MinValue);
+
+
+    private void NavigateToPrevious()
+    {
+        if (CurrentDay > 1)
+        {
+            NavigationManager.NavigateTo($"/archive/day/{CurrentDay - 1}");
+        }
+    }
+
+    private void NavigateToNext()
+    {
+        if (CurrentDay < MaxDay)
+        {
+            NavigationManager.NavigateTo($"/archive/day/{CurrentDay + 1}");
+        }
+    }
+
+    private void OnDateSelected(DateTime? date)
+    {
+        if (date is null)
+            return;
+
+        var selectedDateOnly = DateOnly.FromDateTime(date.Value);
+        var dayNumber = selectedDateOnly.DayNumber - FirstDay.DayNumber + 1;
+
+        if (dayNumber >= 1 && dayNumber <= MaxDay && dayNumber != CurrentDay)
+        {
+            NavigationManager.NavigateTo($"/archive/day/{dayNumber}");
+        }
+    }
+
+    private string GetDateClasses(DateTime date)
+    {
+        var day = DateOnly.FromDateTime(date);
+        var archiveDay = day.DayNumber - FirstDay.DayNumber + 1;
+
+        if (archiveDay == CurrentDay)
+            return "archive-current";
+
+        if (archiveDay < CurrentDay)
+            return "archive-completed";
+
+        if (archiveDay <= MaxDay)
+            return "archive-available";
+
+        return string.Empty;
+    }
+}

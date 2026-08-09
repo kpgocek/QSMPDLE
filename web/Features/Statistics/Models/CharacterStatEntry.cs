@@ -9,15 +9,16 @@ public sealed record CharacterStatEntry
 
 public sealed record CharacterWindowStats
 {
-    public required IReadOnlyList<CharacterStatEntry> Yesterday { get; init; }
-    public required IReadOnlyList<CharacterStatEntry> PastWeek { get; init; }
+    public required IReadOnlyList<CharacterStatEntry> PastTwoWeeks { get; init; }
     public required IReadOnlyList<CharacterStatEntry> PastMonth { get; init; }
+    public required IReadOnlyList<CharacterStatEntry> AllTime { get; init; }
 }
 
 public sealed record GlobalCharacterStats
 {
     public required CharacterWindowStats MostConfusing { get; init; }
     public required CharacterWindowStats Easiest { get; init; }
+    public required CharacterWindowStats Hardest { get; init; }
     public required CharacterWindowStats TheIndicator { get; init; }
     public required CharacterWindowStats TheOpener { get; init; }
 }

@@ -1,6 +1,7 @@
 ﻿@using MudBlazor
 @using QSMPDLE.Web.Components.Game.Modules
 @using QSMPDLE.Web.Components.UX
+@using QSMPDLE.Web.Components.UX.Dialogs
 @using QSMPDLE.Web.Features.Communication.GameEvents
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Gameplay.Services
@@ -13,14 +14,10 @@
     @if (!IsGameLoaded)
     {
 
-        <MudPaper Style="padding: .5rem; border: 0.125rem solid var(--line-strong); box-shadow: var(--soft-shadow); border-radius: .75rem;"
+        <MudPaper Style="padding: .5rem; border: 0.125rem solid var(--line-strong); box-shadow: var(--soft-shadow); border-radius: 0;"
                   Elevation="0" Height="min(20rem, 82vw);" Width="min(20rem, 82vw);">
             <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100%" Width="100%" />
         </MudPaper>
-
-        <div class="answer-reveal" >
-            <h3><MudSkeleton SkeletonType="SkeletonType.Text" Width="4rem" Height="2.5rem" /></h3>
-        </div>
 
         @if (GameMode == GameMode.Practice)
         {
@@ -31,11 +28,11 @@
     }
     else
     {
-        <CharacterPortrait 
-            IconUrl="@(GameStateManager.GameState?.Game.PortraitUrl ?? string.Empty)" 
-            GuessesMade="@(GameStateManager.GameState?.GuessesMade.Count ?? 0)" 
+        <CharacterPortrait IconUrl="@(GameStateManager.GameState?.Game.PortraitUrl ?? string.Empty)"
+            GuessesMade="@(GameStateManager.GameState?.GuessesMade.Count ?? 0)"
             IsGuessed="@(GameStateManager.GameState?.IsWon ?? false)"
             IsFailed="@(GameStateManager.GameState?.IsLost ?? false)" />
+        
         @if (GameStateManager.GameState?.IsFinished ?? false)
         {
             <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
@@ -67,12 +64,12 @@
 
 @if (!(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsWon ?? false))
 {
-    <VictoryDialog GameState="@GameStateManager.GameState" OnClose="ClosePopups" />
+    <VictoryDialog GameState="@GameStateManager.GameState" GameMode="GameMode" OnClose="ClosePopups" />
 }
 
 @if (!(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsLost ?? false))
 {
-    <FailureDialog GameState="@GameStateManager.GameState" OnClose="ClosePopups" />
+    <FailureDialog GameState="@GameStateManager.GameState" GameMode="GameMode" OnClose="ClosePopups" />
 }
 
 

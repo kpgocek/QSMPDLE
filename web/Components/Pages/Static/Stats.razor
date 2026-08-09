@@ -1,0 +1,556 @@
+﻿@page "/stats"
+
+@using MudBlazor
+@using QSMPDLE.Web.Components.Statistics
+@using QSMPDLE.Web.Components.UX.StatDisplay
+@using QSMPDLE.Web.Features.Statistics.Models
+@using QSMPDLE.Web.Infrastructure.Persistence
+
+@inject IGameStatsStore GameStatsStore
+@inject ICharacterStore CharacterStore
+@inject ILogger<Stats> Logger
+
+<PageTitle>Game Statistics - QSMPDLE</PageTitle>
+
+<WebPage>
+
+    <section class="mb-2">
+        <h2>
+            Statistics & Telemetry
+        </h2>
+
+        <p class="info">
+            Some interesting information about our players
+        </p>
+
+        <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Class="mb-6">
+            <strong>Data's incomplete.</strong> We only started collecting gameplay stats from the 1.1 release.
+        </MudAlert>  
+        
+        <MudGrid>
+            <MudItem xs="6" sm="3" Style="display:flex;">
+                <StatCard Title="Players" Delay="100" Icon="@Icons.Material.Filled.PeopleAlt"
+                          Value="@($"{TotalPlayers}")" />
+            </MudItem>
+
+            <MudItem xs="6" sm="3" Style="display:flex;">
+                <StatCard Title="Total Games Played" Delay="200" Icon="@Icons.Material.Filled.EmojiEvents"
+                          Value="@($"{TotalGamesPlayed}")" />
+            </MudItem>
+
+            <MudItem xs="6" sm="3" Style="display:flex;">
+                <StatCard Title="Global Win Rate" Delay="300" Icon="@Icons.Material.Filled.LocalFireDepartment"
+                          Value="@($"{GlobalWinRate:0}%")" />
+            </MudItem>
+
+            <MudItem xs="6" sm="3" Style="display:flex;">
+                <StatCard Title="Avg Guesses to Win" Delay="400" Icon="@Icons.Material.Filled.Tag"
+                          Value="@(GlobalAvgGuessesToWin > 0 ? $"{GlobalAvgGuessesToWin:0.0}" : "-")" />
+            </MudItem>
+        </MudGrid>
+
+    </section>
+
+    <section class="mb-5">
+        <h3>Global Guess Distribution</h3>
+        <p class="info mb-4">How many guesses players needed to win</p>
+
+        <div class="mb-4">
+            <MudButtonGroup Color="MudBlazor.Color.Primary" Variant="Variant.Outlined">
+                <MudButton OnClick="@(() => globalDistributionMode = "Daily")"
+                           Variant="@(globalDistributionMode == "Daily" ? Variant.Filled : Variant.Outlined)">
+                    Daily Mode
+                </MudButton>
+                <MudButton OnClick="@(() => globalDistributionMode = "Practice")"
+                           Variant="@(globalDistributionMode == "Practice" ? Variant.Filled : Variant.Outlined)">
+                    Practice Mode
+                </MudButton>
+                <MudButton OnClick="@(() => globalDistributionMode = "Combined")"
+                           Variant="@(globalDistributionMode == "Combined" ? Variant.Filled : Variant.Outlined)">
+                    Combined
+                </MudButton>
+            </MudButtonGroup>
+        </div>
+
+        <GuessDistributionChart Distribution="@GlobalGuessDistributionData" Title="@($"Global Guess Distribution ({globalDistributionMode})")" />
+    </section>
+
+    <section class="mb-5">
+        <h3>Player Activity</h3>
+
+        <div class="mb-4">
+            <MudButtonGroup Color="MudBlazor.Color.Primary" Variant="Variant.Outlined">
+                <MudButton OnClick="@(() => OnTimeRangeChanged(7))"
+                           Disabled="@loadingActivity"
+                           Variant="@(selectedDays == 7 ? Variant.Filled : Variant.Outlined)">
+                    Last 7 Days
+                </MudButton>
+                <MudButton OnClick="@(() => OnTimeRangeChanged(30))"
+                           Disabled="@loadingActivity"
+                           Variant="@(selectedDays == 30 ? Variant.Filled : Variant.Outlined)">
+                    Last 30 Days
+                </MudButton>
+                <MudButton OnClick="@(() => OnTimeRangeChanged(0))"
+                           Disabled="@loadingActivity"
+                           Variant="@(selectedDays == 0 ? Variant.Filled : Variant.Outlined)">
+                    All Time
+                </MudButton>
+            </MudButtonGroup>
+        </div>
+
+        @if (loadingActivity)
+        {
+            <MudProgressLinear Color="MudBlazor.Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else
+        {
+            <DailyActivePlayersChart ChartData="@dauData" />
+            <NewVsReturningChart ChartData="@newVsReturningData" />
+            <ActivityDistributionChart ChartData="@activityDistribution" />
+
+            <MudGrid Class="mt-4">
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Average Games Per Player" Delay="500" Icon="@Icons.Material.Filled.Calculate"
+                              Value="@(gamesPerPlayer != null ? $"{gamesPerPlayer.Average:0.0}" : "-")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Median Games Per Player" Delay="600" Icon="@Icons.Material.Filled.Functions"
+                              Value="@(gamesPerPlayer != null ? $"{gamesPerPlayer.Median:0}" : "-")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Maximum Games Per Player" Delay="700" Icon="@Icons.Material.Filled.EmojiEvents"
+                              Value="@(gamesPerPlayer != null ? $"{gamesPerPlayer.Maximum}" : "-")" />
+                </MudItem>
+            </MudGrid>
+        }
+    </section>
+
+    <section class="mb-5">
+        <h3>Player Retention</h3>
+
+        @if (loadingRetention)
+        {
+            <MudProgressLinear Color="MudBlazor.Color.Primary" Indeterminate="true" />
+        }
+        else
+        {
+            <p class="info">
+                Day-N retention (DN): players who returned on day N after their first game<br />
+            </p>
+
+            <MudGrid Class="mb-5">
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="D1 Retention" Delay="800" Icon="@Icons.Material.Filled.TrendingUp"
+                              Value="@(retention != null ? $"{retention.D1Retention:0.0}%" : "-")" 
+                              Comment="Returned on day 1" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="D7 Retention" Delay="900" Icon="@Icons.Material.Filled.ShowChart"
+                              Value="@(retention != null ? $"{retention.D7Retention:0.0}%" : "-")" 
+                              Comment="Returned on day 7" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="D30 Retention" Delay="1000" Icon="@Icons.Material.Filled.ShowChart"
+                              Value="@(retention != null ? $"{retention.D30Retention:0.0}%" : "-")" 
+                              Comment="Returned on day 30" />
+                </MudItem>
+            </MudGrid>
+
+            <p class="info">
+                Rolling retention(DN+): players who returned on or after day N
+            </p>
+
+            <MudGrid Class="mb-5">
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="D1+ Retention" Delay="1100" Icon="@Icons.Material.Filled.TrendingUp"
+                              Value="@(retention != null ? $"{retention.D1PlusRetention:0.0}%" : "-")" 
+                              Comment="Returned on or after day 1" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="D7+ Retention" Delay="1200" Icon="@Icons.Material.Filled.ShowChart"
+                              Value="@(retention != null ? $"{retention.D7PlusRetention:0.0}%" : "-")" 
+                              Comment="Returned on or after day 7" />
+                </MudItem>
+
+                <MudItem xs="6" sm="3" Style="display:flex;">
+                    <StatCard Title="D30+ Retention" Delay="1300" Icon="@Icons.Material.Filled.ShowChart"
+                              Value="@(retention != null ? $"{retention.D30PlusRetention:0.0}%" : "-")" 
+                              Comment="Returned on or after day 30" />
+                </MudItem>
+            </MudGrid>
+        }
+    </section>
+
+    <section class="mb-5">
+        <h3>Global Character Insights</h3>
+        <p class="info mb-4">Community patterns around characters — top 3 per time window</p>
+
+        @if (loadingGlobalCharacterStats)
+        {
+            <MudProgressLinear Color="MudBlazor.Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else if (globalCharacterStats != null)
+        {
+            <div class="mb-4">
+                <MudButtonGroup Color="MudBlazor.Color.Primary" Variant="Variant.Outlined">
+                    <MudButton OnClick="@(() => globalCharacterWindow = "AllTime")"
+                               Variant="@(globalCharacterWindow == "AllTime" ? Variant.Filled : Variant.Outlined)">
+                        All Time
+                    </MudButton>
+                    <MudButton OnClick="@(() => globalCharacterWindow = "PastMonth")"
+                               Variant="@(globalCharacterWindow == "PastMonth" ? Variant.Filled : Variant.Outlined)">
+                        Past 30 Days
+                    </MudButton>
+                    <MudButton OnClick="@(() => globalCharacterWindow = "PastTwoWeeks")"
+                               Variant="@(globalCharacterWindow == "PastTwoWeeks" ? Variant.Filled : Variant.Outlined)">
+                        Past 14 Days
+                    </MudButton>
+                </MudButtonGroup>
+            </div>
+
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
+                    <MudCard Style="width:100%;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">🤔 Most Confusing</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Guessed most often as the wrong answer</MudText>
+                            @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.MostConfusing))
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
+                    <MudCard Style="width:100%;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">✅ Easiest to Guess</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Most frequent winning answer</MudText>
+                            @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.Easiest))
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
+                    <MudCard Style="width:100%;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">🧱 Hardest to Guess</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Required the most guesses on average</MudText>
+                            @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.Hardest))
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
+                    <MudCard Style="width:100%;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">💡 The Indicator</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Guess that led to a win on the very next guess</MudText>
+                            @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.TheIndicator))
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="4" Style="display:flex;">
+                    <MudCard Style="width:100%;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">🚀 The Opener</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mb-2 mud-text-secondary">Most popular first guess in winning games</MudText>
+                            @RenderCharacterRanking(GetWindowEntries(globalCharacterStats.TheOpener))
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        }
+    </section>
+
+</WebPage>
+
+@code {
+    // Global Stats
+    private long TotalPlayers { get; set; }
+    private long TotalGamesPlayed { get; set; }
+    private double GlobalWinRate { get; set; }
+    private double GlobalAvgGuessesToWin { get; set; }
+    private long[] DailyGuessDistribution { get; set; } = new long[6];
+    private long[] PracticeGuessDistribution { get; set; } = new long[6];
+    private string globalDistributionMode = "Daily";
+
+    private double[] GlobalGuessDistributionData
+    {
+        get
+        {
+            return globalDistributionMode switch
+            {
+                "Daily" => DailyGuessDistribution.Select(x => (double)x).ToArray(),
+                "Practice" => PracticeGuessDistribution.Select(x => (double)x).ToArray(),
+                "Combined" => DailyGuessDistribution.Zip(PracticeGuessDistribution, (d, p) => (double)(d + p)).ToArray(),
+                _ => new double[6]
+            };
+        }
+    }
+
+    // Player Activity Data
+    private List<DailyActivePlayersData>? dauData;
+    private List<NewVsReturningPlayersData>? newVsReturningData;
+    private PlayerActivityDistributionData[]? activityDistribution;
+    private GamesPerPlayerStats? gamesPerPlayer;
+    private RetentionStats? retention;
+
+    // Character Stats
+    private GlobalCharacterStats? globalCharacterStats;
+    private string globalCharacterWindow = "AllTime";
+
+    private IReadOnlyList<CharacterStatEntry> GetWindowEntries(CharacterWindowStats stats)
+    {
+        return globalCharacterWindow switch
+        {
+            "PastTwoWeeks" => stats.PastTwoWeeks,
+            "PastMonth" => stats.PastMonth,
+            "AllTime" => stats.AllTime,
+            _ => stats.AllTime
+        };
+    }
+
+    private RenderFragment RenderCharacterRanking(IReadOnlyList<CharacterStatEntry> entries) =>
+        @<div>
+            @if (!entries.Any())
+            {
+                <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available</MudText>
+            }
+            else
+            {
+                @for (var i = 0; i < entries.Count && i < 3; i++)
+                {
+                    var entry = entries[i];
+                    var rankBadge = i switch
+                    {
+                        0 => "🥇",
+                        1 => "🥈",
+                        2 => "🥉",
+                        _ => ""
+                    };
+                    <div class="d-flex align-center mb-2" style="gap:8px;">
+                        <span style="font-size:1.2rem;">@rankBadge</span>
+                        <MudAvatar Style="width:32px;height:32px;" Square="true">
+                            <MudImage Src="@($"/graphics/mini-heads/{entry.CharacterName}.webp")" />
+                        </MudAvatar>
+                        <div style="flex:1;">
+                            <MudText Typo="Typo.body1">@entry.CharacterName</MudText>
+                            <MudText Typo="Typo.caption" Color="MudBlazor.Color.Secondary">@entry.Count times</MudText>
+                        </div>
+                    </div>
+                }
+            }
+        </div>;
+
+
+    private int selectedDays = 7;
+    private bool loadingActivity = true;
+    private bool loadingRetention = true;
+    private bool loadingGlobalCharacterStats = true;
+    private bool initialLoadCompleted;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || initialLoadCompleted)
+        {
+            return;
+        }
+
+        try
+        {
+            await ExecuteWithDiagnosticsAsync(nameof(CollectGlobalDataAsync), CollectGlobalDataAsync);
+            await ExecuteWithDiagnosticsAsync(nameof(CollectPlayerActivityDataAsync), CollectPlayerActivityDataAsync);
+            await ExecuteWithDiagnosticsAsync(nameof(CollectRetentionDataAsync), CollectRetentionDataAsync);
+            await ExecuteWithDiagnosticsAsync(nameof(CollectGlobalCharacterStatsAsync), CollectGlobalCharacterStatsAsync);
+
+            initialLoadCompleted = true;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CollectGlobalDataAsync()
+    {
+        var globalData = await GameStatsStore.GetGlobalStatsAsync();
+
+        TotalPlayers = globalData.TotalPlayers;
+        TotalGamesPlayed = globalData.TotalGames;
+        GlobalWinRate = globalData.WinRate;
+        GlobalAvgGuessesToWin = globalData.AverageGuessesToWin;
+        DailyGuessDistribution = globalData.DailyGuessDistribution;
+        PracticeGuessDistribution = globalData.PracticeGuessDistribution;
+    }
+
+    private async Task CollectPlayerActivityDataAsync()
+    {
+        loadingActivity = true;
+
+        try
+        {
+            await LoadRangeDependentActivityDataAsync(selectedDays);
+            activityDistribution = await GameStatsStore.GetPlayerActivityDistributionAsync();
+            gamesPerPlayer = await GameStatsStore.GetGamesPerPlayerStatsAsync();
+        }
+        finally
+        {
+            loadingActivity = false;
+        }
+    }
+
+    private async Task CollectRetentionDataAsync()
+    {
+        loadingRetention = true;
+
+        try
+        {
+            retention = await GameStatsStore.GetRetentionStatsAsync();
+        }
+        finally
+        {
+            loadingRetention = false;
+        }
+    }
+
+    private async Task CollectGlobalCharacterStatsAsync()
+    {
+        loadingGlobalCharacterStats = true;
+
+        try
+        {
+            var raw = await GameStatsStore.GetGlobalCharacterStatsAsync();
+            var lookups = await CharacterStore.GetLookupsAsync();
+
+            IReadOnlyList<CharacterStatEntry> Resolve(IReadOnlyList<CharacterStatEntry> entries) =>
+                entries.Select(e => e with
+                {
+                    CharacterName = lookups.FirstOrDefault(l => l.Id == e.CharacterId)?.Name ?? e.CharacterId.ToString()
+                }).ToList();
+
+            globalCharacterStats = new GlobalCharacterStats
+            {
+                MostConfusing = new CharacterWindowStats
+                {
+                    PastTwoWeeks = Resolve(raw.MostConfusing.PastTwoWeeks),
+                    PastMonth    = Resolve(raw.MostConfusing.PastMonth),
+                    AllTime      = Resolve(raw.MostConfusing.AllTime),
+                },
+                Easiest = new CharacterWindowStats
+                {
+                    PastTwoWeeks = Resolve(raw.Easiest.PastTwoWeeks),
+                    PastMonth    = Resolve(raw.Easiest.PastMonth),
+                    AllTime      = Resolve(raw.Easiest.AllTime),
+                },
+                Hardest = new CharacterWindowStats
+                {
+                    PastTwoWeeks = Resolve(raw.Hardest.PastTwoWeeks),
+                    PastMonth    = Resolve(raw.Hardest.PastMonth),
+                    AllTime      = Resolve(raw.Hardest.AllTime),
+                },
+                TheIndicator = new CharacterWindowStats
+                {
+                    PastTwoWeeks = Resolve(raw.TheIndicator.PastTwoWeeks),
+                    PastMonth    = Resolve(raw.TheIndicator.PastMonth),
+                    AllTime      = Resolve(raw.TheIndicator.AllTime),
+                },
+                TheOpener = new CharacterWindowStats
+                {
+                    PastTwoWeeks = Resolve(raw.TheOpener.PastTwoWeeks),
+                    PastMonth    = Resolve(raw.TheOpener.PastMonth),
+                    AllTime      = Resolve(raw.TheOpener.AllTime),
+                },
+            };
+        }
+        finally
+        {
+            loadingGlobalCharacterStats = false;
+        }
+    }
+
+    private async Task OnTimeRangeChanged(int days)
+    {
+        if (loadingActivity)
+        {
+            return;
+        }
+
+        await ExecuteWithDiagnosticsAsync($"{nameof(OnTimeRangeChanged)}:{days}", async () =>
+        {
+            loadingActivity = true;
+            selectedDays = days;
+            await InvokeAsync(StateHasChanged);
+
+            try
+            {
+                await LoadRangeDependentActivityDataAsync(days);
+            }
+            finally
+            {
+                loadingActivity = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+    }
+
+    private async Task LoadRangeDependentActivityDataAsync(int days)
+    {
+        var from = CalculateFromDate(days);
+
+        dauData = await GameStatsStore.GetDailyActivePlayersAsync(from);
+        newVsReturningData = await GameStatsStore.GetNewVsReturningPlayersAsync(from);
+    }
+
+    private async Task ExecuteWithDiagnosticsAsync(string operationName, Func<Task> operation)
+    {
+        Logger.LogInformation("Stats load {Operation} START", operationName);
+
+        try
+        {
+            await operation();
+            Logger.LogInformation("Stats load {Operation} SUCCESS", operationName);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Stats load {Operation} FAILED", operationName);
+            throw;
+        }
+        finally
+        {
+            Logger.LogInformation("Stats load {Operation} END", operationName);
+        }
+    }
+
+    private static DateOnly? CalculateFromDate(int days)
+    {
+        if (days == 0) return null;
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return days == 7 ? today.AddDays(-6) : today.AddDays(-29);
+    }
+}

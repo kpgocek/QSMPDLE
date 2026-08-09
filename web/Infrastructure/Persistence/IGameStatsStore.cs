@@ -25,4 +25,6 @@ public interface IGameStatsStore
     Task<GlobalCharacterStats> GetGlobalCharacterStatsAsync();
 
     Task<PlayerCharacterStats> GetPlayerCharacterStatsAsync(Guid playerId);
+
+    Task<DateOnly?> GetPlayerFirstGameDateAsync(Guid playerId);
 }

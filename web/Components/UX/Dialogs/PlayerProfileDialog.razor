@@ -1,0 +1,316 @@
+@using MudBlazor
+@using QSMPDLE.Web.Components.Statistics
+@using QSMPDLE.Web.Components.UX.StatDisplay
+@using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Features.Statistics.Models
+@using QSMPDLE.Web.Infrastructure.LocalStorage
+@using QSMPDLE.Web.Infrastructure.Persistence
+
+@inject IPlayerStatsStore PlayerStatsStore
+@inject IGameStatsStore GameStatsStore
+@inject ICharacterStore CharacterStore
+
+<MudDialog Class="pop-up pt-0">
+    <DialogActions>
+        <MudButton OnClick="Close"><MudIcon Icon="@Icons.Material.Filled.Close" /></MudButton>
+    </DialogActions>
+    <TitleContent>
+        <h2>Player Stats</h2>
+    </TitleContent>
+    <DialogContent>
+        @if (loading)
+        {
+            <MudProgressCircular Color="MudBlazor.Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else
+        {
+            @if (globalStats != null && DailyGamesPlayed > 0)
+            {
+                <div class="d-flex flex-wrap justify-center" style="gap:.5rem;">
+                    <MudChip T="string" Color="@WinRateDeltaColor" Variant="Variant.Filled" Size="Size.Small">
+                        Win Rate: @WinRateDeltaText
+                    </MudChip>
+                    @if (DailyGamesWon > 0)
+                    {
+                        <MudChip T="string" Color="@AvgGuessesDeltaColor" Variant="Variant.Filled" Size="Size.Small">
+                            Avg Guesses: @AvgGuessesDeltaText
+                        </MudChip>
+                    }
+                </div>
+            }
+
+            @if (playerCharacterStats is null)
+            {
+                <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available yet</MudText>
+            }
+            else
+            {
+                <div class="d-flex justify-space-between gap-4 mt-4">
+                    <MudCard Class="w-50" Style="border-radius: 0;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <span class="d-flex"><MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1"/>Most Guessed (Wrong)</span>
+                                <h3>@(playerCharacterStats.MostGuessedCharacterName ?? "-")</h3>
+                            </CardHeaderContent>
+                            <CardHeaderAvatar>
+                                @if (playerCharacterStats.MostGuessedIconUrl is not null)
+                                {
+                                    <MudImage Src="@($"/graphics/guessing/{playerCharacterStats.MostGuessedIconUrl}/Head.webp")" Height="80" />
+                                }
+                            </CardHeaderAvatar>
+                        </MudCardHeader>
+                        <MudCardContent Class="pt-0">
+                            @if (playerCharacterStats.MostGuessedCount > 0)
+                            {
+                                <MudText Color="MudBlazor.Color.Secondary">
+                                    Guessed @(playerCharacterStats.MostGuessedCount)× as the wrong answer
+                                </MudText>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+
+                    
+                    <MudCard Class="w-50" Style="border-radius: 0;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <span class="d-flex"><MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1"/>Most Correctly Guessed</span>
+                                <h3>@(playerCharacterStats.MostCorrectlyGuessedCharacterName ?? "-")</h3>
+                            </CardHeaderContent>
+                            <CardHeaderAvatar>
+                                    @if (playerCharacterStats.MostCorrectlyGuessedIconUrl is not null)
+                                {
+                                    <MudImage Src="@($"/graphics/guessing/{playerCharacterStats.MostCorrectlyGuessedIconUrl}/Head.webp")" Height="80" />
+                                }
+                            </CardHeaderAvatar>
+                        </MudCardHeader>
+                           
+                        <MudCardContent Class="pt-0">
+                                @if (playerCharacterStats.MostCorrectlyGuessedCount > 0)
+                                {
+                                    <MudText Color="MudBlazor.Color.Secondary">
+                                        Correctly identified @(playerCharacterStats.MostCorrectlyGuessedCount)× as the answer
+                                    </MudText>
+                                }
+                            </MudCardContent>
+                        </MudCard>
+                   </div>
+            }
+
+            <MudGrid Class="mt-2">
+                
+                
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Daily Games" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
+                                Value="@($"{DailyGamesPlayed}")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Practice Games" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
+                              Value="@($"{PracticeGamesFinished}")"
+                              Comment="@($"{PracticeGamesStarted - PracticeGamesFinished} abandoned")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Current Streak" Delay="250" Icon="@Icons.Material.Filled.Whatshot"
+                              Value="@($"{CurrentStreak}")" />
+                </MudItem>
+
+
+
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Daily Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
+                                Value="@($"{DailyGamesWon}")" />
+                </MudItem>
+               
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Practice Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
+                              Value="@($"{PracticeGamesWon}")" />
+                </MudItem>
+                
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Best Streak" Delay="300" Icon="@Icons.Material.Filled.WorkspacePremium"
+                                Value="@($"{LongestStreak}")" />
+                </MudItem>
+
+
+
+
+                
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Daily Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
+                              Value="@($"{DailyWinRate:0}%")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Practice Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
+                              Value="@($"{FinishedPracticeWinRate:0}%")"
+                              Comment="@($"{AllPracticeWinRate:0}% of all started")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Avg Guesses" Delay="350" Icon="@Icons.Material.Filled.Tag"
+                              Value="@(DailyGamesWon > 0 ? $"{AvgGuessesPerDailyWin:0.0}" : "-")"
+                              Comment="The lower, the better" />
+                </MudItem>
+                
+            </MudGrid>
+
+            @if (DailyGamesWon > 0)
+            {
+                <MudDivider />
+
+                <section class="mt-5">
+                    <GuessDistributionChart Distribution="@GuessDistributionAsDoubles" Title="Your Guess Distribution"/>
+                </section>
+            }
+        }
+    </DialogContent>
+</MudDialog>
+
+<style>
+    .pop-up {
+        border-radius: 0;
+        background: 
+            radial-gradient(circle at 50% 0, var(--surface-strong), transparent 64rem), var(--black);
+    }
+</style>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private bool loading = true;
+
+    private Guid playerId;
+
+    private DateOnly? memberSince;
+
+    // Daily stats
+    private int DailyGamesPlayed { get; set; }
+    private int DailyGamesWon { get; set; }
+    private int CurrentStreak { get; set; }
+    private int LongestStreak { get; set; }
+    private double DailyWinRate { get; set; }
+    private int[] GuessDistribution { get; set; } = new int[6];
+
+    private double[] GuessDistributionAsDoubles => GuessDistribution.Select(x => (double)x).ToArray();
+
+    private double AvgGuessesPerDailyWin =>
+        DailyGamesWon == 0
+            ? 0
+            : (double)Enumerable.Range(0, 6).Sum(i => (i + 1) * GuessDistribution[i]) / DailyGamesWon;
+
+    // Practice stats
+    private int PracticeGamesStarted { get; set; }
+    private int PracticeGamesFinished { get; set; }
+    private int PracticeGamesWon { get; set; }
+
+    private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) / (double)PracticeGamesFinished;
+    private double AllPracticeWinRate => PracticeGamesStarted == 0 ? 0 : (PracticeGamesWon * 100) / (double)PracticeGamesStarted;
+
+    // Global comparison
+    private GlobalStatsView? globalStats;
+
+    // Character stats
+    private PlayerCharacterStats? playerCharacterStats;
+
+    private string PlayerTag =>
+        playerId == Guid.Empty ? "#????????" : $"#{playerId:N}"[..9].ToUpperInvariant();
+
+    private string MemberSinceText =>
+        memberSince.HasValue
+            ? $"Member since {memberSince.Value:MMMM d, yyyy}"
+            : "New player — no games played yet";
+
+    private double WinRateDelta => globalStats is null ? 0 : DailyWinRate - globalStats.WinRate;
+
+    private MudBlazor.Color WinRateDeltaColor => WinRateDelta >= 0 ? MudBlazor.Color.Success : MudBlazor.Color.Error;
+
+    private string WinRateDeltaText =>
+        globalStats is null
+            ? "-"
+            : WinRateDelta >= 0
+                ? $"+{WinRateDelta:0.0}% vs global"
+                : $"{WinRateDelta:0.0}% vs global";
+
+    private double AvgGuessesDelta => globalStats is null ? 0 : AvgGuessesPerDailyWin - globalStats.AverageGuessesToWin;
+
+    private MudBlazor.Color AvgGuessesDeltaColor => AvgGuessesDelta <= 0 ? MudBlazor.Color.Success : MudBlazor.Color.Error;
+
+    private string AvgGuessesDeltaText =>
+        globalStats is null
+            ? "-"
+            : AvgGuessesDelta <= 0
+                ? $"{-AvgGuessesDelta:0.0} fewer than global"
+                : $"{AvgGuessesDelta:0.0} more than global";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        loading = true;
+
+        try
+        {
+            var stats = await PlayerStatsStore.LoadAsync();
+            playerId = stats.Id;
+            DailyGamesPlayed = stats.GamesPlayed;
+            DailyGamesWon = stats.GamesWon;
+            CurrentStreak = stats.CurrentStreak;
+            LongestStreak = stats.MaxStreak;
+            DailyWinRate = stats.WinRate;
+            GuessDistribution = stats.GuessDistribution;
+
+            var gameStats = await GameStatsStore.GetPlayerGames(playerId);
+
+            var practiceGames = gameStats.Where(game => game.Mode.Equals(GameMode.Practice)).Distinct();
+
+            PracticeGamesStarted = practiceGames.Count();
+
+            var finishedPracticeGames = practiceGames.Where(game => game.FinishedOnUtc is not null);
+
+            PracticeGamesFinished = finishedPracticeGames.Count();
+
+            PracticeGamesWon = finishedPracticeGames.Count(game => game.IsWon);
+
+            memberSince = await GameStatsStore.GetPlayerFirstGameDateAsync(playerId);
+
+            globalStats = await GameStatsStore.GetGlobalStatsAsync();
+
+            if (playerId != Guid.Empty)
+            {
+                var rawPlayerCharStats = await GameStatsStore.GetPlayerCharacterStatsAsync(playerId);
+                var lookups = await CharacterStore.GetLookupsAsync();
+
+                playerCharacterStats = new PlayerCharacterStats
+                {
+                    MostGuessedCharacterId = rawPlayerCharStats.MostGuessedCharacterId,
+                    MostGuessedCharacterName = rawPlayerCharStats.MostGuessedCharacterId.HasValue
+                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostGuessedCharacterId.Value)?.Name ?? rawPlayerCharStats.MostGuessedCharacterId.Value.ToString())
+                        : null,
+                    MostGuessedIconUrl = rawPlayerCharStats.MostGuessedCharacterId.HasValue
+                        ? lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostGuessedCharacterId.Value)?.CharacterIconUrl
+                        : null,
+                    MostGuessedCount = rawPlayerCharStats.MostGuessedCount,
+                    MostCorrectlyGuessedCharacterId = rawPlayerCharStats.MostCorrectlyGuessedCharacterId,
+                    MostCorrectlyGuessedCharacterName = rawPlayerCharStats.MostCorrectlyGuessedCharacterId.HasValue
+                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value)?.Name ?? rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value.ToString())
+                        : null,
+                    MostCorrectlyGuessedIconUrl = rawPlayerCharStats.MostCorrectlyGuessedCharacterId.HasValue
+                        ? lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value)?.CharacterIconUrl
+                        : null,
+                    MostCorrectlyGuessedCount = rawPlayerCharStats.MostCorrectlyGuessedCount,
+                };
+            }
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+}

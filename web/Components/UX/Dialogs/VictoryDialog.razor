@@ -84,7 +84,7 @@
             </div>
         }
         <div class="buttons">
-            @if (DayNumber is not null)
+            @if (GameMode == GameMode.Daily)
             {
                 <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary">
 
@@ -231,6 +231,8 @@
 
 @code {
     [Parameter] public GameState GameState { get; set; } = null!;
+
+    [Parameter] public GameMode GameMode { get; set; }
 
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public PlayerStats? Stats { get; set; } = null!;

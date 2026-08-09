@@ -25,6 +25,16 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
         await GameStateStore.SaveAsync(GameState);
     }
 
+    public async Task StartNewArchivedGameAsync(int dayNumber, CancellationToken cancellationToken = default)
+    {
+        var playerId = await GetPlayerIdAsync();
+
+        GameState = await GameService.StartArchivalAsync(dayNumber, cancellationToken);
+        GameState.PlayerId = playerId;
+
+        await GameStateStore.SaveAsync(GameState);
+    }
+
     public async Task<LoadGameResult> LoadOrCreateAsync(GameMode mode, int? dayNumber = null, CancellationToken cancellationToken = default)
     {
         if (mode == GameMode.Daily)

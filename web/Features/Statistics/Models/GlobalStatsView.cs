@@ -8,6 +8,12 @@ public sealed class GlobalStatsView
 
     public long TotalWins { get; init; }
 
+    public double AverageGuessesToWin { get; init; }
+
+    public long[] DailyGuessDistribution { get; init; } = new long[6];
+
+    public long[] PracticeGuessDistribution { get; init; } = new long[6];
+
     public double WinRate =>
         TotalGames == 0
             ? 0

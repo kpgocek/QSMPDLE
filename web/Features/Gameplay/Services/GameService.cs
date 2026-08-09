@@ -61,7 +61,12 @@ public sealed class GameService(ICharacterStore CharacterStore) : IGameService
         return today.DayNumber - FirstDay.DayNumber + 1;
     }
 
+    public async Task<int> GetMaxArchiveDayAsync(CancellationToken cancellationToken)
+    {
+        var todayDayNumber = await GetTodayDayNumberAsync(cancellationToken);
+        return todayDayNumber - 1;
+    }
 
-
+    public DateOnly GetFirstDay() => FirstDay;
 
 }

@@ -60,12 +60,50 @@ public sealed class DatabaseGameStatsStore(
         var totalGames = await query.CountAsync();
         var totalPlayers = await query.Select(g => g.PlayerId).Distinct().CountAsync();
         var totalWins = await query.CountAsync(g => g.IsWon);
+        var avgGuessesToWin = await query
+            .Where(g => g.IsWon)
+            .Select(g => (double?)g.Guesses.Count)
+            .AverageAsync() ?? 0;
+
+        // Sequential queries for guess distributions per mode (avoiding Task.WhenAll)
+        var dailyDistribution = new long[6];
+        var dailyDistributionData = await query
+            .Where(g => g.Mode == GameMode.Daily && g.IsWon)
+            .GroupBy(g => g.Guesses.Count)
+            .Select(group => new { GuessCount = group.Key, Count = (long)group.Count() })
+            .ToListAsync();
+
+        foreach (var item in dailyDistributionData)
+        {
+            if (item.GuessCount >= 1 && item.GuessCount <= 6)
+            {
+                dailyDistribution[item.GuessCount - 1] = item.Count;
+            }
+        }
+
+        var practiceDistribution = new long[6];
+        var practiceDistributionData = await query
+            .Where(g => g.Mode == GameMode.Practice && g.IsWon)
+            .GroupBy(g => g.Guesses.Count)
+            .Select(group => new { GuessCount = group.Key, Count = (long)group.Count() })
+            .ToListAsync();
+
+        foreach (var item in practiceDistributionData)
+        {
+            if (item.GuessCount >= 1 && item.GuessCount <= 6)
+            {
+                practiceDistribution[item.GuessCount - 1] = item.Count;
+            }
+        }
 
         return new GlobalStatsView
         {
             TotalGames = totalGames,
             TotalPlayers = totalPlayers,
-            TotalWins = totalWins
+            TotalWins = totalWins,
+            AverageGuessesToWin = avgGuessesToWin,
+            DailyGuessDistribution = dailyDistribution,
+            PracticeGuessDistribution = practiceDistribution
         };
     }
 
@@ -300,21 +338,6 @@ public sealed class DatabaseGameStatsStore(
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
             ),
-            EligibleForD14 AS (
-                SELECT "PlayerId", "CohortDate"
-                FROM PlayerCohorts
-                WHERE "CohortDate" <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '14 days'
-            ),
-            ReturnedD14 AS (
-                SELECT DISTINCT e."PlayerId"
-                FROM EligibleForD14 e
-                WHERE EXISTS (
-                    SELECT 1 FROM "GameStats" gs
-                    WHERE gs."PlayerId" = e."PlayerId"
-                      AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '14 days'
-                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
-                )
-            ),
             EligibleForD30 AS (
                 SELECT "PlayerId", "CohortDate"
                 FROM PlayerCohorts
@@ -329,33 +352,72 @@ public sealed class DatabaseGameStatsStore(
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '30 days'
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
+            ),
+            ReturnedD1_Plus AS (
+                SELECT DISTINCT e."PlayerId"
+                FROM EligibleForD1 e
+                WHERE EXISTS (
+                    SELECT 1 FROM "GameStats" gs
+                    WHERE gs."PlayerId" = e."PlayerId"
+                      AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') >= e."CohortDate" + INTERVAL '1 day'
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+                )
+            ),
+            ReturnedD7_Plus AS (
+                SELECT DISTINCT e."PlayerId"
+                FROM EligibleForD7 e
+                WHERE EXISTS (
+                    SELECT 1 FROM "GameStats" gs
+                    WHERE gs."PlayerId" = e."PlayerId"
+                      AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') >= e."CohortDate" + INTERVAL '7 days'
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+                )
+            ),
+            ReturnedD30_Plus AS (
+                SELECT DISTINCT e."PlayerId"
+                FROM EligibleForD30 e
+                WHERE EXISTS (
+                    SELECT 1 FROM "GameStats" gs
+                    WHERE gs."PlayerId" = e."PlayerId"
+                      AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') >= e."CohortDate" + INTERVAL '30 days'
+                      AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+                )
             )
             SELECT 
                 (SELECT COUNT(*) FROM EligibleForD1) as "EligibleD1",
                 (SELECT COUNT(*) FROM ReturnedD1) as "ReturnedD1",
                 (SELECT COUNT(*) FROM EligibleForD7) as "EligibleD7",
                 (SELECT COUNT(*) FROM ReturnedD7) as "ReturnedD7",
-                (SELECT COUNT(*) FROM EligibleForD14) as "EligibleD14",
-                (SELECT COUNT(*) FROM ReturnedD14) as "ReturnedD14",
                 (SELECT COUNT(*) FROM EligibleForD30) as "EligibleD30",
-                (SELECT COUNT(*) FROM ReturnedD30) as "ReturnedD30"
+                (SELECT COUNT(*) FROM ReturnedD30) as "ReturnedD30",
+                (SELECT COUNT(*) FROM EligibleForD1) as "EligibleD1Plus",
+                (SELECT COUNT(*) FROM ReturnedD1_Plus) as "ReturnedD1Plus",
+                (SELECT COUNT(*) FROM EligibleForD7) as "EligibleD7Plus",
+                (SELECT COUNT(*) FROM ReturnedD7_Plus) as "ReturnedD7Plus",
+                (SELECT COUNT(*) FROM EligibleForD30) as "EligibleD30Plus",
+                (SELECT COUNT(*) FROM ReturnedD30_Plus) as "ReturnedD30Plus"
             """;
 
         var result = await database.Database
             .SqlQueryRaw<RetentionStatsRaw>(sql)
             .SingleAsync();
 
-        var d1Retention = result.EligibleD1 > 0 ? (result.ReturnedD1 * 100.0 / result.EligibleD1) : 0;
-        var d7Retention = result.EligibleD7 > 0 ? (result.ReturnedD7 * 100.0 / result.EligibleD7) : 0;
-        var d14Retention = result.EligibleD14 > 0 ? (result.ReturnedD14 * 100.0 / result.EligibleD14) : 0;
+        var d1Retention  = result.EligibleD1  > 0 ? (result.ReturnedD1  * 100.0 / result.EligibleD1)  : 0;
+        var d7Retention  = result.EligibleD7  > 0 ? (result.ReturnedD7  * 100.0 / result.EligibleD7)  : 0;
         var d30Retention = result.EligibleD30 > 0 ? (result.ReturnedD30 * 100.0 / result.EligibleD30) : 0;
+
+        var d1PlusRetention  = result.EligibleD1Plus  > 0 ? (result.ReturnedD1Plus  * 100.0 / result.EligibleD1Plus)  : 0;
+        var d7PlusRetention  = result.EligibleD7Plus  > 0 ? (result.ReturnedD7Plus  * 100.0 / result.EligibleD7Plus)  : 0;
+        var d30PlusRetention = result.EligibleD30Plus > 0 ? (result.ReturnedD30Plus * 100.0 / result.EligibleD30Plus) : 0;
 
         return new RetentionStats
         {
-            D1Retention = d1Retention,
-            D7Retention = d7Retention,
-            D14Retention = d14Retention,
-            D30Retention = d30Retention
+            D1Retention  = d1Retention,
+            D7Retention  = d7Retention,
+            D30Retention = d30Retention,
+            D1PlusRetention  = d1PlusRetention,
+            D7PlusRetention  = d7PlusRetention,
+            D30PlusRetention = d30PlusRetention
         };
     }
 
@@ -365,125 +427,205 @@ public sealed class DatabaseGameStatsStore(
 
         // Most confusing: character that appeared as a WRONG guess most often (guessed but not the target)
         var mostConfusingSql = """
-            SELECT 
-                gg."GuessedCharacterId" as "CharacterId",
-                COUNT(*) as "Count"
-            FROM "GameGuess" gg
-            INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
-            WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
-              AND gg."GuessedCharacterId" != gs."TargetCharacterId"
-              AND {0}
-            GROUP BY gg."GuessedCharacterId"
-            ORDER BY "Count" DESC
-            LIMIT 3
+            WITH base AS (
+                SELECT gg."GuessedCharacterId" AS "CharacterId",
+                       gs."StartedOnUtc"
+                FROM "GameGuess" gg
+                INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
+                WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
+                  AND gg."GuessedCharacterId" != gs."TargetCharacterId"
+                  AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+            ),
+            counts AS (
+                SELECT "CharacterId",
+                    COUNT(*) AS "CountAll",
+                    COUNT(*) FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '30 days') AS "Count30",
+                    COUNT(*) FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '14 days') AS "Count14"
+                FROM base
+                GROUP BY "CharacterId"
+            ),
+            ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (ORDER BY "CountAll" DESC) AS "RnAll",
+                    ROW_NUMBER() OVER (ORDER BY "Count30"  DESC) AS "Rn30",
+                    ROW_NUMBER() OVER (ORDER BY "Count14"  DESC) AS "Rn14"
+                FROM counts
+            )
+            SELECT "CharacterId", "CountAll", "Count30", "Count14", "RnAll", "Rn30", "Rn14"
+            FROM ranked
+            WHERE "RnAll" <= 3 OR "Rn30" <= 3 OR "Rn14" <= 3
             """;
 
-        // Easiest: target character guessed correctly on fewest guesses (min avg guess count when won)
+        // Easiest: target character most frequently guessed correctly when won
         var easiestSql = """
-            SELECT 
-                gs."TargetCharacterId" as "CharacterId",
-                COUNT(*) as "Count"
-            FROM "GameStats" gs
-            WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
-              AND gs."IsWon" = TRUE
-              AND {0}
-            GROUP BY gs."TargetCharacterId"
-            ORDER BY "Count" DESC
-            LIMIT 3
+            WITH base AS (
+                SELECT gs."TargetCharacterId" AS "CharacterId",
+                       gs."StartedOnUtc"
+                FROM "GameStats" gs
+                WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
+                  AND gs."IsWon" = TRUE
+                  AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+            ),
+            counts AS (
+                SELECT "CharacterId",
+                    COUNT(*) AS "CountAll",
+                    COUNT(*) FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '30 days') AS "Count30",
+                    COUNT(*) FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '14 days') AS "Count14"
+                FROM base
+                GROUP BY "CharacterId"
+            ),
+            ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (ORDER BY "CountAll" DESC) AS "RnAll",
+                    ROW_NUMBER() OVER (ORDER BY "Count30"  DESC) AS "Rn30",
+                    ROW_NUMBER() OVER (ORDER BY "Count14"  DESC) AS "Rn14"
+                FROM counts
+            )
+            SELECT "CharacterId", "CountAll", "Count30", "Count14", "RnAll", "Rn30", "Rn14"
+            FROM ranked
+            WHERE "RnAll" <= 3 OR "Rn30" <= 3 OR "Rn14" <= 3
             """;
 
-        // The indicator: character guess that was immediately followed by a win on next guess
+        // The indicator: character guess that was immediately followed by a win on the next guess
         var indicatorSql = """
-            SELECT 
-                gg."GuessedCharacterId" as "CharacterId",
-                COUNT(*) as "Count"
-            FROM "GameGuess" gg
-            INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
-            WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
-              AND gs."IsWon" = TRUE
-              AND gg."GuessedCharacterId" != gs."TargetCharacterId"
-              AND NOT EXISTS (
-                  SELECT 1 FROM "GameGuess" gg2
-                  WHERE gg2."GameId" = gg."GameId"
-                    AND gg2."GuessOrder" < gg."GuessOrder"
-                    AND gg2."GuessedCharacterId" = gs."TargetCharacterId"
-              )
-              AND EXISTS (
-                  SELECT 1 FROM "GameGuess" gg3
-                  WHERE gg3."GameId" = gg."GameId"
-                    AND gg3."GuessOrder" = gg."GuessOrder" + 1
-                    AND gg3."GuessedCharacterId" = gs."TargetCharacterId"
-              )
-              AND {0}
-            GROUP BY gg."GuessedCharacterId"
-            ORDER BY "Count" DESC
-            LIMIT 3
+            WITH base AS (
+                SELECT gg."GuessedCharacterId" AS "CharacterId",
+                       gs."StartedOnUtc"
+                FROM "GameGuess" gg
+                INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
+                WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
+                  AND gs."IsWon" = TRUE
+                  AND gg."GuessedCharacterId" != gs."TargetCharacterId"
+                  AND NOT EXISTS (
+                      SELECT 1 FROM "GameGuess" gg2
+                      WHERE gg2."GameId" = gg."GameId"
+                        AND gg2."GuessOrder" < gg."GuessOrder"
+                        AND gg2."GuessedCharacterId" = gs."TargetCharacterId"
+                  )
+                  AND EXISTS (
+                      SELECT 1 FROM "GameGuess" gg3
+                      WHERE gg3."GameId" = gg."GameId"
+                        AND gg3."GuessOrder" = gg."GuessOrder" + 1
+                        AND gg3."GuessedCharacterId" = gs."TargetCharacterId"
+                  )
+                  AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+            ),
+            counts AS (
+                SELECT "CharacterId",
+                    COUNT(*) AS "CountAll",
+                    COUNT(*) FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '30 days') AS "Count30",
+                    COUNT(*) FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '14 days') AS "Count14"
+                FROM base
+                GROUP BY "CharacterId"
+            ),
+            ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (ORDER BY "CountAll" DESC) AS "RnAll",
+                    ROW_NUMBER() OVER (ORDER BY "Count30"  DESC) AS "Rn30",
+                    ROW_NUMBER() OVER (ORDER BY "Count14"  DESC) AS "Rn14"
+                FROM counts
+            )
+            SELECT "CharacterId", "CountAll", "Count30", "Count14", "RnAll", "Rn30", "Rn14"
+            FROM ranked
+            WHERE "RnAll" <= 3 OR "Rn30" <= 3 OR "Rn14" <= 3
             """;
 
         // The opener: most popular first guess (GuessOrder=0) in winning sessions
         var openerSql = """
-            SELECT 
-                gg."GuessedCharacterId" as "CharacterId",
-                COUNT(*) as "Count"
-            FROM "GameGuess" gg
-            INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
-            WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
-              AND gs."IsWon" = TRUE
-              AND gg."GuessOrder" = 0
-              AND gg."GuessedCharacterId" != gs."TargetCharacterId"
-              AND {0}
-            GROUP BY gg."GuessedCharacterId"
-            ORDER BY "Count" DESC
-            LIMIT 3
+            WITH base AS (
+                SELECT gg."GuessedCharacterId" AS "CharacterId",
+                       gs."StartedOnUtc"
+                FROM "GameGuess" gg
+                INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
+                WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
+                  AND gs."IsWon" = TRUE
+                  AND gg."GuessOrder" = 0
+                  AND gg."GuessedCharacterId" != gs."TargetCharacterId"
+                  AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+            ),
+            counts AS (
+                SELECT "CharacterId",
+                    COUNT(*) AS "CountAll",
+                    COUNT(*) FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '30 days') AS "Count30",
+                    COUNT(*) FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '14 days') AS "Count14"
+                FROM base
+                GROUP BY "CharacterId"
+            ),
+            ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (ORDER BY "CountAll" DESC) AS "RnAll",
+                    ROW_NUMBER() OVER (ORDER BY "Count30"  DESC) AS "Rn30",
+                    ROW_NUMBER() OVER (ORDER BY "Count14"  DESC) AS "Rn14"
+                FROM counts
+            )
+            SELECT "CharacterId", "CountAll", "Count30", "Count14", "RnAll", "Rn30", "Rn14"
+            FROM ranked
+            WHERE "RnAll" <= 3 OR "Rn30" <= 3 OR "Rn14" <= 3
             """;
 
-        var exclusion = "AND NOT (gs.\"Mode\" = 0 AND DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)";
+        // Hardest: target characters that required the most guesses on average in won games
+        var hardestSql = """
+            WITH base AS (
+                SELECT gs."TargetCharacterId" AS "CharacterId",
+                       gs."StartedOnUtc",
+                       COUNT(gg."Id") AS "GuessCount"
+                FROM "GameStats" gs
+                INNER JOIN "GameGuess" gg ON gg."GameId" = gs."GameId"
+                WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
+                  AND gs."IsWon" = TRUE
+                  AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+                GROUP BY gs."GameId", gs."TargetCharacterId", gs."StartedOnUtc"
+            ),
+            counts AS (
+                SELECT "CharacterId",
+                    AVG("GuessCount") AS "CountAll",
+                    AVG("GuessCount") FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '30 days') AS "Count30",
+                    AVG("GuessCount") FILTER (WHERE DATE("StartedOnUtc" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '14 days') AS "Count14"
+                FROM base
+                GROUP BY "CharacterId"
+            ),
+            ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (ORDER BY "CountAll" DESC NULLS LAST) AS "RnAll",
+                    ROW_NUMBER() OVER (ORDER BY "Count30"  DESC NULLS LAST) AS "Rn30",
+                    ROW_NUMBER() OVER (ORDER BY "Count14"  DESC NULLS LAST) AS "Rn14"
+                FROM counts
+            )
+            SELECT "CharacterId",
+                ROUND("CountAll"::numeric, 1) AS "CountAll",
+                ROUND(COALESCE("Count30", 0)::numeric, 1) AS "Count30",
+                ROUND(COALESCE("Count14", 0)::numeric, 1) AS "Count14",
+                "RnAll", "Rn30", "Rn14"
+            FROM ranked
+            WHERE "RnAll" <= 3 OR "Rn30" <= 3 OR "Rn14" <= 3
+            """;
 
-        var yesterdayFilter = $"DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '1 day' {exclusion}";
-        var weekFilter = $"DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '7 days' {exclusion}";
-        var monthFilter = $"DATE(gs.\"StartedOnUtc\" AT TIME ZONE 'UTC') >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - INTERVAL '30 days' {exclusion}";
-
-        async Task<List<CharacterStatEntryRaw>> RunQuery(string sqlTemplate, string dateFilter)
+        CharacterWindowStats BuildWindowStats(List<CharacterStatEntryMultiWindowRaw> rows)
         {
-            var sql = string.Format(sqlTemplate, dateFilter);
-            return await database.Database.SqlQueryRaw<CharacterStatEntryRaw>(sql).ToListAsync();
-        }
+            CharacterStatEntry Map(CharacterStatEntryMultiWindowRaw r, long count) =>
+                new() { CharacterId = r.CharacterId, CharacterName = r.CharacterId.ToString(), Count = count };
 
-        CharacterWindowStats BuildWindowStats(
-            List<CharacterStatEntryRaw> yesterday,
-            List<CharacterStatEntryRaw> week,
-            List<CharacterStatEntryRaw> month)
-        {
             return new CharacterWindowStats
             {
-                Yesterday = yesterday.Select(r => new CharacterStatEntry { CharacterId = r.CharacterId, CharacterName = r.CharacterId.ToString(), Count = r.Count }).ToList(),
-                PastWeek = week.Select(r => new CharacterStatEntry { CharacterId = r.CharacterId, CharacterName = r.CharacterId.ToString(), Count = r.Count }).ToList(),
-                PastMonth = month.Select(r => new CharacterStatEntry { CharacterId = r.CharacterId, CharacterName = r.CharacterId.ToString(), Count = r.Count }).ToList(),
+                PastTwoWeeks = rows.Where(r => r.Rn14 <= 3).OrderBy(r => r.Rn14).Select(r => Map(r, r.Count14)).ToList(),
+                PastMonth    = rows.Where(r => r.Rn30 <= 3).OrderBy(r => r.Rn30).Select(r => Map(r, r.Count30)).ToList(),
+                AllTime      = rows.Where(r => r.RnAll <= 3).OrderBy(r => r.RnAll).Select(r => Map(r, r.CountAll)).ToList(),
             };
         }
 
-        var confusingYesterday = await RunQuery(mostConfusingSql, yesterdayFilter);
-        var confusingWeek = await RunQuery(mostConfusingSql, weekFilter);
-        var confusingMonth = await RunQuery(mostConfusingSql, monthFilter);
-
-        var easiestYesterday = await RunQuery(easiestSql, yesterdayFilter);
-        var easiestWeek = await RunQuery(easiestSql, weekFilter);
-        var easiestMonth = await RunQuery(easiestSql, monthFilter);
-
-        var indicatorYesterday = await RunQuery(indicatorSql, yesterdayFilter);
-        var indicatorWeek = await RunQuery(indicatorSql, weekFilter);
-        var indicatorMonth = await RunQuery(indicatorSql, monthFilter);
-
-        var openerYesterday = await RunQuery(openerSql, yesterdayFilter);
-        var openerWeek = await RunQuery(openerSql, weekFilter);
-        var openerMonth = await RunQuery(openerSql, monthFilter);
+        var confusingRows   = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(mostConfusingSql).ToListAsync();
+        var easiestRows     = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(easiestSql).ToListAsync();
+        var hardestRows     = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(hardestSql).ToListAsync();
+        var indicatorRows   = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(indicatorSql).ToListAsync();
+        var openerRows      = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(openerSql).ToListAsync();
 
         return new GlobalCharacterStats
         {
-            MostConfusing = BuildWindowStats(confusingYesterday, confusingWeek, confusingMonth),
-            Easiest = BuildWindowStats(easiestYesterday, easiestWeek, easiestMonth),
-            TheIndicator = BuildWindowStats(indicatorYesterday, indicatorWeek, indicatorMonth),
-            TheOpener = BuildWindowStats(openerYesterday, openerWeek, openerMonth),
+            MostConfusing = BuildWindowStats(confusingRows),
+            Easiest       = BuildWindowStats(easiestRows),
+            Hardest       = BuildWindowStats(hardestRows),
+            TheIndicator  = BuildWindowStats(indicatorRows),
+            TheOpener     = BuildWindowStats(openerRows),
         };
     }
 
@@ -534,12 +676,27 @@ public sealed class DatabaseGameStatsStore(
         return new PlayerCharacterStats
         {
             MostGuessedCharacterId = mostGuessed?.CharacterId,
-            MostGuessedCharacterName = mostGuessed?.CharacterId.ToString(),
+            MostGuessedCharacterName = null,
             MostGuessedCount = mostGuessed?.Count ?? 0,
             MostCorrectlyGuessedCharacterId = mostCorrect?.CharacterId,
-            MostCorrectlyGuessedCharacterName = mostCorrect?.CharacterId.ToString(),
+            MostCorrectlyGuessedCharacterName = null,
             MostCorrectlyGuessedCount = mostCorrect?.Count ?? 0,
         };
+    }
+
+    public async Task<DateOnly?> GetPlayerFirstGameDateAsync(Guid playerId)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        var earliest = await database.GameStats
+            .AsNoTracking()
+            .Where(g => g.PlayerId == playerId)
+            .Select(g => (DateTimeOffset?)g.StartedOnUtc)
+            .MinAsync();
+
+        return earliest.HasValue
+            ? DateOnly.FromDateTime(earliest.Value.UtcDateTime)
+            : null;
     }
 
     private sealed class NewVsReturningPlayersDataRaw
@@ -562,15 +719,31 @@ public sealed class DatabaseGameStatsStore(
         public long ReturnedD1 { get; set; }
         public long EligibleD7 { get; set; }
         public long ReturnedD7 { get; set; }
-        public long EligibleD14 { get; set; }
-        public long ReturnedD14 { get; set; }
         public long EligibleD30 { get; set; }
         public long ReturnedD30 { get; set; }
+
+        public long EligibleD1Plus { get; set; }
+        public long ReturnedD1Plus { get; set; }
+        public long EligibleD7Plus { get; set; }
+        public long ReturnedD7Plus { get; set; }
+        public long EligibleD30Plus { get; set; }
+        public long ReturnedD30Plus { get; set; }
     }
 
     private sealed class CharacterStatEntryRaw
     {
         public int CharacterId { get; set; }
         public long Count { get; set; }
+    }
+
+    private sealed class CharacterStatEntryMultiWindowRaw
+    {
+        public int CharacterId { get; set; }
+        public long CountAll { get; set; }
+        public long Count30 { get; set; }
+        public long Count14 { get; set; }
+        public long RnAll { get; set; }
+        public long Rn30 { get; set; }
+        public long Rn14 { get; set; }
     }
 }

@@ -24,6 +24,8 @@
         }
 
         <div class="buttons">
+            @if (GameMode == GameMode.Daily)
+            {
             <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary">
 
                 <MudMenuItem OnClick="Share">
@@ -52,6 +54,7 @@
                 </MudMenuItem>
 
             </MudMenu>
+            }
 
             <MudButton OnClick="Close">
                 Close
@@ -96,6 +99,8 @@
 
 @code {
     [Parameter] public GameState GameState { get; set; }
+
+    [Parameter] public GameMode GameMode { get; set; }
 
     [Parameter] public EventCallback OnClose { get; set; }
 

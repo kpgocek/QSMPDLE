@@ -1,0 +1,109 @@
+@page "/archive"
+
+@using MudBlazor
+@using QSMPDLE.Web.Features.Gameplay.Services
+
+@inject IGameService GameService
+
+<PageTitle>Archive - QSMPDLE</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="Browse and play all past QSMPDLE daily puzzles. Challenge yourself with archived character guessing games from previous days." />
+</HeadContent>
+
+<WebPage>
+    <h2>Archive</h2>
+
+    <p class="info">
+        Play any past daily puzzle. Each day features a different QSMP2 character to guess.
+    </p>
+
+    <section class="mb-5">
+
+    @if (!_isLoaded)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (_archiveDays.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">No archive puzzles available yet. Check back after the first daily puzzle has passed!</MudAlert>
+    }
+    else
+    {
+            <MudGrid Spacing="8">
+
+            @foreach (var day in _archiveDays)
+            {
+                <MudItem xs="3" sm="3">
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Href="@($"/archive/day/{day.DayNumber}")" Class="card-container">
+                            <div class="archive-card">
+                                <h3 class="day-number">@day.DayNumber.ToString("00")</h3>
+                                <p class="day-date">@day.Date.ToString("MMM d, yyyy")</p>
+                            </div>
+                        </MudButton>
+                </MudItem>
+            }
+
+        </MudGrid>
+    }
+
+    </section>
+
+</WebPage>
+
+<style>
+    .card-container {
+        display: flex;
+        background: var(--surface);
+
+        text-align: center;
+        border: 0.125rem solid var(--surface-strong);
+        border-radius: 0;
+        box-shadow: 0 .25rem .75rem var(--black);
+        padding: .75rem .25rem;
+    }
+
+    .archive-card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .day-number {
+        color: var(--primary);
+        font-size: 3rem;
+    }
+
+    .day-date {
+        color: var(--ghost);
+    }
+</style>
+
+@code {
+    private bool _isLoaded = false;
+    private List<ArchiveDayInfo> _archiveDays = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var firstDay = GameService.GetFirstDay();
+        var maxDay = await GameService.GetMaxArchiveDayAsync(CancellationToken.None);
+
+        // Generate list of all archive days in reverse order (most recent first)
+        _archiveDays = Enumerable.Range(1, maxDay)
+            .Select(day => new ArchiveDayInfo
+            {
+                DayNumber = day,
+                Date = firstDay.AddDays(day - 1)
+            })
+            .OrderByDescending(d => d.DayNumber)
+            .ToList();
+
+        _isLoaded = true;
+    }
+
+    private class ArchiveDayInfo
+    {
+        public int DayNumber { get; set; }
+        public DateOnly Date { get; set; }
+    }
+}
+

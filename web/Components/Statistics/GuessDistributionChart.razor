@@ -1,0 +1,60 @@
+@using MudBlazor
+@using MudBlazor.Charts
+@using QSMPDLE.Web.Themes
+
+@inject ThemeService Themes;
+
+<MudPaper Class="pa-4 mb-4" Elevation="2" Style="border-radius: 0;">
+    <MudText Typo="Typo.h6" Class="mb-4 d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.BarChart" Class="mr-1" />@Title</MudText>
+
+    @if (Distribution == null || Distribution.All(x => x == 0))
+    {
+        <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available</MudText>
+    }
+    else
+    {
+        <MudChart ChartType="ChartType.Bar" ChartSeries="@Series" ChartLabels="@GuessLabels" ChartOptions="@Options"
+                  Width="100%" Height="300px" @bind-SelectedIndex="@Index" MatchBoundsToSize="true">
+        </MudChart>
+    }
+</MudPaper>
+
+@code {
+
+    [Parameter]
+    public double[] Distribution { get; set; } = Array.Empty<double>();
+
+    [Parameter]
+    public string Title { get; set; } = "Guess Distribution";
+
+    private int Index = -1;
+    private BarChartOptions Options = new BarChartOptions();
+
+    private string[] GuessLabels = ["1", "2", "3", "4", "5", "6"];
+
+    private List<ChartSeries<double>> Series = [];
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        Series = [new ChartSeries<double> { Name = "Wins", Data = Distribution }];
+
+        var palette = Themes.CurrentTheme.PaletteDark;
+
+        Options.ChartPalette = [
+            palette.Primary.ToString(),
+            palette.Secondary.ToString(),
+            palette.Success.ToString(),
+            palette.Warning.ToString(),
+            palette.PrimaryLighten,
+            palette.SuccessLighten,
+            palette.WarningLighten,
+            palette.SecondaryLighten,
+            palette.PrimaryDarken,
+            palette.SuccessDarken,
+            palette.WarningDarken,
+            palette.SecondaryDarken
+        ];
+    }
+}

@@ -1,0 +1,105 @@
+@page "/archive/day/{DayNumber:int}"
+@using MudBlazor
+@using QSMPDLE.Web.Components.Game
+@using QSMPDLE.Web.Components.Layout
+@using QSMPDLE.Web.Components.UX.Navigation
+@using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Features.Gameplay.Services
+
+@inject IGameService GameService
+@inject NavigationManager NavigationManager
+
+<HeadContent>
+    <title>Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE</title>
+    <meta name="description" content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy")). Guess the QSMP2 character from the past daily challenge." />
+
+    <link rel="canonical" href="@CanonicalUrl" />
+
+    <meta property="og:title" content="Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE" />
+    <meta property="og:description" content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy"))." />
+    <meta property="og:url" content="@CanonicalUrl" />
+    <meta property="og:type" content="website" />
+</HeadContent>
+
+@if (!_isValidDay)
+{
+    <WebPage>
+        <h2>Archive Day Not Found</h2>
+        <p>Archive day #@DayNumber is not available. Please choose a valid archive day.</p>
+        <MudButton Href="/archive" Variant="Variant.Filled" Color="Color.Primary">
+            View Archive
+        </MudButton>
+    </WebPage>
+}
+else
+{
+    <h2>ARCHIVE<span class="separator">|</span>DAY #@DayNumber.ToString("00")</h2>
+
+    <div class="archive-info">
+        <MudText Typo="Typo.body2" Class="archive-date">@ArchiveDate.ToLongDateString()</MudText>
+    </div>
+
+    <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" />
+
+    <Gameplay @key="DayNumber" GameMode="GameMode.Archive" ArchiveGameNumber="DayNumber" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
+}
+
+<style>
+    h2 {
+        margin-top: 2.75rem;
+    }
+
+    .separator {
+        color: var(--tint);
+    }
+
+    .archive-info {
+        text-align: center;
+        margin: 1rem 0;
+    }
+
+    .archive-date {
+        color: var(--ghost);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int DayNumber { get; set; }
+
+    private bool _isValidDay = true;
+    private bool _isLoaded = false;
+    private int _maxDay;
+    private DateOnly _firstDay;
+
+    private DateOnly ArchiveDate => _firstDay.AddDays(DayNumber - 1);
+
+    private string CanonicalUrl => $"{NavigationManager.BaseUri.TrimEnd('/')}/archive/day/{DayNumber}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _firstDay = GameService.GetFirstDay();
+        var todayDayNumber = await GameService.GetTodayDayNumberAsync(CancellationToken.None);
+        _maxDay = await GameService.GetMaxArchiveDayAsync(CancellationToken.None);
+
+        // Validate day number is within valid range
+        if (DayNumber < 1 || DayNumber >= todayDayNumber)
+        {
+            _isValidDay = false;
+        }
+    }
+
+    private Task OnGameStateChange(GameState gameState)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task OnGameLoaded()
+    {
+        _isLoaded = true;
+        return Task.CompletedTask;
+    }
+}

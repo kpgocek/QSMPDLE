@@ -10,4 +10,6 @@ public interface IGameService
 
     // ENDPOINTS
     Task<int> GetTodayDayNumberAsync(CancellationToken cancellationToken);
+    Task<int> GetMaxArchiveDayAsync(CancellationToken cancellationToken);
+    DateOnly GetFirstDay();
 }
