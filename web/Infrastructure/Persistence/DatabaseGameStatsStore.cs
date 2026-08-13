@@ -60,10 +60,26 @@ public sealed class DatabaseGameStatsStore(
         var totalGames = await query.CountAsync();
         var totalPlayers = await query.Select(g => g.PlayerId).Distinct().CountAsync();
         var totalWins = await query.CountAsync(g => g.IsWon);
+        var totalCompletedGames = await query.CountAsync(g => g.FinishedOnUtc.HasValue);
         var avgGuessesToWin = await query
             .Where(g => g.IsWon)
             .Select(g => (double?)g.Guesses.Count)
             .AverageAsync() ?? 0;
+        var avgGuessesPerCompletedGame = await query
+            .Where(g => g.FinishedOnUtc.HasValue)
+            .Select(g => (double?)g.Guesses.Count)
+            .AverageAsync() ?? 0;
+
+        var totalRecordedSessions = await query.CountAsync();
+        var modePopularity = await query
+            .GroupBy(g => g.Mode)
+            .Select(group => new ModePopularityEntry
+            {
+                Mode = group.Key,
+                SessionCount = group.LongCount(),
+                Share = totalRecordedSessions == 0 ? 0 : group.LongCount() * 100.0 / totalRecordedSessions
+            })
+            .ToListAsync();
 
         // Sequential queries for guess distributions per mode (avoiding Task.WhenAll)
         var dailyDistribution = new long[6];
@@ -101,7 +117,10 @@ public sealed class DatabaseGameStatsStore(
             TotalGames = totalGames,
             TotalPlayers = totalPlayers,
             TotalWins = totalWins,
+            TotalCompletedGames = totalCompletedGames,
             AverageGuessesToWin = avgGuessesToWin,
+            AverageGuessesPerCompletedGame = avgGuessesPerCompletedGame,
+            ModePopularity = modePopularity,
             DailyGuessDistribution = dailyDistribution,
             PracticeGuessDistribution = practiceDistribution
         };
@@ -622,7 +641,7 @@ public sealed class DatabaseGameStatsStore(
         return new GlobalCharacterStats
         {
             MostConfusing = BuildWindowStats(confusingRows),
-            Easiest = BuildWindowStats(easiestRows),
+            MostWonTargets = BuildWindowStats(easiestRows),
             Hardest = BuildWindowStats(hardestRows),
             TheIndicator = BuildWindowStats(indicatorRows),
             TheOpener = BuildWindowStats(openerRows),

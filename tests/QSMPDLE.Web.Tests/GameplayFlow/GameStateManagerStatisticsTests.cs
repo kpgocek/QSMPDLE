@@ -62,6 +62,7 @@ public sealed class GameStateManagerStatisticsTests
         var session = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
         session.FinishedOnUtc.Should().NotBeNull();
         session.IsWon.Should().BeFalse();
+        session.Guesses.Should().HaveCount(6);
         setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(1);
         setup.PlayerStatsStore.Stats.GamesWon.Should().Be(0);
     }
@@ -115,7 +116,7 @@ public sealed class GameStateManagerStatisticsTests
 
         setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(1);
         setup.PlayerStatsStore.Stats.GamesWon.Should().Be(1);
-        setup.PlayerStatsStore.Stats.LastCompletedDayNumber.Should().Be(3);
+        setup.PlayerStatsStore.Stats.LastCompletedDayNumber.Should().Be(60);
         setup.PlayerStatsStore.Stats.LastPlayedDailyGameId.Should().Be(setup.Manager.GameState.GameId);
         setup.PlayerStatsStore.Stats.GuessDistribution[0].Should().Be(1);
     }
@@ -131,11 +132,27 @@ public sealed class GameStateManagerStatisticsTests
         var session = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
         session.PlayerId.Should().Be(setup.PlayerStatsStore.Stats.Id);
         session.Mode.Should().Be(GameMode.Daily);
-        session.DailyNumber.Should().Be(3);
+        session.DailyNumber.Should().Be(60);
         session.TargetCharacterId.Should().Be(setup.Target.Id);
         session.FinishedOnUtc.Should().NotBeNull();
         session.Guesses.Should().ContainSingle();
         session.Guesses.First().GuessedCharacterId.Should().Be(setup.Target.Id);
+    }
+
+    [Fact]
+    public async Task CompletedGamesIncludeLossesInAverageGuessCount()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+
+        foreach (var guess in setup.LosingGuesses)
+        {
+            await setup.Manager.MakeGuessAsync(guess.Id);
+        }
+
+        var session = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
+        session.FinishedOnUtc.Should().NotBeNull();
+        session.Guesses.Should().HaveCount(6);
     }
 
     private static Setup CreateSetup()
@@ -146,13 +163,15 @@ public sealed class GameStateManagerStatisticsTests
         var lose5 = CreateCharacter(5, "Lose5", joinDay: 50, languages: 2, pronouns: ["Any"], affiliations: ["Other"], species: ["Human"]);
         var lose6 = CreateCharacter(6, "Lose6", joinDay: 60, languages: 3, pronouns: ["He/Him"], affiliations: ["Other"], species: ["Human"]);
         var lose7 = CreateCharacter(7, "Lose7", joinDay: 70, languages: 4, pronouns: ["She/Her"], affiliations: ["Other"], species: ["Human"]);
-        var characterStore = new InMemoryCharacterStore([target, incorrectGuess, lose4, lose5, lose6, lose7], target.Id, new Dictionary<int, int> { [3] = target.Id });
+        var lose8 = CreateCharacter(8, "Lose8", joinDay: 80, languages: 1, pronouns: ["They/Them"], affiliations: ["Other"], species: ["Human"]);
+        var lose9 = CreateCharacter(9, "Lose9", joinDay: 90, languages: 2, pronouns: ["Any"], affiliations: ["Other"], species: ["Human"]);
+        var characterStore = new InMemoryCharacterStore([target, incorrectGuess, lose4, lose5, lose6, lose7, lose8, lose9], target.Id, new Dictionary<int, int> { [3] = target.Id });
         var playerStatsStore = new InMemoryPlayerStatsStore { Stats = new PlayerStats { Id = Guid.Parse("11111111-1111-1111-1111-111111111111") } };
         var gameStateStore = new InMemoryGameStateStore();
         var gameStatsStore = new InMemoryGameStatsStore();
         var statisticsService = new StatisticsService(playerStatsStore, gameStatsStore);
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore), new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), statisticsService);
-        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, statisticsService, target, incorrectGuess, [incorrectGuess, lose4, lose5, lose6, lose7]);
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore), playerStatsStore, characterStore, new CharacterComparer(characterStore), statisticsService);
+        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, statisticsService, target, incorrectGuess, [incorrectGuess, lose4, lose5, lose6, lose7, lose8, lose9]);
     }
 
     private static Character CreateCharacter(int id, string name, int joinDay, int languages, string[] pronouns, string[] affiliations, string[] species) => new()

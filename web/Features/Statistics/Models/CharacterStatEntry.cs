@@ -17,7 +17,7 @@ public sealed record CharacterWindowStats
 public sealed record GlobalCharacterStats
 {
     public required CharacterWindowStats MostConfusing { get; init; }
-    public required CharacterWindowStats Easiest { get; init; }
+    public required CharacterWindowStats MostWonTargets { get; init; }
     public required CharacterWindowStats Hardest { get; init; }
     public required CharacterWindowStats TheIndicator { get; init; }
     public required CharacterWindowStats TheOpener { get; init; }

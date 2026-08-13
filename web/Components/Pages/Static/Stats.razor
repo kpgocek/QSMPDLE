@@ -34,7 +34,7 @@
             </MudItem>
 
             <MudItem xs="6" sm="3" Style="display:flex;">
-                <StatCard Title="Total Games Played" Delay="200" Icon="@Icons.Material.Filled.EmojiEvents"
+                <StatCard Title="Recorded Gameplay Sessions" Delay="200" Icon="@Icons.Material.Filled.EmojiEvents"
                           Value="@($"{TotalGamesPlayed}")" />
             </MudItem>
 
@@ -44,7 +44,7 @@
             </MudItem>
 
             <MudItem xs="6" sm="3" Style="display:flex;">
-                <StatCard Title="Avg Guesses to Win" Delay="400" Icon="@Icons.Material.Filled.Tag"
+                <StatCard Title="Average Guesses to Win" Delay="400" Icon="@Icons.Material.Filled.Tag"
                           Value="@(GlobalAvgGuessesToWin > 0 ? $"{GlobalAvgGuessesToWin:0.0}" : "-")" />
             </MudItem>
         </MudGrid>
@@ -141,12 +141,12 @@
             <MudGrid Class="mb-3">
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="D1 Retention" Delay="800" Icon="@Icons.Material.Filled.TrendingUp"
-                              Value="@(retention != null ? $"{retention.D1Retention:0.0}%" : "-")" Comment="Returned on day 1" />
+                              Value="@(retention != null ? $"{retention.D1Retention:0.0}%" : "-")" Comment="First recorded gameplay date + 1 day" />
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="D7 Retention" Delay="900" Icon="@Icons.Material.Filled.ShowChart"
-                              Value="@(retention != null ? $"{retention.D7Retention:0.0}%" : "-")" Comment="Returned on day 7" />
+                              Value="@(retention != null ? $"{retention.D7Retention:0.0}%" : "-")" Comment="First recorded gameplay date + 7 days" />
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
@@ -257,7 +257,7 @@
                         <MudCardHeader>
                             <CardHeaderContent>
                                 <h5>🚀 The Opener</h5>
-                                <small>Most popular first guess in winning games</small>
+                                <small>Most common first guess in winning games</small>
                             </CardHeaderContent>
                         </MudCardHeader>
                         <MudCardContent>
@@ -275,10 +275,14 @@
     // Global Stats
     private long TotalPlayers { get; set; }
     private long TotalGamesPlayed { get; set; }
+    private long TotalCompletedGames { get; set; }
     private double GlobalWinRate { get; set; }
+    private double GlobalCompletionRate { get; set; }
     private double GlobalAvgGuessesToWin { get; set; }
+    private double GlobalAvgGuessesPerCompletedGame { get; set; }
     private long[] DailyGuessDistribution { get; set; } = new long[6];
     private long[] PracticeGuessDistribution { get; set; } = new long[6];
+    private IReadOnlyList<ModePopularityEntry> modePopularity = [];
     private string globalDistributionMode = "Daily";
 
     private double[] GlobalGuessDistributionData
@@ -385,9 +389,13 @@
         TotalPlayers = globalData.TotalPlayers;
         TotalGamesPlayed = globalData.TotalGames;
         GlobalWinRate = globalData.WinRate;
+        TotalCompletedGames = globalData.TotalCompletedGames;
+        GlobalCompletionRate = globalData.CompletionRate;
         GlobalAvgGuessesToWin = globalData.AverageGuessesToWin;
+        GlobalAvgGuessesPerCompletedGame = globalData.AverageGuessesPerCompletedGame;
         DailyGuessDistribution = globalData.DailyGuessDistribution;
         PracticeGuessDistribution = globalData.PracticeGuessDistribution;
+        modePopularity = globalData.ModePopularity;
     }
 
     private async Task CollectPlayerActivityDataAsync()
@@ -443,11 +451,11 @@
                     PastMonth = Resolve(raw.MostConfusing.PastMonth),
                     AllTime = Resolve(raw.MostConfusing.AllTime),
                 },
-                Easiest = new CharacterWindowStats
+                MostWonTargets = new CharacterWindowStats
                 {
-                    PastTwoWeeks = Resolve(raw.Easiest.PastTwoWeeks),
-                    PastMonth = Resolve(raw.Easiest.PastMonth),
-                    AllTime = Resolve(raw.Easiest.AllTime),
+                    PastTwoWeeks = Resolve(raw.MostWonTargets.PastTwoWeeks),
+                    PastMonth = Resolve(raw.MostWonTargets.PastMonth),
+                    AllTime = Resolve(raw.MostWonTargets.AllTime),
                 },
                 Hardest = new CharacterWindowStats
                 {

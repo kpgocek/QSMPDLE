@@ -104,7 +104,7 @@ public sealed class GameStateManagerGuessTests
         result!.Joined.Should().Be(ComparisonResult.Earlier);
         result.Languages.Should().Be(ComparisonResult.Less);
         result.Pronouns.Should().Be(ComparisonResult.Partial);
-        result.Affiliation.Should().Be(ComparisonResult.Partial);
+        result.Affiliation.Should().Be(ComparisonResult.Correct);
         result.Species.Should().Be(ComparisonResult.Wrong);
         result.Character.Id.Should().Be(setup.ScenarioGuess.Id);
     }
