@@ -43,8 +43,7 @@ public sealed class SitemapService(
             .ToListAsync(cancellationToken);
 
         var latestArchiveDate = archiveGames
-            .Select(g => (DateOnly?)g.Date)
-            .Max();
+            .Max(g => (DateOnly?)g.Date);
 
         var staticPages = BuildStaticPages(latestArchiveDate);
 

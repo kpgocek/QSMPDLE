@@ -1,15 +1,10 @@
 ﻿@using MudBlazor
 @using QSMPDLE.Web.Components.Game.Modules
-@using QSMPDLE.Web.Components.UX
 @using QSMPDLE.Web.Components.UX.Dialogs
-@using QSMPDLE.Web.Features.Communication.GameEvents
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Gameplay.Services
-@using QSMPDLE.Web.Features.Statistics.Services
 
 @inject IGameStateManager GameStateManager
-@inject IStatisticsService StatisticsService
-
 <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
     @if (!IsGameLoaded)
     {
@@ -164,28 +159,6 @@ null)
             await GameStateChanged.InvokeAsync(GameStateManager.GameState);
             await InvokeAsync(StateHasChanged);
 
-            if (GameStateManager.GameState.GuessesMade.Count == 1)
-            {
-                await StatisticsService.RecordGameStartedAsync(new GameStartedEvent
-                {
-                    Timestamp = DateTime.UtcNow,
-                    DayNumber = GameStateManager.GameState.Game.DayNumber,
-                    PlayerId = GameStateManager.GameState.PlayerId,
-                    GameId = GameStateManager.GameState.GameId,
-                    GameMode = GameMode,
-                    TargetCharacterId = GameStateManager.GameState.Game.TargetId,
-                });
-            }
-
-            await StatisticsService.RecordGuessMadeAsync(new GuessMadeEvent
-            {
-                Timestamp = DateTime.UtcNow,
-                PlayerId = GameStateManager.GameState.PlayerId,
-                GameId = GameStateManager.GameState.GameId,
-                GuessedCharacterId = guessedCharacterId,
-            });
-
-            await RecordFinishedGameStatsIfNeededAsync();
         }
         finally
         {
@@ -196,8 +169,7 @@ null)
 
     private async Task StartNewGameAsync()
     {
-        var loadingResult = await GameStateManager.LoadOrCreateAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber
-: null);
+        var loadingResult = await GameStateManager.StartGameAsync(GameMode, GameMode == GameMode.Archive ? ArchiveGameNumber : null);
 
         if (loadingResult == LoadGameResult.Failed)
         {
@@ -216,8 +188,6 @@ null)
         await GameLoaded.InvokeAsync();
 
         await InvokeAsync(StateHasChanged);
-
-        await RecordFinishedGameStatsIfNeededAsync();
     }
 
     private async Task NewPractice()
@@ -238,22 +208,4 @@ null)
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task RecordFinishedGameStatsIfNeededAsync()
-    {
-        if (GameStateManager.GameState is not { IsFinished: true, StatsRecorded: false })
-            return;
-
-        await StatisticsService.RecordGameFinishedAsync(new GameFinishedEvent
-        {
-            Timestamp = DateTime.UtcNow,
-            GameMode = GameMode,
-            DayNumber = GameStateManager.GameState.Game.DayNumber,
-            PlayerId = GameStateManager.GameState.PlayerId,
-            GameId = GameStateManager.GameState.GameId,
-            GuessCount = GameStateManager.GameState.GuessesMade.Count,
-            IsWon = GameStateManager.GameState.IsWon,
-        });
-
-        await GameStateManager.MarkStatsRecordedAsync();
-    }
 }

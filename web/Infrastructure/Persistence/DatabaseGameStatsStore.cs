@@ -145,7 +145,7 @@ public sealed class DatabaseGameStatsStore(
         if (from.HasValue)
         {
             var fromDateString = from.Value.ToString("yyyy-MM-dd");
-            var sql = """
+            const string sql = """
                 WITH PlayerFirstGame AS (
                     SELECT 
                         "PlayerId",
@@ -179,16 +179,16 @@ public sealed class DatabaseGameStatsStore(
                 .SqlQueryRaw<NewVsReturningPlayersDataRaw>(sql, fromDateString)
                 .ToListAsync();
 
-            return results.Select(r => new NewVsReturningPlayersData
+            return results.ConvertAll(r => new NewVsReturningPlayersData
             {
                 Date = r.Date,
                 NewPlayers = r.NewPlayers,
                 ReturningPlayers = r.ReturningPlayers
-            }).ToList();
+            });
         }
         else
         {
-            var sql = """
+            const string sql = """
                 WITH PlayerFirstGame AS (
                     SELECT 
                         "PlayerId",
@@ -221,12 +221,12 @@ public sealed class DatabaseGameStatsStore(
                 .SqlQueryRaw<NewVsReturningPlayersDataRaw>(sql)
                 .ToListAsync();
 
-            return results.Select(r => new NewVsReturningPlayersData
+            return results.ConvertAll(r => new NewVsReturningPlayersData
             {
                 Date = r.Date,
                 NewPlayers = r.NewPlayers,
                 ReturningPlayers = r.ReturningPlayers
-            }).ToList();
+            });
         }
     }
 
@@ -265,7 +265,7 @@ public sealed class DatabaseGameStatsStore(
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
-        var sql = """
+        const string sql = """
             WITH PlayerGameCounts AS (
                 SELECT 
                     "PlayerId",
@@ -298,7 +298,7 @@ public sealed class DatabaseGameStatsStore(
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
-        var sql = """
+        const string sql = """
             WITH PlayerCohorts AS (
                 SELECT 
                     "PlayerId",
@@ -402,21 +402,21 @@ public sealed class DatabaseGameStatsStore(
             .SqlQueryRaw<RetentionStatsRaw>(sql)
             .SingleAsync();
 
-        var d1Retention  = result.EligibleD1  > 0 ? (result.ReturnedD1  * 100.0 / result.EligibleD1)  : 0;
-        var d7Retention  = result.EligibleD7  > 0 ? (result.ReturnedD7  * 100.0 / result.EligibleD7)  : 0;
+        var d1Retention = result.EligibleD1 > 0 ? (result.ReturnedD1 * 100.0 / result.EligibleD1) : 0;
+        var d7Retention = result.EligibleD7 > 0 ? (result.ReturnedD7 * 100.0 / result.EligibleD7) : 0;
         var d30Retention = result.EligibleD30 > 0 ? (result.ReturnedD30 * 100.0 / result.EligibleD30) : 0;
 
-        var d1PlusRetention  = result.EligibleD1Plus  > 0 ? (result.ReturnedD1Plus  * 100.0 / result.EligibleD1Plus)  : 0;
-        var d7PlusRetention  = result.EligibleD7Plus  > 0 ? (result.ReturnedD7Plus  * 100.0 / result.EligibleD7Plus)  : 0;
+        var d1PlusRetention = result.EligibleD1Plus > 0 ? (result.ReturnedD1Plus * 100.0 / result.EligibleD1Plus) : 0;
+        var d7PlusRetention = result.EligibleD7Plus > 0 ? (result.ReturnedD7Plus * 100.0 / result.EligibleD7Plus) : 0;
         var d30PlusRetention = result.EligibleD30Plus > 0 ? (result.ReturnedD30Plus * 100.0 / result.EligibleD30Plus) : 0;
 
         return new RetentionStats
         {
-            D1Retention  = d1Retention,
-            D7Retention  = d7Retention,
+            D1Retention = d1Retention,
+            D7Retention = d7Retention,
             D30Retention = d30Retention,
-            D1PlusRetention  = d1PlusRetention,
-            D7PlusRetention  = d7PlusRetention,
+            D1PlusRetention = d1PlusRetention,
+            D7PlusRetention = d7PlusRetention,
             D30PlusRetention = d30PlusRetention
         };
     }
@@ -426,7 +426,7 @@ public sealed class DatabaseGameStatsStore(
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
         // Most confusing: character that appeared as a WRONG guess most often (guessed but not the target)
-        var mostConfusingSql = """
+        const string mostConfusingSql = """
             WITH base AS (
                 SELECT gg."GuessedCharacterId" AS "CharacterId",
                        gs."StartedOnUtc"
@@ -457,7 +457,7 @@ public sealed class DatabaseGameStatsStore(
             """;
 
         // Easiest: target character most frequently guessed correctly when won
-        var easiestSql = """
+        const string easiestSql = """
             WITH base AS (
                 SELECT gs."TargetCharacterId" AS "CharacterId",
                        gs."StartedOnUtc"
@@ -487,7 +487,7 @@ public sealed class DatabaseGameStatsStore(
             """;
 
         // The indicator: character guess that was immediately followed by a win on the next guess
-        var indicatorSql = """
+        const string indicatorSql = """
             WITH base AS (
                 SELECT gg."GuessedCharacterId" AS "CharacterId",
                        gs."StartedOnUtc"
@@ -531,7 +531,7 @@ public sealed class DatabaseGameStatsStore(
             """;
 
         // The opener: most popular first guess (GuessOrder=0) in winning sessions
-        var openerSql = """
+        const string openerSql = """
             WITH base AS (
                 SELECT gg."GuessedCharacterId" AS "CharacterId",
                        gs."StartedOnUtc"
@@ -564,7 +564,7 @@ public sealed class DatabaseGameStatsStore(
             """;
 
         // Hardest: target characters that required the most guesses on average in won games
-        var hardestSql = """
+        const string hardestSql = """
             WITH base AS (
                 SELECT gs."TargetCharacterId" AS "CharacterId",
                        gs."StartedOnUtc",
@@ -600,32 +600,32 @@ public sealed class DatabaseGameStatsStore(
             WHERE "RnAll" <= 3 OR "Rn30" <= 3 OR "Rn14" <= 3
             """;
 
-        CharacterWindowStats BuildWindowStats(List<CharacterStatEntryMultiWindowRaw> rows)
+        static CharacterWindowStats BuildWindowStats(List<CharacterStatEntryMultiWindowRaw> rows)
         {
-            CharacterStatEntry Map(CharacterStatEntryMultiWindowRaw r, long count) =>
+            static CharacterStatEntry Map(CharacterStatEntryMultiWindowRaw r, long count) =>
                 new() { CharacterId = r.CharacterId, CharacterName = r.CharacterId.ToString(), Count = count };
 
             return new CharacterWindowStats
             {
                 PastTwoWeeks = rows.Where(r => r.Rn14 <= 3).OrderBy(r => r.Rn14).Select(r => Map(r, r.Count14)).ToList(),
-                PastMonth    = rows.Where(r => r.Rn30 <= 3).OrderBy(r => r.Rn30).Select(r => Map(r, r.Count30)).ToList(),
-                AllTime      = rows.Where(r => r.RnAll <= 3).OrderBy(r => r.RnAll).Select(r => Map(r, r.CountAll)).ToList(),
+                PastMonth = rows.Where(r => r.Rn30 <= 3).OrderBy(r => r.Rn30).Select(r => Map(r, r.Count30)).ToList(),
+                AllTime = rows.Where(r => r.RnAll <= 3).OrderBy(r => r.RnAll).Select(r => Map(r, r.CountAll)).ToList(),
             };
         }
 
-        var confusingRows   = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(mostConfusingSql).ToListAsync();
-        var easiestRows     = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(easiestSql).ToListAsync();
-        var hardestRows     = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(hardestSql).ToListAsync();
-        var indicatorRows   = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(indicatorSql).ToListAsync();
-        var openerRows      = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(openerSql).ToListAsync();
+        var confusingRows = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(mostConfusingSql).ToListAsync();
+        var easiestRows = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(easiestSql).ToListAsync();
+        var hardestRows = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(hardestSql).ToListAsync();
+        var indicatorRows = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(indicatorSql).ToListAsync();
+        var openerRows = await database.Database.SqlQueryRaw<CharacterStatEntryMultiWindowRaw>(openerSql).ToListAsync();
 
         return new GlobalCharacterStats
         {
             MostConfusing = BuildWindowStats(confusingRows),
-            Easiest       = BuildWindowStats(easiestRows),
-            Hardest       = BuildWindowStats(hardestRows),
-            TheIndicator  = BuildWindowStats(indicatorRows),
-            TheOpener     = BuildWindowStats(openerRows),
+            Easiest = BuildWindowStats(easiestRows),
+            Hardest = BuildWindowStats(hardestRows),
+            TheIndicator = BuildWindowStats(indicatorRows),
+            TheOpener = BuildWindowStats(openerRows),
         };
     }
 
@@ -634,7 +634,7 @@ public sealed class DatabaseGameStatsStore(
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
         // Most guessed (as wrong guesses)
-        var mostGuessedSql = """
+        const string mostGuessedSql = """
             SELECT 
                 gg."GuessedCharacterId" as "CharacterId",
                 COUNT(*) as "Count"
@@ -649,7 +649,7 @@ public sealed class DatabaseGameStatsStore(
             """;
 
         // Most correctly guessed = character was the target and the game was won
-        var mostCorrectSql = """
+        const string mostCorrectSql = """
             SELECT 
                 gs."TargetCharacterId" as "CharacterId",
                 COUNT(*) as "Count"

@@ -12,12 +12,13 @@
 
 <MudDialog Class="pop-up pt-0">
     <DialogActions>
-        <MudButton OnClick="Close">
-            <MudIcon Icon="@Icons.Material.Filled.Close" />
-        </MudButton>
     </DialogActions>
     <TitleContent>
-        <h2>Player Stats</h2>
+        <div class="d-flex align-center justify-space-between w-100">
+            <h2 class="mb-0">Player Stats</h2>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Close" Size="Size.Medium" />
+        </div>
     </TitleContent>
     <DialogContent>
         @if (loading)

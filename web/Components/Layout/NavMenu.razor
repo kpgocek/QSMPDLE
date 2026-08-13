@@ -1,5 +1,4 @@
-﻿@using BlazorBootstrap
-@using MudBlazor
+﻿@using MudBlazor
 @using QSMPDLE.Web.Components.UX.Dialogs
 @inject NavigationManager Nav
 @inject IDialogService DialogService
@@ -16,27 +15,27 @@
 
             <span class="separator">•</span>
 
+            <NavLink href="/archive">
+                Archive
+            </NavLink>
+
+            <span class="separator">•</span>
+
             <NavLink href="/practice">
                 Practice
             </NavLink>
 
             <span class="separator">•</span>
 
-            @* <NavLink href="/archive">
-                Archive
-            </NavLink>
-
-            <span class="separator">•</span> *@
-
             <NavLink href="/how-to-play">
                 How to Play
             </NavLink>
 
-            @* <span class="separator">•</span>
+            <span class="separator">•</span>
 
             <button type="button" class="nav-profile-btn" @onclick="OpenProfile">
-                Profile
-            </button> *@
+                Player Stats
+            </button>
 
         </nav>
 

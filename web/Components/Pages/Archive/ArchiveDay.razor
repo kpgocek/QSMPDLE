@@ -11,12 +11,15 @@
 
 <HeadContent>
     <title>Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE</title>
-    <meta name="description" content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy")). Guess the QSMP2 character from the past daily challenge." />
+    <meta name="description"
+          content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy")). Guess the QSMP2 character from the past daily challenge." />
 
     <link rel="canonical" href="@CanonicalUrl" />
 
-    <meta property="og:title" content="Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE" />
-    <meta property="og:description" content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy"))." />
+    <meta property="og:title"
+          content="Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE" />
+    <meta property="og:description"
+          content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy"))." />
     <meta property="og:url" content="@CanonicalUrl" />
     <meta property="og:type" content="website" />
 </HeadContent>
@@ -33,29 +36,68 @@
 }
 else
 {
-    <h2>ARCHIVE<span class="separator">|</span>DAY #@DayNumber.ToString("00")</h2>
+    @if (!_isGameLoaded)
+    {
+        <h2>
+            <MudSkeleton SkeletonType="SkeletonType.Text" Width="22rem" Height="2.375rem" />
+        </h2>
 
-    <div class="archive-info">
-        <MudText Typo="Typo.body2" Class="archive-date">@ArchiveDate.ToLongDateString()</MudText>
-    </div>
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="8rem" Height="2rem" />
+    }
+    else
+    {
+        <div class="archive-header">
+            <button @onclick="NavigateToPrevious" class="@(DayNumber > 1 ? "" : "hidden")" aria-label="Previous day">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Medium" />
+            </button>
 
-    <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" />
+            <h2 class="header-text">ARCHIVE<span class="separator">|</span>DAY #@DayNumber.ToString("00")</h2>
 
-    <Gameplay @key="DayNumber" GameMode="GameMode.Archive" ArchiveGameNumber="DayNumber" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
+            <button @onclick="NavigateToNext" aria-label="Next day" class="@(DayNumber < _maxDay ? "" : "hidden")">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Medium" />
+            </button>
+        </div>
+
+        <MudButton Class="archive-info" Color="Color.Primary" OnClick="ToggleCalendar">
+            <MudText Typo="Typo.body2" Class="archive-date">@ArchiveDate.ToLongDateString()</MudText>
+        </MudButton>
+
+        <div class="@(_showCalendar ? "" : "collapsed") mt-3">
+            <ArchiveNavigator CurrentDay=" @DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar" />
+        </div>
+    }
+
+    <Gameplay @key="DayNumber" GameMode="GameMode.Archive" ArchiveGameNumber="DayNumber"
+              GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
 }
 
 <style>
-    h2 {
+    .hidden {
+        visibility: hidden;
+    }
+
+    .collapsed {
+        visibility: collapse;
+    }
+
+    .archive-header {
         margin-top: 2.75rem;
+        height: 2.5em;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .header-text {
+        height: 1em;
+        display: flex;
+        justify-content: center;
+        margin-inline: 1rem;
+        min-width: 22rem;
     }
 
     .separator {
         color: var(--tint);
-    }
-
-    .archive-info {
-        text-align: center;
-        margin: 1rem 0;
     }
 
     .archive-date {
@@ -71,7 +113,8 @@ else
     public int DayNumber { get; set; }
 
     private bool _isValidDay = true;
-    private bool _isLoaded = false;
+    private bool _isGameLoaded = false;
+    private bool _showCalendar = false;
     private int _maxDay;
     private DateOnly _firstDay;
 
@@ -97,9 +140,30 @@ else
         return Task.CompletedTask;
     }
 
-    private Task OnGameLoaded()
+    private async Task OnGameLoaded()
     {
-        _isLoaded = true;
-        return Task.CompletedTask;
+        _isGameLoaded = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void NavigateToPrevious()
+    {
+        if (DayNumber > 1)
+        {
+            NavigationManager.NavigateTo($"/archive/day/{DayNumber - 1}");
+        }
+    }
+
+    private void NavigateToNext()
+    {
+        if (DayNumber < _maxDay)
+        {
+            NavigationManager.NavigateTo($"/archive/day/{DayNumber + 1}");
+        }
+    }
+
+    private void ToggleCalendar()
+    {
+        _showCalendar = !_showCalendar;
     }
 }

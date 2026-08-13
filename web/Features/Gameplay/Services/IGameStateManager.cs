@@ -6,6 +6,7 @@ using QSMPDLE.Web.Extensions;
 public interface IGameStateManager
 {
     GameState GameState { get; }
+    Task<LoadGameResult> StartGameAsync(GameMode mode, int? dayNumber = null, CancellationToken cancellationToken = default);
     Task<LoadGameResult> LoadOrCreateAsync(GameMode mode, int? dayNumber = null, CancellationToken cancellationToken = default);
     Task StartNewPracticeGameAsync(CancellationToken cancellationToken = default);
     Task StartNewArchivedGameAsync(int dayNumber, CancellationToken cancellationToken = default);

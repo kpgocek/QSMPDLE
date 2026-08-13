@@ -22,7 +22,7 @@ public sealed class GameSession
 
     public ICollection<GameGuess> Guesses { get; set; } = [];
 
-    internal void AddGuess(int guessedCharacterId)
+    public void AddGuess(int guessedCharacterId)
     {
         if (Guesses.Any(guess => guess.GuessedCharacterId == guessedCharacterId))
             return;

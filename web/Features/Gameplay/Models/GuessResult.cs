@@ -4,6 +4,9 @@ public sealed class GuessResult
 {
     public CharacterLookup Character { get; init; } = null!;
     public bool IsCorrect { get; init; }
+    public bool IsFirstGuess { get; init; }
+    public bool IsFinished => IsCorrect || IsLastAllowedGuess;
+    public bool IsLastAllowedGuess { get; init; }
 
     public ComparisonResult Pronouns { get; init; }
     public ComparisonResult Languages { get; init; }

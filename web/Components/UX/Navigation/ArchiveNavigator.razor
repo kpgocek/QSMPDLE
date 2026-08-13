@@ -2,33 +2,13 @@
 @inject NavigationManager NavigationManager
 
 <div class="archive-navigator">
-    <MudIconButton 
-        Icon="@Icons.Material.Filled.ArrowBack" 
-        OnClick="NavigateToPrevious"
-        Disabled="@(CurrentDay <= 1)"
-        aria-label="Previous day" />
+    <MudPaper Class="pa-1">
 
-    <MudMenu Icon="@Icons.Material.Filled.CalendarMonth">
+        <MudDatePicker PickerVariant="PickerVariant.Static" Orientation="Orientation.Portrait" Color="Color.Default"
+                       ShowToolbar="false" Date="@SelectedDate" DateChanged="OnDateSelected" MinDate="@MinDate" MaxDate="@MaxDate"
+                       AutoClose="true" AdditionalDateClassesFunc="GetDateClasses" />
 
-        <MudPaper Class="pa-2">
-
-            <MudDatePicker PickerVariant="PickerVariant.Static"
-                           Date="@SelectedDate"
-                           DateChanged="OnDateSelected"
-                           MinDate="@MinDate"
-                           MaxDate="@MaxDate"
-                           AutoClose="true"
-                           AdditionalDateClassesFunc="GetDateClasses" />
-
-        </MudPaper>
-
-    </MudMenu>
-
-    <MudIconButton 
-        Icon="@Icons.Material.Filled.ArrowForward" 
-        OnClick="NavigateToNext"
-        Disabled="@(CurrentDay >= MaxDay)"
-        aria-label="Next day" />
+    </MudPaper>
 </div>
 
 <style>
@@ -65,29 +45,15 @@
     [Parameter]
     public DateOnly FirstDay { get; set; }
 
+    [Parameter]
+    public EventCallback DateSelected { get; set; }
+
 
     private DateTime? SelectedDate => FirstDay.AddDays(CurrentDay - 1).ToDateTime(TimeOnly.MinValue);
 
     private DateTime MinDate => FirstDay.ToDateTime(TimeOnly.MinValue);
 
     private DateTime MaxDate => FirstDay.AddDays(MaxDay - 1).ToDateTime(TimeOnly.MinValue);
-
-
-    private void NavigateToPrevious()
-    {
-        if (CurrentDay > 1)
-        {
-            NavigationManager.NavigateTo($"/archive/day/{CurrentDay - 1}");
-        }
-    }
-
-    private void NavigateToNext()
-    {
-        if (CurrentDay < MaxDay)
-        {
-            NavigationManager.NavigateTo($"/archive/day/{CurrentDay + 1}");
-        }
-    }
 
     private void OnDateSelected(DateTime? date)
     {
@@ -100,6 +66,7 @@
         if (dayNumber >= 1 && dayNumber <= MaxDay && dayNumber != CurrentDay)
         {
             NavigationManager.NavigateTo($"/archive/day/{dayNumber}");
+            DateSelected.InvokeAsync();
         }
     }
 
