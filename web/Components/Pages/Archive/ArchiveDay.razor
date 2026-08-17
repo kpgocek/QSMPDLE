@@ -82,7 +82,7 @@ else
         </MudButton>
 
         <div class="@(_showCalendar ? "" : "collapsed") mt-3">
-            <ArchiveNavigator CurrentDay=" @DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar" CompletedDays="@_completedDays" />
+            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar" CompletedDays="@_completedDays" />
         </div>
     }
 

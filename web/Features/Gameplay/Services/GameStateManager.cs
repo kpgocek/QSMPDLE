@@ -4,10 +4,10 @@ using System.Linq;
 using Models;
 using QSMPDLE.Web.Extensions;
 using QSMPDLE.Web.Features.Communication.GameEvents;
+using QSMPDLE.Web.Features.Statistics.Models;
+using QSMPDLE.Web.Features.Statistics.Services;
 using QSMPDLE.Web.Infrastructure.LocalStorage;
 using QSMPDLE.Web.Infrastructure.Persistence;
-using QSMPDLE.Web.Features.Statistics.Services;
-using QSMPDLE.Web.Features.Statistics.Models;
 
 // <summary>
 // Manages the game state for different game modes (daily, practice, archival).
@@ -172,7 +172,7 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
             });
         }
 
-        var guessEvent = new QSMPDLE.Web.Features.Communication.GameEvents.GuessMadeEvent
+        var guessEvent = new GuessMadeEvent
         {
             Timestamp = DateTime.UtcNow,
             PlayerId = GameState.PlayerId,
@@ -190,7 +190,10 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
 
         if (GameState.IsFinished && !GameState.StatsRecorded)
         {
-            var finishedEvent = new QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent
+            if (GameState.Game is null)
+                throw new NullReferenceException("Game should not be null here.");
+
+            var finishedEvent = new GameFinishedEvent
             {
                 Timestamp = DateTime.UtcNow,
                 GameMode = GameState.GameMode,
