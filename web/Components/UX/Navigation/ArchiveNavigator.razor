@@ -1,37 +1,43 @@
 @using MudBlazor
 @inject NavigationManager NavigationManager
+@inject QSMPDLE.Web.Services.IArchiveStatusService StatusService
+@inject QSMPDLE.Web.Features.Communication.GameEvents.IGameEventBus EventBus
 
 <div class="archive-navigator">
     <MudPaper Class="pa-1">
 
-        <MudDatePicker PickerVariant="PickerVariant.Static" Orientation="Orientation.Portrait" Color="Color.Default"
+        <MudDatePicker PickerVariant="PickerVariant.Static" Orientation="Orientation.Portrait" Color="Color.Default" @key="datePickerKey"
                        ShowToolbar="false" Date="@SelectedDate" DateChanged="OnDateSelected" MinDate="@MinDate" MaxDate="@MaxDate"
-                       AutoClose="true" AdditionalDateClassesFunc="GetDateClasses" />
+                       AutoClose="true" AdditionalDateClassesFunc="GetDateClasses" PickerOpened="OnPickerOpened" PickerMonthChanged="OnPickerMonthChanged" />
 
     </MudPaper>
 </div>
 
 <style>
-    .archive-navigator {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        justify-content: center;
-    }
-
-    .archive-completed button {
-        background: var(--success);
-        color: white;
-    }
-
-    .archive-current button {
-        background: var(--accent);
+    .archive-current  {
+        border: 1px solid var(--tint);
         color: white;
         font-weight: bold;
     }
 
-    .archive-available button {
-        border: 1px solid var(--tint);
+    .archive-notstarted  {
+        background: var(--shadow);
+    }
+
+    .archive-inprogress  {
+        color: var(--partial) !important;
+        background: var(--shadow);
+    }
+
+    .archive-won  {
+        border: 1px solid var(--correct);
+        background: var(--shadow);
+        color: var(--correct) !important;
+    }
+
+    .archive-lost  {
+        border: 1px solid var(--wrong);
+        color: var(--wrong) !important;
     }
 </style>
 
@@ -46,7 +52,12 @@
     public DateOnly FirstDay { get; set; }
 
     [Parameter]
+    public HashSet<int>? CompletedDays { get; set; }
+
+    [Parameter]
     public EventCallback DateSelected { get; set; }
+
+    private int datePickerKey;
 
 
     private DateTime? SelectedDate => FirstDay.AddDays(CurrentDay - 1).ToDateTime(TimeOnly.MinValue);
@@ -54,6 +65,28 @@
     private DateTime MinDate => FirstDay.ToDateTime(TimeOnly.MinValue);
 
     private DateTime MaxDate => FirstDay.AddDays(MaxDay - 1).ToDateTime(TimeOnly.MinValue);
+
+    private int GetArchiveDayNumber(DateTime date)
+    {
+        var day = DateOnly.FromDateTime(date);
+        return day.DayNumber - FirstDay.DayNumber + 1;
+    }
+
+    // In-memory cache: archiveDay (1-based) -> DayStatus
+    private readonly Dictionary<int, QSMPDLE.Web.Services.DayStatus> _dayStatuses = new();
+
+    // Keep track of which months (year*100 + month) we've loaded to avoid duplicate network calls
+    private readonly HashSet<int> _loadedMonthKeys = new();
+
+    // Track ongoing month-load tasks to prevent duplicate concurrent requests for the same month
+    private readonly Dictionary<int, System.Threading.Tasks.Task> _ongoingLoads = new();
+
+    private readonly object _loadLock = new();
+
+    private void UpdateDatePicker()
+    {
+        datePickerKey++;
+    }
 
     private void OnDateSelected(DateTime? date)
     {
@@ -68,22 +101,222 @@
             NavigationManager.NavigateTo($"/archive/day/{dayNumber}");
             DateSelected.InvokeAsync();
         }
+
     }
+
+    private DateOnly? _loadOnFirstRender;
+
+    protected override Task OnInitializedAsync()
+    {
+        // Subscribe to internal game events so we can refresh month/day statuses when local game state changes.
+        EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GuessMadeEvent>(async ev =>
+        {
+            if (!ev.DayNumber.HasValue)
+                return;
+
+            var date = FirstDay.AddDays(ev.DayNumber.Value - 1);
+            await InvokeAsync(async () =>
+            {
+                await LoadStatusesForDayAsync(date);
+            });
+        });
+
+        EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(async ev =>
+        {
+            if (!ev.DayNumber.HasValue)
+                return;
+
+            var date = FirstDay.AddDays(ev.DayNumber.Value - 1);
+            await InvokeAsync(async () =>
+            {
+                await LoadStatusesForDayAsync(date);
+            });
+        });
+
+        // Defer loading month data that may use JS interop (via StatusService -> StatisticsService -> LocalStorage)
+        // until after first render so prerendering does not attempt JS interop.
+        var selected = SelectedDate ?? DateTime.Now;
+        _loadOnFirstRender = DateOnly.FromDateTime(selected);
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        if (_loadOnFirstRender.HasValue)
+        {
+            await LoadMonthForDateAsync(_loadOnFirstRender.Value);
+            _loadOnFirstRender = null;
+            await InvokeAsync(() => { UpdateDatePicker(); StateHasChanged(); });
+        }
+    }
+
+    private async Task OnPickerOpened()
+    {
+        // When picker opens, ensure the visible month (fallback to selected date) is loaded.
+        var visible = SelectedDate ?? DateTime.UtcNow;
+        await LoadMonthForDateAsync(DateOnly.FromDateTime(visible));
+    }
+
+    private async Task OnPickerMonthChanged(DateTime? month)
+    {
+        if (!month.HasValue)
+            return;
+
+        var firstOfMonth = new DateOnly(month.Value.Year, month.Value.Month, 1);
+        await LoadMonthForDateAsync(firstOfMonth);
+    }
+
+    private async Task LoadStatusesForDayAsync(DateOnly date)
+    {
+        try
+        {
+            var fetched = await StatusService.GetStatusesAsync(date, date);
+
+            // Map absolute DayNumber -> archiveDay (1-based) then merge.
+            foreach (var kv in fetched)
+            {
+                var absoluteDayNumber = kv.Key;
+                var day = DateOnly.FromDayNumber(absoluteDayNumber);
+                var archiveDay = day.DayNumber - FirstDay.DayNumber + 1;
+                if (archiveDay >= 1 && archiveDay <= MaxDay)
+                {
+                    _dayStatuses[archiveDay] = kv.Value;
+                }
+            }
+        }
+        catch
+        {
+            // ignore errors
+        }
+
+        await InvokeAsync(() => { UpdateDatePicker(); StateHasChanged(); });
+    }
+
 
     private string GetDateClasses(DateTime date)
     {
-        var day = DateOnly.FromDateTime(date);
-        var archiveDay = day.DayNumber - FirstDay.DayNumber + 1;
+        // MUST be synchronous and side-effect free: only read from cache and return classes.
+        var classes = new HashSet<string>();
+
+        var archiveDay = GetArchiveDayNumber(date);
 
         if (archiveDay == CurrentDay)
             return "archive-current";
 
-        if (archiveDay < CurrentDay)
-            return "archive-completed";
+        if (archiveDay > MaxDay || archiveDay < 1)
+        {
+            return "archive-unavailable";
+        }
 
-        if (archiveDay <= MaxDay)
-            return "archive-available";
+        // Prefer explicit statuses from the cache. If not present, treat as NotStarted per plan.
+        if (_dayStatuses.TryGetValue(archiveDay, out var status))
+        {
+            switch (status)
+            {
+                case QSMPDLE.Web.Services.DayStatus.Won:
+                    return "archive-won";
+                case QSMPDLE.Web.Services.DayStatus.Lost:
+                    return "archive-lost";
+                case QSMPDLE.Web.Services.DayStatus.InProgress:
+                    return "archive-inprogress";
+                case QSMPDLE.Web.Services.DayStatus.NotStarted:
+                default:
+                    return "archive-notstarted";
+            }
+        }
+        else
+        {
+            // Not yet loaded: show NotStarted as the safe default. Loading of months is triggered separately.
+            return "archive-notstarted";
+        }
+    }
 
-        return string.Empty;
+    // Public method to load statuses for the month containing `date`.
+    // Performs a single batched call per month and prevents duplicate concurrent requests.
+    public async System.Threading.Tasks.Task LoadMonthForDateAsync(DateOnly date)
+    {
+        var monthKey = date.Year * 100 + date.Month;
+
+        lock (_loadLock)
+        {
+            if (_loadedMonthKeys.Contains(monthKey))
+                return;
+
+            if (_ongoingLoads.TryGetValue(monthKey, out var existing))
+            {
+                // Another request is already in progress for this month; await it outside the lock.
+                System.Threading.Tasks.Task.Run(() => { }).Wait(0); // noop to satisfy pattern
+            }
+        }
+
+        System.Threading.Tasks.Task loadTask;
+
+        lock (_loadLock)
+        {
+            if (_loadedMonthKeys.Contains(monthKey))
+                return;
+
+            if (_ongoingLoads.TryGetValue(monthKey, out var existing))
+            {
+                loadTask = existing;
+            }
+            else
+            {
+                loadTask = LoadMonthAsync(date, monthKey);
+                _ongoingLoads[monthKey] = loadTask;
+            }
+        }
+
+        try
+        {
+            await loadTask.ConfigureAwait(false);
+        }
+        finally
+        {
+            lock (_loadLock)
+            {
+                _ongoingLoads.Remove(monthKey);
+            }
+        }
+    }
+
+    private async Task LoadMonthAsync(DateOnly date, int monthKey)
+    {
+        var monthStart = new DateOnly(date.Year, date.Month, 1);
+        var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+        try
+        {
+            var fetched = await StatusService.GetStatusesAsync(monthStart, monthEnd);
+
+            // Map absolute DayNumber -> archiveDay (1-based) then merge.
+            foreach (var kv in fetched)
+            {
+                var absoluteDayNumber = kv.Key;
+                var day = DateOnly.FromDayNumber(absoluteDayNumber);
+                var archiveDay = day.DayNumber - FirstDay.DayNumber + 1;
+                if (archiveDay >= 1 && archiveDay <= MaxDay)
+                {
+                    _dayStatuses[archiveDay] = kv.Value;
+                    Console.WriteLine($"Loaded status for archive day {archiveDay}: {kv.Value}");
+                }
+            }
+
+            lock (_loadLock)
+            {
+                _loadedMonthKeys.Add(monthKey);
+            }
+        }
+        catch
+        {
+            // Swallow and allow retry later
+        }
+        finally
+        {
+            await InvokeAsync(() => { UpdateDatePicker(); StateHasChanged(); });
+        }
     }
 }

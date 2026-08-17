@@ -107,9 +107,30 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 
             await SavePlayerStatsAsync(playerStats);
         }
+        else if (eventData.GameMode == GameMode.Archive)
+        {
+            var playerStats = await GetPlayerStatsAsync();
+
+            ArgumentNullException.ThrowIfNull(playerStats);
+
+            playerStats.ArchiveGamesPlayed++;
+
+            if (eventData.IsWon)
+            {
+                playerStats.ArchiveGamesWon++;
+            }
+            else
+            {
+                playerStats.ArchiveGamesLost++;
+            }
+
+            await SavePlayerStatsAsync(playerStats);
+        }
     }
 
     public async Task<GameSession> GetGameStatsAsync(Guid gameId) => await GameStatsStore.LoadOrNewAsync(gameId);
+    public async Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber) => await GameStatsStore.GetPlayerCompletedDailyGameAsync(playerId, dailyNumber);
+    public async Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId) => await GameStatsStore.GetPlayerCompletedDailyNumbersAsync(playerId);
     private async Task SaveGameStatsAsync(GameSession gameStats) => await GameStatsStore.SaveAsync(gameStats);
 
     public async Task<PlayerStats> GetPlayerStatsAsync() => await PlayerStatsStore.LoadAsync();

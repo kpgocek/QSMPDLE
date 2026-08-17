@@ -19,6 +19,7 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
         return Task.CompletedTask;
     }
 
+
     public Task<GameState?> GetAsync() => Task.FromResult(State is null ? null : Clone(State));
 
     public Task SaveAsync(GameState state)
@@ -131,6 +132,35 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
 
     public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId)
         => Task.FromResult<IEnumerable<GameSession>>(Sessions.Values.Where(session => session.PlayerId == playerId).ToList());
+
+    public Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
+        => Task.FromResult(Sessions.Values.FirstOrDefault(session =>
+            session.PlayerId == playerId &&
+            session.Mode == GameMode.Daily &&
+            session.DailyNumber == dailyNumber &&
+            session.FinishedOnUtc.HasValue));
+
+    public Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId)
+    {
+        var numbers = Sessions.Values
+            .Where(s => s.PlayerId == playerId && s.Mode == GameMode.Daily && s.FinishedOnUtc.HasValue && s.DailyNumber.HasValue)
+            .Select(s => s.DailyNumber!.Value)
+            .Distinct()
+            .ToList();
+
+        return Task.FromResult(numbers);
+    }
+
+    public Task<List<GameSession>> GetPlayerDailyGamesByNumberRangeAsync(Guid playerId, int startNumber, int endNumber)
+    {
+        var list = Sessions.Values
+            .Where(s => s.PlayerId == playerId && s.Mode == GameMode.Daily && s.DailyNumber.HasValue)
+            .Where(s => s.DailyNumber!.Value >= startNumber && s.DailyNumber!.Value <= endNumber)
+            .Select(Clone)
+            .ToList();
+
+        return Task.FromResult(list);
+    }
 
     public Task<GlobalStatsView> GetGlobalStatsAsync() => throw new NotImplementedException();
     public Task<List<DailyActivePlayersData>> GetDailyActivePlayersAsync(DateOnly? from) => throw new NotImplementedException();
@@ -256,6 +286,25 @@ internal sealed class InMemoryStatisticsService : IStatisticsService
 
     public Task<PlayerStats> GetPlayerStatsAsync() => Task.FromResult(PlayerStats);
     public Task<GameSession> GetGameStatsAsync(Guid gameId) => Task.FromResult(LoadOrCreate(gameId));
+    public Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
+    {
+        return Task.FromResult(Sessions.Values.FirstOrDefault(session =>
+            session.PlayerId == playerId &&
+            session.Mode == GameMode.Daily &&
+            session.DailyNumber == dailyNumber &&
+            session.FinishedOnUtc.HasValue));
+    }
+
+    public Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId)
+    {
+        var numbers = Sessions.Values
+            .Where(s => s.PlayerId == playerId && s.Mode == GameMode.Daily && s.FinishedOnUtc.HasValue && s.DailyNumber.HasValue)
+            .Select(s => s.DailyNumber!.Value)
+            .Distinct()
+            .ToList();
+
+        return Task.FromResult(numbers);
+    }
 
     private GameSession LoadOrCreate(Guid gameId)
     {

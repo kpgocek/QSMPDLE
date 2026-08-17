@@ -14,4 +14,6 @@ public interface IStatisticsService
     // ENDPOINTS
     Task<PlayerStats> GetPlayerStatsAsync();
     Task<GameSession> GetGameStatsAsync(Guid gameId);
+    Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber);
+    Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId);
 }

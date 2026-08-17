@@ -114,9 +114,11 @@ public sealed class GameStateManagerStatisticsTests
 
         await setup.Manager.MakeGuessAsync(setup.Target.Id);
 
+        var dayNumber = setup.Manager.GameState.Game.DayNumber;
+
         setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(1);
         setup.PlayerStatsStore.Stats.GamesWon.Should().Be(1);
-        setup.PlayerStatsStore.Stats.LastCompletedDayNumber.Should().Be(60);
+        setup.PlayerStatsStore.Stats.LastCompletedDayNumber.Should().Be(dayNumber);
         setup.PlayerStatsStore.Stats.LastPlayedDailyGameId.Should().Be(setup.Manager.GameState.GameId);
         setup.PlayerStatsStore.Stats.GuessDistribution[0].Should().Be(1);
     }
@@ -130,13 +132,322 @@ public sealed class GameStateManagerStatisticsTests
         await setup.Manager.MakeGuessAsync(setup.Target.Id);
 
         var session = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
+        var dayNumber = setup.Manager.GameState.Game.DayNumber;
+
         session.PlayerId.Should().Be(setup.PlayerStatsStore.Stats.Id);
         session.Mode.Should().Be(GameMode.Daily);
-        session.DailyNumber.Should().Be(60);
+        session.DailyNumber.Should().Be(dayNumber);
         session.TargetCharacterId.Should().Be(setup.Target.Id);
         session.FinishedOnUtc.Should().NotBeNull();
         session.Guesses.Should().ContainSingle();
         session.Guesses.First().GuessedCharacterId.Should().Be(setup.Target.Id);
+    }
+
+    [Fact]
+    public async Task DailyAndArchiveUseTheSamePlayerIdWhenPlayerStatsAreIntact()
+    {
+        var setup = CreateSetup();
+
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        setup.Manager.GameState.PlayerId.Should().Be(setup.PlayerStatsStore.Stats.Id);
+
+        await setup.Manager.MakeGuessAsync(setup.Target.Id);
+
+        var session = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
+        session.PlayerId.Should().Be(setup.PlayerStatsStore.Stats.Id);
+
+        await setup.Manager.StartGameAsync(GameMode.Archive, setup.Manager.GameState.Game.DayNumber);
+
+        setup.Manager.GameState.PlayerId.Should().Be(setup.PlayerStatsStore.Stats.Id);
+    }
+
+    [Fact]
+    public async Task CompletedDailyWinAppearsInHistoryForSamePlayerId()
+    {
+        var setup = CreateSetup();
+
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        await setup.Manager.MakeGuessAsync(setup.Target.Id);
+
+        var completedDay = setup.Manager.GameState.Game.DayNumber;
+        completedDay.Should().NotBeNull();
+        var completedDayValue = completedDay.Value;
+        var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
+
+        numbers.Should().ContainSingle().Which.Should().Be(completedDayValue);
+        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CompletedDailyLossAppearsInHistoryForSamePlayerId()
+    {
+        var setup = CreateSetup();
+
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+
+        foreach (var guess in setup.LosingGuesses)
+        {
+            await setup.Manager.MakeGuessAsync(guess.Id);
+        }
+
+        var completedDay = setup.Manager.GameState.Game.DayNumber;
+        completedDay.Should().NotBeNull();
+        var completedDayValue = completedDay.Value;
+        var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
+
+        numbers.Should().ContainSingle().Which.Should().Be(completedDayValue);
+        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task UnfinishedDailyDoesNotAppearInHistory()
+    {
+        var setup = CreateSetup();
+
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        await setup.Manager.MakeGuessAsync(setup.IncorrectGuess.Id);
+
+        var completedDay = setup.Manager.GameState.Game.DayNumber;
+        completedDay.Should().NotBeNull();
+        var completedDayValue = completedDay.Value;
+        var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
+
+        numbers.Should().BeEmpty();
+        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DifferentPlayerIdDoesNotSeeAnotherPlayersHistory()
+    {
+        var setup = CreateSetup();
+        var playerId = setup.PlayerStatsStore.Stats.Id;
+
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        await setup.Manager.MakeGuessAsync(setup.Target.Id);
+
+        var otherPlayerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        setup.PlayerStatsStore.Stats = new PlayerStats { Id = otherPlayerId };
+        var completedDayValue = setup.Manager.GameState.Game.DayNumber!.Value;
+
+        (await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(otherPlayerId)).Should().BeEmpty();
+        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(otherPlayerId, completedDayValue)).Should().BeNull();
+        (await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(playerId)).Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task ArchiveDoesNotChangeDailyStreakOrProgression()
+    {
+        var setup = CreateSetup();
+
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        await setup.Manager.MakeGuessAsync(setup.Target.Id);
+
+        var beforeStats = new PlayerStats
+        {
+            Version = setup.PlayerStatsStore.Stats.Version,
+            Id = setup.PlayerStatsStore.Stats.Id,
+            GamesPlayed = setup.PlayerStatsStore.Stats.GamesPlayed,
+            GamesWon = setup.PlayerStatsStore.Stats.GamesWon,
+            CurrentStreak = setup.PlayerStatsStore.Stats.CurrentStreak,
+            MaxStreak = setup.PlayerStatsStore.Stats.MaxStreak,
+            LastCompletedDayNumber = setup.PlayerStatsStore.Stats.LastCompletedDayNumber,
+            LastPlayedDailyGameId = setup.PlayerStatsStore.Stats.LastPlayedDailyGameId,
+            GuessDistribution = setup.PlayerStatsStore.Stats.GuessDistribution.ToArray(),
+        };
+        await setup.Manager.StartGameAsync(GameMode.Archive, setup.Manager.GameState.Game.DayNumber!.Value);
+
+        setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(beforeStats.GamesPlayed);
+        setup.PlayerStatsStore.Stats.GamesWon.Should().Be(beforeStats.GamesWon);
+        setup.PlayerStatsStore.Stats.CurrentStreak.Should().Be(beforeStats.CurrentStreak);
+        setup.PlayerStatsStore.Stats.LastCompletedDayNumber.Should().Be(beforeStats.LastCompletedDayNumber);
+    }
+
+    [Fact]
+    public async Task ArchiveCompletedDayHistoryIsLoadedInOneQuery()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        await setup.Manager.MakeGuessAsync(setup.Target.Id);
+
+        var playerId = setup.PlayerStatsStore.Stats.Id;
+        var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(playerId);
+
+        numbers.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task ArchiveRecognizesCompletedDailyWin()
+    {
+        var setup = CreateSetup();
+        var completedDaily = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = setup.PlayerStatsStore.Stats.Id,
+            Mode = GameMode.Daily,
+            DailyNumber = 3,
+            TargetCharacterId = setup.Target.Id,
+            FinishedOnUtc = DateTimeOffset.UtcNow,
+            IsWon = true,
+            Guesses = [new GameGuess { GameId = Guid.NewGuid(), GuessOrder = 0, GuessedCharacterId = setup.Target.Id }]
+        };
+        setup.GameStatsStore.Sessions[completedDaily.GameId] = completedDaily;
+
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        setup.Manager.GameState.GameMode.Should().Be(GameMode.Archive);
+        setup.Manager.GameState.GameId.Should().NotBe(Guid.Empty);
+        setup.Manager.GameState.IsWon.Should().BeTrue();
+        setup.Manager.GameState.IsFinished.Should().BeTrue();
+        setup.Manager.GameState.Game.DayNumber.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task ArchiveRecognizesCompletedDailyLoss()
+    {
+        var setup = CreateSetup();
+        var completedDaily = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = setup.PlayerStatsStore.Stats.Id,
+            Mode = GameMode.Daily,
+            DailyNumber = 3,
+            TargetCharacterId = setup.Target.Id,
+            FinishedOnUtc = DateTimeOffset.UtcNow,
+            IsWon = false,
+            Guesses = Enumerable.Range(0, 6).Select(index => new GameGuess { GameId = Guid.NewGuid(), GuessOrder = index, GuessedCharacterId = setup.LosingGuesses[index].Id }).ToList()
+        };
+        setup.GameStatsStore.Sessions[completedDaily.GameId] = completedDaily;
+
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        setup.Manager.GameState.GameMode.Should().Be(GameMode.Archive);
+        setup.Manager.GameState.IsLost.Should().BeTrue();
+        setup.Manager.GameState.IsFinished.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ArchiveRemainsPlayableWhenDailyIsUnfinished()
+    {
+        var setup = CreateSetup();
+        var unfinishedDaily = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = setup.PlayerStatsStore.Stats.Id,
+            Mode = GameMode.Daily,
+            DailyNumber = 3,
+            TargetCharacterId = setup.Target.Id,
+            StartedOnUtc = DateTimeOffset.UtcNow,
+            Guesses = [new GameGuess { GameId = Guid.NewGuid(), GuessOrder = 0, GuessedCharacterId = setup.IncorrectGuess.Id }]
+        };
+        setup.GameStatsStore.Sessions[unfinishedDaily.GameId] = unfinishedDaily;
+
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        result.Should().Be(Extensions.LoadGameResult.CreatedNew);
+        setup.Manager.GameState.GameMode.Should().Be(GameMode.Archive);
+        setup.Manager.GameState.IsFinished.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ArchiveRemainsPlayableWithoutDailyHistory()
+    {
+        var setup = CreateSetup();
+
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        result.Should().Be(Extensions.LoadGameResult.CreatedNew);
+        setup.Manager.GameState.GameMode.Should().Be(GameMode.Archive);
+        setup.Manager.GameState.IsFinished.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ArchiveIgnoresOtherPlayersCompletedDaily()
+    {
+        var setup = CreateSetup();
+        var otherPlayerSession = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            Mode = GameMode.Daily,
+            DailyNumber = 3,
+            TargetCharacterId = setup.Target.Id,
+            FinishedOnUtc = DateTimeOffset.UtcNow,
+            IsWon = true,
+        };
+        setup.GameStatsStore.Sessions[otherPlayerSession.GameId] = otherPlayerSession;
+
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        result.Should().Be(Extensions.LoadGameResult.CreatedNew);
+        setup.Manager.GameState.GameMode.Should().Be(GameMode.Archive);
+        setup.Manager.GameState.IsFinished.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ArchiveKeepsExistingLocalStateWhenPresent()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+        var firstGameId = setup.Manager.GameState.GameId;
+
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        setup.Manager.GameState.GameId.Should().Be(firstGameId);
+    }
+
+    [Fact]
+    public async Task ArchiveRejectsCachedStateWithDifferentDay()
+    {
+        var setup = CreateSetup();
+
+        await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        setup.GameStateStore.State = new GameState
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = setup.PlayerStatsStore.Stats.Id,
+            GameMode = GameMode.Archive,
+            Game = new Game
+            {
+                DayNumber = 5,
+                TargetId = setup.Target.Id,
+                PortraitUrl = string.Empty
+            }
+        };
+
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        result.Should().Be(Extensions.LoadGameResult.CreatedNew);
+        setup.Manager.GameState.Game.DayNumber.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task ArchiveDoesNotChangeDailyStreakWhenLoadingCompletedDaily()
+    {
+        var setup = CreateSetup();
+        var completedDaily = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = setup.PlayerStatsStore.Stats.Id,
+            Mode = GameMode.Daily,
+            DailyNumber = 3,
+            TargetCharacterId = setup.Target.Id,
+            FinishedOnUtc = DateTimeOffset.UtcNow,
+            IsWon = true,
+            Guesses = [new GameGuess { GameId = Guid.NewGuid(), GuessOrder = 0, GuessedCharacterId = setup.Target.Id }]
+        };
+        setup.GameStatsStore.Sessions[completedDaily.GameId] = completedDaily;
+
+        var beforeStreak = setup.PlayerStatsStore.Stats.CurrentStreak;
+        var beforeGamesPlayed = setup.PlayerStatsStore.Stats.GamesPlayed;
+
+        await setup.Manager.StartGameAsync(GameMode.Archive, 3);
+
+        setup.PlayerStatsStore.Stats.CurrentStreak.Should().Be(beforeStreak);
+        setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(beforeGamesPlayed);
     }
 
     [Fact]

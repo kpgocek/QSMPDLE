@@ -138,3 +138,7 @@ h4 {
     font-weight: 800;
     text-transform: capitalize !important;
 }
+
+.mud-picker-calendar {
+    gap: 0.25em 0.125em !important;
+}

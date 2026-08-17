@@ -37,6 +37,14 @@ public sealed class LocalStoragePlayerStatsStore(ILocalStorageService LocalStora
             shouldSave = true;
         }
 
+        if (stats.ArchiveGamesPlayed < 0 || stats.ArchiveGamesWon < 0 || stats.ArchiveGamesLost < 0)
+        {
+            stats.ArchiveGamesPlayed = Math.Max(0, stats.ArchiveGamesPlayed);
+            stats.ArchiveGamesWon = Math.Max(0, stats.ArchiveGamesWon);
+            stats.ArchiveGamesLost = Math.Max(0, stats.ArchiveGamesLost);
+            shouldSave = true;
+        }
+
         if (shouldSave)
         {
             await SaveAsync(stats);

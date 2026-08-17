@@ -10,6 +10,8 @@ public interface IGameStatsStore
 
     Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId);
 
+    Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber);
+
     Task<GlobalStatsView> GetGlobalStatsAsync();
 
     Task<List<DailyActivePlayersData>> GetDailyActivePlayersAsync(DateOnly? from);
@@ -27,4 +29,15 @@ public interface IGameStatsStore
     Task<PlayerCharacterStats> GetPlayerCharacterStatsAsync(Guid playerId);
 
     Task<DateOnly?> GetPlayerFirstGameDateAsync(Guid playerId);
+    Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId);
+
+    /// <summary>
+    /// Returns all Daily-mode game sessions for the given player where the session's StartedOnUtc falls within the inclusive date range [start, end].
+    /// Implementations MUST perform a single batched database query for the range.
+    /// </summary>
+    /// <summary>
+    /// Returns all Daily-mode game sessions for the given player whose DailyNumber is between startNumber and endNumber (inclusive).
+    /// Implementations MUST perform a single batched database query for the range.
+    /// </summary>
+    Task<List<GameSession>> GetPlayerDailyGamesByNumberRangeAsync(Guid playerId, int startNumber, int endNumber);
 }

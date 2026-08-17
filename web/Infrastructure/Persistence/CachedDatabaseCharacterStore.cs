@@ -31,7 +31,7 @@ public class CachedDatabaseCharacterStore(
 
     public async Task<IReadOnlyList<CharacterLookup>> GetLookupsAsync(CancellationToken cancellationToken = default)
     {
-        var lookups = await Cache.GetOrCreateAsync<List<CharacterLookup>>("qsmpdle-character-lookups", async entry =>
+        var lookups = await Cache.GetOrCreateAsync("qsmpdle-character-lookups", async entry =>
         {
             entry.Priority = CacheItemPriority.NeverRemove;
 

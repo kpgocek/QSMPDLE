@@ -117,6 +117,12 @@
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Archive Games" Delay="100" Icon="@Icons.Material.Filled.History"
+                              Value="@($"{ArchiveGamesPlayed}")"
+                              Comment="@($"{ArchiveGamesWon} won, {ArchiveGamesLost} lost")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Practice Games" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
                               Value="@($"{PracticeGamesFinished}")"
                               Comment="@($"{PracticeGamesStarted - PracticeGamesFinished} abandoned")" />
@@ -136,6 +142,11 @@
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Archive Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
+                              Value="@($"{ArchiveGamesWon}")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Practice Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
                               Value="@($"{PracticeGamesWon}")" />
                 </MudItem>
@@ -152,6 +163,12 @@
                 <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Daily Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
                               Value="@($"{DailyWinRate:0}%")" />
+                </MudItem>
+
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Archive Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
+                              Value="@($"{ArchiveWinRate:0}%")"
+                              Comment="Archive games only" />
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
@@ -202,6 +219,10 @@
     private int CurrentStreak { get; set; }
     private int LongestStreak { get; set; }
     private double DailyWinRate { get; set; }
+    private int ArchiveGamesPlayed { get; set; }
+    private int ArchiveGamesWon { get; set; }
+    private int ArchiveGamesLost { get; set; }
+    private double ArchiveWinRate { get; set; }
     private int[] GuessDistribution { get; set; } = new int[6];
 
     private double[] GuessDistributionAsDoubles => GuessDistribution.Select(x => (double)x).ToArray();
@@ -275,6 +296,10 @@
             CurrentStreak = stats.CurrentStreak;
             LongestStreak = stats.MaxStreak;
             DailyWinRate = stats.WinRate;
+            ArchiveGamesPlayed = stats.ArchiveGamesPlayed;
+            ArchiveGamesWon = stats.ArchiveGamesWon;
+            ArchiveGamesLost = stats.ArchiveGamesLost;
+            ArchiveWinRate = stats.ArchiveWinRate;
             GuessDistribution = stats.GuessDistribution;
 
             var gameStats = await GameStatsStore.GetPlayerGames(playerId);

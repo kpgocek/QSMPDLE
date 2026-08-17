@@ -1,17 +1,19 @@
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
+using System.Linq;
 using Models;
 using QSMPDLE.Web.Extensions;
 using QSMPDLE.Web.Features.Communication.GameEvents;
 using QSMPDLE.Web.Infrastructure.LocalStorage;
 using QSMPDLE.Web.Infrastructure.Persistence;
 using QSMPDLE.Web.Features.Statistics.Services;
+using QSMPDLE.Web.Features.Statistics.Models;
 
 // <summary>
 // Manages the game state for different game modes (daily, practice, archival).
 // </summary>
 public class GameStateManager(IGameStateStore GameStateStore, IGameService GameService, IPlayerStatsStore PlayerStatsStore,
-    ICharacterStore CharacterStore, ICharacterComparer CharacterComparer, IStatisticsService StatisticsService) : IGameStateManager
+    ICharacterStore CharacterStore, ICharacterComparer CharacterComparer, IStatisticsService StatisticsService, QSMPDLE.Web.Features.Communication.GameEvents.IGameEventBus? eventBus = null) : IGameStateManager
 {
     private const int MaxGuesses = 6;
 
@@ -56,8 +58,30 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
 
         var gameState = await GameStateStore.GetAsync();
 
+        if (mode == GameMode.Archive && dayNumber.HasValue && gameState is null)
+        {
+            var completedDaily = await StatisticsService.GetPlayerCompletedDailyGameAsync(playerId, dayNumber.Value);
+
+            if (completedDaily is not null)
+            {
+                GameState = CreateArchiveReplayState(completedDaily, playerId);
+                await GameStateStore.SaveAsync(GameState);
+                return LoadGameResult.LoadedExisting;
+            }
+        }
+
         if (gameState is not null)
         {
+            if (mode == GameMode.Archive && dayNumber.HasValue && gameState.Game.DayNumber != dayNumber.Value)
+            {
+                gameState = null;
+            }
+
+            if (gameState is null)
+            {
+                goto CreateNewGame;
+            }
+
             GameState = gameState;
 
             if (GameState.PlayerId != playerId)
@@ -69,6 +93,7 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
             return LoadGameResult.LoadedExisting;
         }
 
+    CreateNewGame:
         if (mode == GameMode.Daily)
         {
             GameState = await GameService.StartDailyAsync(cancellationToken);
@@ -147,17 +172,25 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
             });
         }
 
-        await StatisticsService.RecordGuessMadeAsync(new GuessMadeEvent
+        var guessEvent = new QSMPDLE.Web.Features.Communication.GameEvents.GuessMadeEvent
         {
             Timestamp = DateTime.UtcNow,
             PlayerId = GameState.PlayerId,
             GameId = GameState.GameId,
             GuessedCharacterId = characterId,
-        });
+            DayNumber = GameState.Game?.DayNumber
+        };
+
+        await StatisticsService.RecordGuessMadeAsync(guessEvent);
+        // Publish internal event so UI components can react to in-memory/local-storage changes
+        if (eventBus is not null)
+        {
+            await eventBus.PublishAsync(guessEvent);
+        }
 
         if (GameState.IsFinished && !GameState.StatsRecorded)
         {
-            await StatisticsService.RecordGameFinishedAsync(new GameFinishedEvent
+            var finishedEvent = new QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent
             {
                 Timestamp = DateTime.UtcNow,
                 GameMode = GameState.GameMode,
@@ -166,7 +199,14 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
                 GameId = GameState.GameId,
                 GuessCount = GameState.GuessesMade.Count,
                 IsWon = GameState.IsWon,
-            });
+            };
+
+            await StatisticsService.RecordGameFinishedAsync(finishedEvent);
+            // Publish internal event for UI
+            if (eventBus is not null)
+            {
+                await eventBus.PublishAsync(finishedEvent);
+            }
 
             await MarkStatsRecordedAsync(cancellationToken);
         }
@@ -184,6 +224,46 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
     {
         GameState.SeenPopup = true;
         await GameStateStore.SaveAsync(GameState);
+    }
+
+    private static GameState CreateArchiveReplayState(GameSession completedDaily, Guid playerId)
+    {
+        var dayNumber = completedDaily.DailyNumber
+            ?? throw new InvalidOperationException("Completed daily session is missing a day number.");
+
+        var state = new GameState
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = playerId,
+            GameMode = GameMode.Archive,
+            Game = new Game
+            {
+                DayNumber = dayNumber,
+                TargetId = completedDaily.TargetCharacterId,
+                PortraitUrl = string.Empty
+            },
+            IsWon = completedDaily.IsWon,
+            IsLost = completedDaily.FinishedOnUtc.HasValue && !completedDaily.IsWon,
+            SeenPopup = completedDaily.FinishedOnUtc.HasValue,
+            StatsRecorded = true,
+            GuessesMade = completedDaily.Guesses
+                .OrderBy(guess => guess.GuessOrder)
+                .Select(guess => new GuessResult
+                {
+                    Character = new CharacterLookup(guess.GuessedCharacterId, guess.GuessedCharacterId.ToString(), guess.GuessedCharacterId.ToString(), [], string.Empty),
+                    IsCorrect = guess.GuessedCharacterId == completedDaily.TargetCharacterId,
+                    IsFirstGuess = guess.GuessOrder == 0,
+                    IsLastAllowedGuess = guess.GuessOrder == completedDaily.Guesses.Count - 1,
+                    Joined = ComparisonResult.Correct,
+                    Languages = ComparisonResult.Correct,
+                    Pronouns = ComparisonResult.Correct,
+                    Affiliation = ComparisonResult.Correct,
+                    Species = ComparisonResult.Correct,
+                })
+                .ToList()
+        };
+
+        return state;
     }
 
     public async Task MarkStatsRecordedAsync(CancellationToken cancellationToken = default)

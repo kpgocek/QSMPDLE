@@ -49,6 +49,9 @@ builder.Services.AddGameplay();
 builder.Services.AddSharingFeature();
 builder.Services.AddStatistics();
 
+// Archive status service used by ArchiveNavigator to lazily load per-day statuses for the calendar.
+builder.Services.AddScoped<QSMPDLE.Web.Services.IArchiveStatusService, QSMPDLE.Web.Services.ArchiveStatusService>();
+
 builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents(options => options.DetailedErrors = true);

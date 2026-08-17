@@ -20,6 +20,73 @@ public sealed class DatabaseGameStatsStore(
             .ToListAsync();
     }
 
+    public async Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var numbers = await database.GameStats
+            .AsNoTracking()
+            .Where(gs => gs.PlayerId == playerId
+                         && gs.Mode == GameMode.Daily
+                         && gs.FinishedOnUtc.HasValue
+                         && !(gs.Mode == GameMode.Daily && DateOnly.FromDateTime(gs.StartedOnUtc.UtcDateTime) == today))
+            .Select(gs => gs.DailyNumber)
+            .Where(n => n.HasValue)
+            .Select(n => n!.Value)
+            .Distinct()
+            .ToListAsync();
+
+        return numbers;
+    }
+
+    public async Task<List<GameSession>> GetPlayerDailyGamesByNumberRangeAsync(Guid playerId, int startNumber, int endNumber)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        // Single batched query for the DailyNumber range
+        var sessions = await database.GameStats
+            .AsNoTracking()
+            .Where(gs => gs.PlayerId == playerId && gs.Mode == GameMode.Daily && gs.DailyNumber.HasValue && gs.DailyNumber >= startNumber && gs.DailyNumber <= endNumber)
+            .ToListAsync();
+
+        return sessions.Select(s => new GameSession
+        {
+            GameId = s.GameId,
+            PlayerId = s.PlayerId,
+            Mode = s.Mode,
+            DailyNumber = s.DailyNumber,
+            TargetCharacterId = s.TargetCharacterId,
+            StartedOnUtc = s.StartedOnUtc,
+            FinishedOnUtc = s.FinishedOnUtc,
+            IsWon = s.IsWon,
+            Guesses = s.Guesses.Select(g => new GameGuess
+            {
+                GameId = g.GameId,
+                GuessOrder = g.GuessOrder,
+                GuessedCharacterId = g.GuessedCharacterId
+            }).ToList()
+        }).ToList();
+    }
+
+    public async Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        return await database.GameStats
+            .AsNoTracking()
+            .Include(stats => stats.Guesses)
+            .FirstOrDefaultAsync(game =>
+                game.PlayerId == playerId &&
+                game.Mode == GameMode.Daily &&
+                game.DailyNumber == dailyNumber &&
+                game.FinishedOnUtc.HasValue &&
+                !(game.Mode == GameMode.Daily && DateOnly.FromDateTime(game.StartedOnUtc.UtcDateTime) == today));
+    }
+
     public async Task<GameSession> LoadOrNewAsync(Guid gameId)
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
