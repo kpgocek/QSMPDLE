@@ -31,27 +31,10 @@
     <WebPage>
         <h2>Archive Day Not Found</h2>
         <p>Archive day #@DayNumber is not available. Please choose a valid archive day.</p>
-        <MudButton Href="/archive" Variant="Variant.Filled" Color="Color.Primary">
-            View Archive
+        <MudButton Href="/archive/day/1" Variant="Variant.Filled" Color="Color.Primary">
+            Return to Day 1
         </MudButton>
     </WebPage>
-}
-else if (_isArchiveCompletedDaily)
-{
-    <div class="archive-completed-state">
-        <h2>ARCHIVE<span class="separator">|</span>DAY #@DayNumber.ToString("00")</h2>
-        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-            You already completed this daily puzzle.
-        </MudAlert>
-    </div>
-}
-else if (!_interactiveReady)
-{
-    <h2>
-        <MudSkeleton SkeletonType="SkeletonType.Text" Width="22rem" Height="2.375rem" />
-    </h2>
-
-    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="8rem" Height="2rem" />
 }
 else
 {
@@ -138,7 +121,6 @@ else
     private bool _isValidDay = true;
     private bool _isArchiveCompletedDaily = false;
     private bool _isGameLoaded = false;
-    private bool _interactiveReady;
     private bool _showCalendar = false;
     private int _maxDay;
     private DateOnly _firstDay;
@@ -148,29 +130,27 @@ else
 
     private string CanonicalUrl => $"{NavigationManager.BaseUri.TrimEnd('/')}/archive/day/{DayNumber}";
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
         _firstDay = GameService.GetFirstDay();
-        var todayDayNumber = await GameService.GetTodayDayNumberAsync(CancellationToken.None);
         _maxDay = await GameService.GetMaxArchiveDayAsync(CancellationToken.None);
 
-        // Validate day number is within valid range
-        if (DayNumber < 1 || DayNumber >= todayDayNumber)
-        {
-            _isValidDay = false;
-        }
+        // Validate day number is within valid range.
+        _isValidDay = DayNumber >= 1 && DayNumber <= _maxDay;
+
+        _isGameLoaded = false;
+        _showCalendar = false;
+        _isArchiveCompletedDaily = false;
+        _completedDays = null;
+
+        if (!_isValidDay)
+            return;
+
+        await LoadArchiveStateAsync();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private async Task LoadArchiveStateAsync()
     {
-        if (!firstRender)
-        {
-            return;
-        }
-
-        // Interactive-only work that may use JS interop (via LocalStorage) must run after first render.
-        _interactiveReady = true;
-
         try
         {
             var playerId = await GetPlayerIdAsync();
@@ -179,6 +159,8 @@ else
             // Load the set of completed daily numbers for the current player in one query.
             var completed = await StatisticsService.GetPlayerCompletedDailyNumbersAsync(playerId);
             _completedDays = completed is null ? null : new HashSet<int>(completed);
+
+            _isGameLoaded = true;
         }
         finally
         {

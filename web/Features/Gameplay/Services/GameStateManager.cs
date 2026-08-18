@@ -170,6 +170,19 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
                 GameMode = GameState.GameMode,
                 TargetCharacterId = GameState.Game.TargetId,
             });
+
+            if (eventBus is not null)
+            {
+                await eventBus.PublishAsync(new GameStartedEvent
+                {
+                    Timestamp = DateTime.UtcNow,
+                    DayNumber = GameState.Game.DayNumber,
+                    PlayerId = GameState.PlayerId,
+                    GameId = GameState.GameId,
+                    GameMode = GameState.GameMode,
+                    TargetCharacterId = GameState.Game.TargetId,
+                });
+            }
         }
 
         var guessEvent = new GuessMadeEvent

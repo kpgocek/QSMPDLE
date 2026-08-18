@@ -1,7 +1,9 @@
 ﻿@using MudBlazor
 @using QSMPDLE.Web.Components.UX.Dialogs
+@using QSMPDLE.Web.Features.Gameplay.Services
 @inject NavigationManager Nav
 @inject IDialogService DialogService
+@inject IGameService GameService
 
 <header class="topbar">
     <div class="topbar-container" id="game-top">
@@ -15,7 +17,7 @@
 
             <span class="separator">•</span>
 
-            <NavLink href="/archive">
+            <NavLink href="@ArchiveLink">
                 Archive
             </NavLink>
 
@@ -141,6 +143,8 @@
 </style>
 
 @code {
+    private string ArchiveLink => $"/archive/day/{Math.Max(1, GameService.GetTodayDayNumberAsync(CancellationToken.None).GetAwaiter().GetResult() - 1)}";
+
     private async Task OpenProfile()
     {
         var options = new DialogOptions

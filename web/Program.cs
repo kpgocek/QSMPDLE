@@ -51,6 +51,7 @@ builder.Services.AddStatistics();
 
 // Archive status service used by ArchiveNavigator to lazily load per-day statuses for the calendar.
 builder.Services.AddScoped<QSMPDLE.Web.Services.IArchiveStatusService, QSMPDLE.Web.Services.ArchiveStatusService>();
+builder.Services.AddSingleton<QSMPDLE.Web.Services.IArchiveStatusCache, QSMPDLE.Web.Services.ArchiveStatusCache>();
 
 builder.Services
     .AddRazorComponents()

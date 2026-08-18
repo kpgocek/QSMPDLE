@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Services;
@@ -8,13 +9,15 @@ namespace QSMPDLE.Web.Services
     // Production implementation that queries the game stats store to determine per-day statuses for the current player.
     public sealed class ArchiveStatusService : IArchiveStatusService
     {
+        private readonly IArchiveStatusCache _cache;
         private readonly IStatisticsService _statisticsService;
         private readonly IGameStatsStore _gameStatsStore;
         private readonly IGameService _gameService;
         private readonly IArchiveGameStateSource _gameStateSource;
 
-        public ArchiveStatusService(IStatisticsService statisticsService, IGameStatsStore gameStatsStore, IGameService gameService, IArchiveGameStateSource gameStateSource)
+        public ArchiveStatusService(IStatisticsService statisticsService, IGameStatsStore gameStatsStore, IGameService gameService, IArchiveGameStateSource gameStateSource, IArchiveStatusCache? cache = null)
         {
+            _cache = cache ?? new ArchiveStatusCache(new MemoryCache(new MemoryCacheOptions()));
             _statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
             _gameStatsStore = gameStatsStore ?? throw new ArgumentNullException(nameof(gameStatsStore));
             _gameService = gameService ?? throw new ArgumentNullException(nameof(gameService));
@@ -27,6 +30,11 @@ namespace QSMPDLE.Web.Services
         }
 
         public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default)
+        {
+            return await _cache.GetStatusesAsync(start, end, async () => await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken), cancellationToken);
+        }
+
+        private async Task<Dictionary<int, DayStatus>> GetStatusesCoreAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken)
         {
             // Get current player id from statistics service (which uses the same player store as GameStateManager)
             var playerStats = await _statisticsService.GetPlayerStatsAsync();
@@ -62,25 +70,24 @@ namespace QSMPDLE.Web.Services
 
             var map = new Dictionary<int, DayStatus>();
 
-            // Build index by archive day number -> list of sessions using DailyNumber directly.
+            // Build index by archive day number -> sessions using DailyNumber directly.
             var firstDayNumber = _gameService.GetFirstDay().DayNumber;
             var byDay = sessions
                 .Where(s => s.DailyNumber.HasValue)
-                .GroupBy(s => firstDayNumber + s.DailyNumber!.Value - 1);
+                .GroupBy(s => firstDayNumber + s.DailyNumber!.Value - 1)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             // For each calendar day in range, decide status
             for (var d = start; d <= end; d = d.AddDays(1))
             {
                 var abs = d.DayNumber;
-                if (!byDay.Any(g => g.Key == abs))
+                if (!byDay.TryGetValue(abs, out var group))
                 {
                     map[abs] = includeLocalStorageFallback
                         ? await GetLocalStorageStatusAsync(abs - firstDayNumber + 1, cancellationToken)
                         : DayStatus.NotStarted;
                     continue;
                 }
-
-                var group = byDay.First(g => g.Key == abs);
 
                 // If any session for the day is unfinished -> InProgress
                 if (group.Any(s => !s.FinishedOnUtc.HasValue))
@@ -106,6 +113,11 @@ namespace QSMPDLE.Web.Services
             }
 
             return map;
+        }
+
+        public Task InvalidateAsync(DateOnly start, DateOnly end, CancellationToken cancellationToken = default)
+        {
+            return _cache.InvalidateAsync(start, end, cancellationToken);
         }
 
         private async Task<DayStatus> GetLocalStorageStatusAsync(int archiveDayNumber, CancellationToken cancellationToken)

@@ -9,5 +9,7 @@ namespace QSMPDLE.Web.Services
         Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, CancellationToken cancellationToken = default);
 
         Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default);
+
+        Task InvalidateAsync(DateOnly start, DateOnly end, CancellationToken cancellationToken = default);
     }
 }

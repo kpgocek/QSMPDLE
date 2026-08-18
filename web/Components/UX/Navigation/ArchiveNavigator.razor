@@ -6,7 +6,7 @@
 <div class="archive-navigator">
     <MudPaper Class="pa-1">
 
-        <MudDatePicker PickerVariant="PickerVariant.Static" Orientation="Orientation.Portrait" Color="Color.Default" @key="datePickerKey"
+        <MudDatePicker PickerVariant="PickerVariant.Static" Orientation="Orientation.Portrait" Color="Color.Default"
                        ShowToolbar="false" Date="@SelectedDate" DateChanged="OnDateSelected" MinDate="@MinDate" MaxDate="@MaxDate"
                        AutoClose="true" AdditionalDateClassesFunc="GetDateClasses" PickerOpened="OnPickerOpened" PickerMonthChanged="OnPickerMonthChanged" />
 
@@ -57,9 +57,6 @@
     [Parameter]
     public EventCallback DateSelected { get; set; }
 
-    private int datePickerKey;
-
-
     private DateTime? SelectedDate => FirstDay.AddDays(CurrentDay - 1).ToDateTime(TimeOnly.MinValue);
 
     private DateTime MinDate => FirstDay.ToDateTime(TimeOnly.MinValue);
@@ -82,11 +79,6 @@
     private readonly Dictionary<int, System.Threading.Tasks.Task> _ongoingLoads = new();
 
     private readonly object _loadLock = new();
-
-    private void UpdateDatePicker()
-    {
-        datePickerKey++;
-    }
 
     private void OnDateSelected(DateTime? date)
     {
@@ -149,7 +141,7 @@
         {
             await LoadMonthForDateAsync(_loadOnFirstRender.Value);
             _loadOnFirstRender = null;
-            await InvokeAsync(() => { UpdateDatePicker(); StateHasChanged(); });
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -192,7 +184,7 @@
             // ignore errors
         }
 
-        await InvokeAsync(() => { UpdateDatePicker(); StateHasChanged(); });
+        await InvokeAsync(StateHasChanged);
     }
 
 
@@ -316,7 +308,7 @@
         }
         finally
         {
-            await InvokeAsync(() => { UpdateDatePicker(); StateHasChanged(); });
+            await InvokeAsync(StateHasChanged);
         }
     }
 }
