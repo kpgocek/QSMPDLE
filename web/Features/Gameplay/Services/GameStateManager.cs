@@ -12,7 +12,7 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 // <summary>
 // Manages the game state for different game modes (daily, practice, archival).
 // </summary>
-public class GameStateManager(IGameStateStore GameStateStore, IGameService GameService, IPlayerStatsStore PlayerStatsStore,
+public class GameStateManager(IGameStateStore GameStateStore, IGameService GameService, IDayService DayService, IPlayerStatsStore PlayerStatsStore,
     ICharacterStore CharacterStore, ICharacterComparer CharacterComparer, IStatisticsService StatisticsService, QSMPDLE.Web.Features.Communication.GameEvents.IGameEventBus? eventBus = null) : IGameStateManager
 {
     private const int MaxGuesses = 6;
@@ -43,7 +43,7 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
     {
         if (mode == GameMode.Daily)
         {
-            dayNumber = await GameService.GetTodayDayNumberAsync(cancellationToken);
+            dayNumber = DayService.GetTodayDayNumber();
         }
 
         await GameStateStore.Init(mode switch

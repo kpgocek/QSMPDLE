@@ -1,6 +1,7 @@
 ﻿@using MudBlazor
 @using QSMPDLE.Web.Components.Game.Modules
 @using QSMPDLE.Web.Components.UX.Dialogs
+@using QSMPDLE.Web.Features.Communication.GameEvents
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Gameplay.Services
 
@@ -120,6 +121,9 @@
 
     [Parameter]
     public EventCallback GameLoaded { get; set; }
+
+    [Parameter]
+    public EventCallback<GameFinishedEvent> GameFinished { get; set; }
 
     private CharacterLookup? GuessedCharacter;
     private bool IsGameLoaded = false;

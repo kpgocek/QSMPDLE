@@ -149,7 +149,8 @@ public sealed class GameStateManagerGuessTests
         var gameStateStore = new InMemoryGameStateStore();
         var gameStatsStore = new InMemoryGameStatsStore();
         var statisticsService = new StatisticsService(playerStatsStore, gameStatsStore);
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore), new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), statisticsService);
+        var dayService = new DayService();
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), statisticsService);
 
         return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, target, guessOne, guessTwo, guessThree, guessFour, guessFive, guessSix, scenarioGuess, [guessOne.Id, guessTwo.Id, guessThree.Id]);
     }

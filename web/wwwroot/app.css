@@ -141,4 +141,5 @@ h4 {
 
 .mud-picker-calendar {
     gap: 0.25em 0.125em !important;
+    position: relative;
 }

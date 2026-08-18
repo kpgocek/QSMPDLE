@@ -107,7 +107,8 @@ public sealed class GameStateManagerLifecycleTests
         var gameStatsStore = new InMemoryGameStatsStore();
         var statisticsService = new InMemoryStatisticsService();
         var playerId = playerStatsStore.Stats.Id;
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore), playerStatsStore, characterStore, new CharacterComparer(characterStore), statisticsService);
+        var dayService = new DayService();
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, playerStatsStore, characterStore, new CharacterComparer(characterStore), statisticsService);
         return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, characterStore, target, guess, playerId);
     }
 

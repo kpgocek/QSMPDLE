@@ -481,7 +481,8 @@ public sealed class GameStateManagerStatisticsTests
         var gameStateStore = new InMemoryGameStateStore();
         var gameStatsStore = new InMemoryGameStatsStore();
         var statisticsService = new StatisticsService(playerStatsStore, gameStatsStore);
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore), playerStatsStore, characterStore, new CharacterComparer(characterStore), statisticsService);
+        var dayService = new DayService();
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, playerStatsStore, characterStore, new CharacterComparer(characterStore), statisticsService);
         return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, statisticsService, target, incorrectGuess, [incorrectGuess, lose4, lose5, lose6, lose7, lose8, lose9]);
     }
 

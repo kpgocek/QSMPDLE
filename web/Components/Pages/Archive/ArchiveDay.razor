@@ -7,8 +7,9 @@
 @using QSMPDLE.Web.Features.Gameplay.Services
 @using QSMPDLE.Web.Features.Statistics.Services
 
-@inject IGameService GameService
+@inject IDayService DayService
 @inject IStatisticsService StatisticsService
+@inject QSMPDLE.Web.Features.Communication.GameEvents.IGameEventBus EventBus
 @inject NavigationManager NavigationManager
 
 <HeadContent>
@@ -65,7 +66,7 @@ else
         </MudButton>
 
         <div class="@(_showCalendar ? "" : "collapsed") mt-3">
-            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar" CompletedDays="@_completedDays" />
+            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar" RefreshRequested="RefreshArchiveStateAsync" CompletedDays="@_completedDays" />
         </div>
     }
 
@@ -125,15 +126,17 @@ else
     private int _maxDay;
     private DateOnly _firstDay;
     private HashSet<int>? _completedDays;
+    private bool _isInitialized;
+    private bool _refreshPending;
 
-    private DateOnly ArchiveDate => _firstDay.AddDays(DayNumber - 1);
+    private DateOnly ArchiveDate => DayService.GetArchiveDate(DayNumber);
 
     private string CanonicalUrl => $"{NavigationManager.BaseUri.TrimEnd('/')}/archive/day/{DayNumber}";
 
     protected override async Task OnParametersSetAsync()
     {
-        _firstDay = GameService.GetFirstDay();
-        _maxDay = await GameService.GetMaxArchiveDayAsync(CancellationToken.None);
+        _firstDay = DayService.GetFirstDay();
+        _maxDay = DayService.GetMaxArchiveDay();
 
         // Validate day number is within valid range.
         _isValidDay = DayNumber >= 1 && DayNumber <= _maxDay;
@@ -142,10 +145,40 @@ else
         _showCalendar = false;
         _isArchiveCompletedDaily = false;
         _completedDays = null;
+        _isInitialized = false;
+    }
 
-        if (!_isValidDay)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !_isValidDay || _isInitialized)
             return;
 
+        _isInitialized = true;
+        SubscribeToGameEvents();
+        await LoadArchiveStateAsync();
+    }
+
+    private void SubscribeToGameEvents()
+    {
+        EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(OnGameFinishedAsync);
+    }
+
+    private async Task OnGameFinishedAsync(QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent eventData)
+    {
+        if (eventData.DayNumber != DayNumber)
+            return;
+
+        _refreshPending = true;
+        await LoadArchiveStateAsync();
+        await InvokeAsync(RefreshArchiveStateAsync);
+    }
+
+    private async Task RefreshArchiveStateAsync()
+    {
+        if (!_refreshPending)
+            return;
+
+        _refreshPending = false;
         await LoadArchiveStateAsync();
     }
 

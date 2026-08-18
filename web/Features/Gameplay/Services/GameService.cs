@@ -3,10 +3,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
-public sealed class GameService(ICharacterStore CharacterStore) : IGameService
+public sealed class GameService(ICharacterStore CharacterStore, IDayService DayService) : IGameService
 {
-    private static readonly DateOnly FirstDay = new(2026, 6, 15);
-
     public async Task<GameState> StartDailyAsync(CancellationToken cancellationToken = default)
     {
         var dayNumber = await GetTodayDayNumberAsync(cancellationToken);
@@ -56,17 +54,14 @@ public sealed class GameService(ICharacterStore CharacterStore) : IGameService
 
     public async Task<int> GetTodayDayNumberAsync(CancellationToken cancellationToken)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        return today.DayNumber - FirstDay.DayNumber + 1;
+        return DayService.GetTodayDayNumber();
     }
 
     public async Task<int> GetMaxArchiveDayAsync(CancellationToken cancellationToken)
     {
-        var todayDayNumber = await GetTodayDayNumberAsync(cancellationToken);
-        return todayDayNumber - 1;
+        return DayService.GetMaxArchiveDay();
     }
 
-    public DateOnly GetFirstDay() => FirstDay;
+    public DateOnly GetFirstDay() => DayService.GetFirstDay();
 
 }

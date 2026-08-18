@@ -1,12 +1,10 @@
 @page "/archive"
-@using QSMPDLE.Web.Features.Gameplay.Services
 @inject NavigationManager NavigationManager
-@inject IGameService GameService
+@inject QSMPDLE.Web.Features.Gameplay.Services.IDayService DayService
 
 @code {
     protected override void OnInitialized()
     {
-        var yesterday = Math.Max(1, GameService.GetTodayDayNumberAsync(CancellationToken.None).GetAwaiter().GetResult() - 1);
-        NavigationManager.NavigateTo($"/archive/day/{yesterday}", replace: true);
+        NavigationManager.NavigateTo(DayService.GetYesterdayArchiveLink(), replace: true);
     }
 }

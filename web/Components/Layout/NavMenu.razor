@@ -1,9 +1,8 @@
 ﻿@using MudBlazor
 @using QSMPDLE.Web.Components.UX.Dialogs
-@using QSMPDLE.Web.Features.Gameplay.Services
 @inject NavigationManager Nav
 @inject IDialogService DialogService
-@inject IGameService GameService
+@inject QSMPDLE.Web.Features.Gameplay.Services.IDayService DayService
 
 <header class="topbar">
     <div class="topbar-container" id="game-top">
@@ -143,7 +142,7 @@
 </style>
 
 @code {
-    private string ArchiveLink => $"/archive/day/{Math.Max(1, GameService.GetTodayDayNumberAsync(CancellationToken.None).GetAwaiter().GetResult() - 1)}";
+    private string ArchiveLink => DayService.GetYesterdayArchiveLink();
 
     private async Task OpenProfile()
     {

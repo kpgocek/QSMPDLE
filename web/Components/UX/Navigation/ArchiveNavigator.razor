@@ -57,6 +57,9 @@
     [Parameter]
     public EventCallback DateSelected { get; set; }
 
+    [Parameter]
+    public EventCallback RefreshRequested { get; set; }
+
     private DateTime? SelectedDate => FirstDay.AddDays(CurrentDay - 1).ToDateTime(TimeOnly.MinValue);
 
     private DateTime MinDate => FirstDay.ToDateTime(TimeOnly.MinValue);
@@ -122,13 +125,13 @@
             await InvokeAsync(async () =>
             {
                 await LoadStatusesForDayAsync(date);
+                await RefreshRequested.InvokeAsync();
             });
         });
 
-        // Defer loading month data that may use JS interop (via StatusService -> StatisticsService -> LocalStorage)
-        // until after first render so prerendering does not attempt JS interop.
         var selected = SelectedDate ?? DateTime.Now;
         _loadOnFirstRender = DateOnly.FromDateTime(selected);
+
         return Task.CompletedTask;
     }
 
@@ -147,6 +150,9 @@
 
     private async Task OnPickerOpened()
     {
+        if (_loadOnFirstRender.HasValue)
+            return;
+
         // When picker opens, ensure the visible month (fallback to selected date) is loaded.
         var visible = SelectedDate ?? DateTime.UtcNow;
         await LoadMonthForDateAsync(DateOnly.FromDateTime(visible));

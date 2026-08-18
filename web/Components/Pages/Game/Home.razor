@@ -3,6 +3,7 @@
 @using QSMPDLE.Web.Components.Game
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Statistics.Services
+@using QSMPDLE.Web.Features.Communication.GameEvents
 
 @inject IStatisticsService StatisticsService
 
@@ -17,7 +18,7 @@ else
     <h2>DAILY CHARACTER<span class="separator">|</span>#@DailyNumber.ToString("00")</h2>
 }
 
-<Gameplay GameMode="GameMode.Daily" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
+<Gameplay GameMode="GameMode.Daily" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" GameFinished="OnGameFinished" />
 
 <style>
     h2 {
@@ -32,6 +33,7 @@ else
 @code {
     private int DailyNumber = 0;
     private bool IsGameLoaded = false;
+    private bool _refreshPending;
 
     private async Task OnGameStateChange(GameState gameState)
     {
@@ -41,6 +43,22 @@ else
     private async Task OnGameLoaded()
     {
         IsGameLoaded = true;
+    }
+
+    private async Task OnGameFinished(GameFinishedEvent eventData)
+    {
+        _refreshPending = true;
+        DailyNumber = eventData.DayNumber ?? DailyNumber;
+        await InvokeAsync(RefreshDailyStateAsync);
+    }
+
+    private async Task RefreshDailyStateAsync()
+    {
+        if (!_refreshPending)
+            return;
+
+        _refreshPending = false;
+        await InvokeAsync(StateHasChanged);
     }
 }
 

@@ -12,15 +12,15 @@ namespace QSMPDLE.Web.Services
         private readonly IArchiveStatusCache _cache;
         private readonly IStatisticsService _statisticsService;
         private readonly IGameStatsStore _gameStatsStore;
-        private readonly IGameService _gameService;
+        private readonly QSMPDLE.Web.Features.Gameplay.Services.IDayService _dayService;
         private readonly IArchiveGameStateSource _gameStateSource;
 
-        public ArchiveStatusService(IStatisticsService statisticsService, IGameStatsStore gameStatsStore, IGameService gameService, IArchiveGameStateSource gameStateSource, IArchiveStatusCache? cache = null)
+        public ArchiveStatusService(IStatisticsService statisticsService, IGameStatsStore gameStatsStore, QSMPDLE.Web.Features.Gameplay.Services.IDayService dayService, IArchiveGameStateSource gameStateSource, IArchiveStatusCache? cache = null)
         {
             _cache = cache ?? new ArchiveStatusCache(new MemoryCache(new MemoryCacheOptions()));
             _statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
             _gameStatsStore = gameStatsStore ?? throw new ArgumentNullException(nameof(gameStatsStore));
-            _gameService = gameService ?? throw new ArgumentNullException(nameof(gameService));
+            _dayService = dayService ?? throw new ArgumentNullException(nameof(dayService));
             _gameStateSource = gameStateSource ?? throw new ArgumentNullException(nameof(gameStateSource));
         }
 
@@ -49,10 +49,8 @@ namespace QSMPDLE.Web.Services
             }
 
             // Convert the date range into DailyNumber range using GameService first-day semantics.
-            var firstDay = _gameService.GetFirstDay();
-
-            var startNumber = start.DayNumber - firstDay.DayNumber + 1;
-            var endNumber = end.DayNumber - firstDay.DayNumber + 1;
+            var startNumber = _dayService.GetArchiveDayNumber(start);
+            var endNumber = _dayService.GetArchiveDayNumber(end);
 
             if (endNumber < 1 || startNumber > int.MaxValue) // quick bounds check
             {
@@ -71,7 +69,7 @@ namespace QSMPDLE.Web.Services
             var map = new Dictionary<int, DayStatus>();
 
             // Build index by archive day number -> sessions using DailyNumber directly.
-            var firstDayNumber = _gameService.GetFirstDay().DayNumber;
+            var firstDayNumber = _dayService.GetFirstDay().DayNumber;
             var byDay = sessions
                 .Where(s => s.DailyNumber.HasValue)
                 .GroupBy(s => firstDayNumber + s.DailyNumber!.Value - 1)
