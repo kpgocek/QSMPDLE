@@ -251,7 +251,9 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
 
         var state = new GameState
         {
-            GameId = Guid.NewGuid(),
+            // Preserve the original completed session id so any telemetry or lookups
+            // that reference the game by id continue to work with the replay.
+            GameId = completedDaily.GameId,
             PlayerId = playerId,
             GameMode = GameMode.Archive,
             Game = new Game
@@ -266,6 +268,21 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
             StatsRecorded = true,
             GuessesMade = new List<GuessResult>()
         };
+
+        // Ensure portrait is available on replay so the reveal UI can render the
+        // correct character image. Fall back to empty if character lookup fails.
+        try
+        {
+            var targetCharacter = await CharacterStore.GetCharacterAsync(completedDaily.TargetCharacterId, cancellationToken);
+            if (targetCharacter is not null)
+            {
+                state.Game.PortraitUrl = targetCharacter.IconUrl;
+            }
+        }
+        catch
+        {
+            // ignore failures and leave PortraitUrl empty
+        }
 
         var orderedGuesses = completedDaily.Guesses.OrderBy(guess => guess.GuessOrder).ToList();
 
