@@ -58,7 +58,9 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
 
         var gameState = await GameStateStore.GetAsync();
 
-        if (mode == GameMode.Archive && dayNumber.HasValue && gameState is null)
+        // If this is an archive request and a completed daily exists on the server,
+        // prefer the server-side completed session replay and overwrite any local cached state.
+        if (mode == GameMode.Archive && dayNumber.HasValue)
         {
             var completedDaily = await StatisticsService.GetPlayerCompletedDailyGameAsync(playerId, dayNumber.Value);
 
