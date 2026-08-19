@@ -64,7 +64,7 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
 
             if (completedDaily is not null)
             {
-                GameState = CreateArchiveReplayState(completedDaily, playerId);
+                GameState = await CreateArchiveReplayStateAsync(completedDaily, playerId, cancellationToken);
                 await GameStateStore.SaveAsync(GameState);
                 return LoadGameResult.LoadedExisting;
             }
@@ -242,7 +242,7 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
         await GameStateStore.SaveAsync(GameState);
     }
 
-    private static GameState CreateArchiveReplayState(GameSession completedDaily, Guid playerId)
+    private async Task<GameState> CreateArchiveReplayStateAsync(GameSession completedDaily, Guid playerId, CancellationToken cancellationToken = default)
     {
         var dayNumber = completedDaily.DailyNumber
             ?? throw new InvalidOperationException("Completed daily session is missing a day number.");
@@ -262,22 +262,49 @@ public class GameStateManager(IGameStateStore GameStateStore, IGameService GameS
             IsLost = completedDaily.FinishedOnUtc.HasValue && !completedDaily.IsWon,
             SeenPopup = completedDaily.FinishedOnUtc.HasValue,
             StatsRecorded = true,
-            GuessesMade = completedDaily.Guesses
-                .OrderBy(guess => guess.GuessOrder)
-                .Select(guess => new GuessResult
-                {
-                    Character = new CharacterLookup(guess.GuessedCharacterId, guess.GuessedCharacterId.ToString(), guess.GuessedCharacterId.ToString(), [], string.Empty),
-                    IsCorrect = guess.GuessedCharacterId == completedDaily.TargetCharacterId,
-                    IsFirstGuess = guess.GuessOrder == 0,
-                    IsLastAllowedGuess = guess.GuessOrder == completedDaily.Guesses.Count - 1,
-                    Joined = ComparisonResult.Correct,
-                    Languages = ComparisonResult.Correct,
-                    Pronouns = ComparisonResult.Correct,
-                    Affiliation = ComparisonResult.Correct,
-                    Species = ComparisonResult.Correct,
-                })
-                .ToList()
+            GuessesMade = new List<GuessResult>()
         };
+
+        var orderedGuesses = completedDaily.Guesses.OrderBy(guess => guess.GuessOrder).ToList();
+
+        for (var i = 0; i < orderedGuesses.Count; i++)
+        {
+            var guess = orderedGuesses[i];
+
+            // Use the CharacterComparer to produce the same GuessResult as live play.
+            var comparison = await CharacterComparer.CompareAsync(completedDaily.TargetCharacterId, guess.GuessedCharacterId, cancellationToken);
+
+            if (comparison is null)
+            {
+                // Fallback: construct a minimal GuessResult with conservative values
+                comparison = new GuessResult
+                {
+                    Character = new CharacterLookup(guess.GuessedCharacterId, guess.GuessedCharacterId.ToString(), guess.GuessedCharacterId.ToString(), new List<string>(), string.Empty),
+                    IsCorrect = guess.GuessedCharacterId == completedDaily.TargetCharacterId,
+                    Pronouns = ComparisonResult.Wrong,
+                    Languages = ComparisonResult.Wrong,
+                    Joined = ComparisonResult.Wrong,
+                    Affiliation = ComparisonResult.Wrong,
+                    Species = ComparisonResult.Wrong,
+                };
+            }
+
+            // Ensure first/last flags reflect the archived ordering
+            var replay = new GuessResult
+            {
+                Character = comparison.Character,
+                IsCorrect = comparison.IsCorrect,
+                IsFirstGuess = i == 0,
+                IsLastAllowedGuess = i == orderedGuesses.Count - 1,
+                Joined = comparison.Joined,
+                Languages = comparison.Languages,
+                Pronouns = comparison.Pronouns,
+                Affiliation = comparison.Affiliation,
+                Species = comparison.Species,
+            };
+
+            state.GuessesMade.Add(replay);
+        }
 
         return state;
     }
