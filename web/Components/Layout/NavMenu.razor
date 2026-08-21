@@ -9,7 +9,12 @@
 
         <h1 class="logo">QSMP<span class="text-accent">DLE</span></h1>
 
-        <nav class="links">
+        <div class="mobile-menu">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Size="Size.Large"
+                           OnClick="@ToggleMenu" AriaLabel="Toggle Menu" />
+        </div>
+
+        <nav class="links @MenuVisibilityClass">
             <NavLink href="/" Match="NavLinkMatch.All">
                 Daily
             </NavLink>
@@ -110,6 +115,11 @@
         background-color: var(--surface);
     }
 
+    .show,
+    .hide {
+        display: flex;
+    }
+
     .separator {
         color: var(--ghost);
         margin-inline: 0.75rem;
@@ -144,6 +154,10 @@
 @code {
     private string ArchiveLink => DayService.GetYesterdayArchiveLink();
 
+    private bool isMenuOpen = false;
+
+    private string MenuVisibilityClass => isMenuOpen ? "show" : "hide";
+
     private async Task OpenProfile()
     {
         var options = new DialogOptions
@@ -154,5 +168,10 @@
         };
 
         await DialogService.ShowAsync<PlayerProfileDialog>("Player Profile", options);
+    }
+
+    private void ToggleMenu()
+    {
+        isMenuOpen = !isMenuOpen;
     }
 }

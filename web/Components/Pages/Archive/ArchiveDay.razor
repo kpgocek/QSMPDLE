@@ -13,9 +13,9 @@
 @inject NavigationManager NavigationManager
 
 <HeadContent>
-        <title>Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE</title>
+    <title>Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE</title>
     <meta name="description"
-              content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy")). Guess the QSMP2 character from the past daily challenge." />
+          content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy")). Guess the QSMP2 character from the past daily challenge." />
 
     <link rel="canonical" href="@CanonicalUrl" />
 
@@ -66,7 +66,8 @@ else
         </MudButton>
 
         <div class="@(_showCalendar ? "" : "collapsed") mt-3">
-            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar" RefreshRequested="RefreshArchiveStateAsync" CompletedDays="@_completedDays" />
+            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar"
+                              RefreshRequested="RefreshArchiveStateAsync" CompletedDays="@_completedDays" />
         </div>
     }
 
@@ -96,7 +97,6 @@ else
         display: flex;
         justify-content: center;
         margin-inline: 1rem;
-        min-width: 22rem;
     }
 
     .separator {

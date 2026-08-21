@@ -9,6 +9,12 @@
         flex-direction: column-reverse;
         gap: .75rem;
     }
+
+    .guess-card,
+    .placeholder-card {
+        width: 100%;
+        border-inline: none;
+    }
 }
 
 .opacity-1 {

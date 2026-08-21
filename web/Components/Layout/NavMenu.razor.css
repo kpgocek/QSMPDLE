@@ -1,20 +1,32 @@
-@media (max-width: 68rem) {
-    .logo {
-        font-size: clamp(3rem, 10vw, 6rem);
-    }
-
-    .links {
-        width: 100%;
-        justify-content: space-evenly;
-        padding-inline: 1rem;
-    }
-
-    .links a span {
+    .mobile-menu {
         display: none;
     }
 
-    .separator {
-        color: var(--ghost);
-        margin-inline: 0.125rem;
+    @media (max-width: 68rem) {
+
+        .logo {
+            font-size: clamp(3rem, 12vw, 6rem);
+        }
+
+        .links {
+            width: 100%;
+            flex-direction: column;
+            font-size: clamp(1.5rem, 6.4vw, 5rem);
+        }
+
+        .mobile-menu {
+            display: block;
+        }
+
+        .show {
+            display: flex;
+        }
+
+        .hide {
+            display: none;
+        }
+
+        .separator {
+            display: none;
+        }
     }
-}
