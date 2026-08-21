@@ -150,11 +150,17 @@ namespace QSMPDLE.Web.Migrations
                     b.Property<int?>("DailyNumber")
                         .HasColumnType("integer");
 
+                    b.Property<int>("FirstEntryPoint")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset?>("FinishedOnUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("GameId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("IsLegacyDuplicate")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsWon")
                         .HasColumnType("boolean");
@@ -165,6 +171,12 @@ namespace QSMPDLE.Web.Migrations
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("PuzzleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SessionCategory")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset>("StartedOnUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -173,7 +185,12 @@ namespace QSMPDLE.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameId");
+                    b.HasIndex("GameId")
+                        .IsUnique();
+
+                    b.HasIndex("PlayerId", "PuzzleId")
+                        .IsUnique()
+                        .HasFilter("\"PuzzleId\" IS NOT NULL AND NOT \"IsLegacyDuplicate\"");
 
                     b.ToTable("GameStats", t =>
                         {

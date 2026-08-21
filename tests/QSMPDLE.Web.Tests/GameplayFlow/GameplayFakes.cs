@@ -11,6 +11,7 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
 {
     public string? Key { get; private set; }
     public GameState? State { get; set; }
+    private readonly Dictionary<string, GameState> _statesByKey = [];
     public List<GameState> SavedStates { get; } = [];
 
     public Task Init(string key)
@@ -21,10 +22,32 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
 
 
     public Task<GameState?> GetAsync() => Task.FromResult(State is null ? null : Clone(State));
+    public Task<GameState?> GetByKeyAsync(string key) => Task.FromResult(_statesByKey.TryGetValue(key, out var state) ? Clone(state) : null);
+    public Task<IReadOnlyList<int>> GetLegacyPuzzleIdsAsync() => Task.FromResult<IReadOnlyList<int>>(_statesByKey.Keys
+        .Select(key => key.StartsWith("daily-", StringComparison.Ordinal) ? key[6..] : key.StartsWith("archive-", StringComparison.Ordinal) ? key[8..] : null)
+        .Where(suffix => int.TryParse(suffix, out _))
+        .Select(suffix => int.Parse(suffix!))
+        .Distinct()
+        .ToList());
+    public Task SaveByKeyAsync(string key, GameState state)
+    {
+        _statesByKey[key] = Clone(state);
+        return Task.CompletedTask;
+    }
+    public Task RemoveByKeyAsync(string key)
+    {
+        _statesByKey.Remove(key);
+        return Task.CompletedTask;
+    }
+
+    public void SetStateForKey(string key, GameState state) => _statesByKey[key] = Clone(state);
+    public bool HasStateForKey(string key) => _statesByKey.ContainsKey(key);
 
     public Task SaveAsync(GameState state)
     {
         State = Clone(state);
+        if (Key is not null)
+            _statesByKey[Key] = Clone(state);
         SavedStates.Add(Clone(state));
         return Task.CompletedTask;
     }
@@ -42,11 +65,14 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
         PlayerId = state.PlayerId,
         Game = new Game
         {
-            DayNumber = state.Game.DayNumber,
+            PuzzleId = state.Game.PuzzleId,
             TargetId = state.Game.TargetId,
             PortraitUrl = state.Game.PortraitUrl,
         },
         GameMode = state.GameMode,
+        SessionCategory = state.SessionCategory,
+        EntryPoint = state.EntryPoint,
+        FirstEntryPoint = state.FirstEntryPoint,
         IsWon = state.IsWon,
         IsLost = state.IsLost,
         SeenPopup = state.SeenPopup,
@@ -130,6 +156,18 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
         return Task.CompletedTask;
     }
 
+    public Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId) => Task.FromResult(Sessions.Values.FirstOrDefault(session =>
+        session.PlayerId == playerId && session.SessionCategory == SessionCategory.CanonicalPuzzle && !session.IsLegacyDuplicate && (session.PuzzleId ?? session.DailyNumber) == puzzleId));
+
+    public Task<GameSession> ClaimCanonicalSessionAsync(GameSession proposedSession)
+    {
+        var existing = Sessions.Values.FirstOrDefault(session => session.PlayerId == proposedSession.PlayerId && session.SessionCategory == SessionCategory.CanonicalPuzzle && !session.IsLegacyDuplicate && (session.PuzzleId ?? session.DailyNumber) == proposedSession.PuzzleId);
+        if (existing is not null)
+            return Task.FromResult(existing);
+        Sessions[proposedSession.GameId] = Clone(proposedSession);
+        return Task.FromResult(proposedSession);
+    }
+
     public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId)
         => Task.FromResult<IEnumerable<GameSession>>(Sessions.Values.Where(session => session.PlayerId == playerId).ToList());
 
@@ -162,6 +200,10 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
         return Task.FromResult(list);
     }
 
+    public Task<List<GameSession>> GetPlayerCanonicalGamesByPuzzleRangeAsync(Guid playerId, int startPuzzleId, int endPuzzleId) => Task.FromResult(Sessions.Values
+        .Where(session => session.PlayerId == playerId && session.SessionCategory == SessionCategory.CanonicalPuzzle && !session.IsLegacyDuplicate && (session.PuzzleId ?? session.DailyNumber) >= startPuzzleId && (session.PuzzleId ?? session.DailyNumber) <= endPuzzleId)
+        .Select(Clone).ToList());
+
     public Task<GlobalStatsView> GetGlobalStatsAsync() => throw new NotImplementedException();
     public Task<List<DailyActivePlayersData>> GetDailyActivePlayersAsync(DateOnly? from) => throw new NotImplementedException();
     public Task<List<NewVsReturningPlayersData>> GetNewVsReturningPlayersAsync(DateOnly? from) => throw new NotImplementedException();
@@ -177,6 +219,10 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
         GameId = stats.GameId,
         PlayerId = stats.PlayerId,
         Mode = stats.Mode,
+        PuzzleId = stats.PuzzleId,
+        SessionCategory = stats.SessionCategory,
+        FirstEntryPoint = stats.FirstEntryPoint,
+        IsLegacyDuplicate = stats.IsLegacyDuplicate,
         DailyNumber = stats.DailyNumber,
         TargetCharacterId = stats.TargetCharacterId,
         StartedOnUtc = stats.StartedOnUtc,
@@ -257,6 +303,9 @@ internal sealed class InMemoryStatisticsService : IStatisticsService
         session.PlayerId = eventData.PlayerId;
         session.StartedOnUtc = eventData.Timestamp;
         session.DailyNumber = eventData.DayNumber;
+        session.PuzzleId = eventData.PuzzleId;
+        session.SessionCategory = eventData.SessionCategory;
+        session.FirstEntryPoint = eventData.EntryPoint;
         session.TargetCharacterId = eventData.TargetCharacterId;
         session.Mode = eventData.GameMode;
         return Task.CompletedTask;
@@ -285,6 +334,15 @@ internal sealed class InMemoryStatisticsService : IStatisticsService
     }
 
     public Task<PlayerStats> GetPlayerStatsAsync() => Task.FromResult(PlayerStats);
+    public Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId) => Task.FromResult(Sessions.Values.FirstOrDefault(session =>
+        session.PlayerId == playerId && session.SessionCategory == SessionCategory.CanonicalPuzzle && !session.IsLegacyDuplicate && (session.PuzzleId ?? session.DailyNumber) == puzzleId));
+    public Task<GameSession> ClaimCanonicalSessionAsync(GameSession proposedSession)
+    {
+        var existing = Sessions.Values.FirstOrDefault(session => session.PlayerId == proposedSession.PlayerId && session.SessionCategory == SessionCategory.CanonicalPuzzle && !session.IsLegacyDuplicate && (session.PuzzleId ?? session.DailyNumber) == proposedSession.PuzzleId);
+        if (existing is not null) return Task.FromResult(existing);
+        Sessions[proposedSession.GameId] = proposedSession;
+        return Task.FromResult(proposedSession);
+    }
     public Task<GameSession> GetGameStatsAsync(Guid gameId) => Task.FromResult(LoadOrCreate(gameId));
     public Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
     {

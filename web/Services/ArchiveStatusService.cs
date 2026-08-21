@@ -29,9 +29,17 @@ namespace QSMPDLE.Web.Services
             return await GetStatusesAsync(start, end, includeLocalStorageFallback: true, cancellationToken);
         }
 
-        public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default)
+    public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default)
+    {
+        // Local Storage belongs to this browser/circuit, not to the singleton
+        // server cache. Caching it by month would show another browser's stale
+        // state (or a pre-migration NotStarted value), so read it live.
+        if (includeLocalStorageFallback)
         {
-            return await _cache.GetStatusesAsync(start, end, async () => await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken), cancellationToken);
+            return await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken);
+        }
+
+        return await _cache.GetStatusesAsync(start, end, async () => await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken), cancellationToken);
         }
 
         private async Task<Dictionary<int, DayStatus>> GetStatusesCoreAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken)
@@ -63,16 +71,23 @@ namespace QSMPDLE.Web.Services
             startNumber = Math.Max(1, startNumber);
             endNumber = Math.Max(0, endNumber);
 
-            // Fetch sessions by DailyNumber range (batched)
-            var sessions = await _gameStatsStore.GetPlayerDailyGamesByNumberRangeAsync(playerId, startNumber, endNumber);
+            // One canonical session represents the puzzle regardless of whether it was opened
+            // through Daily or Archive.
+            var sessions = await _gameStatsStore.GetPlayerCanonicalGamesByPuzzleRangeAsync(playerId, startNumber, endNumber);
+            // Compatibility for the release in which the data migration has not
+            // yet run (and for old Local Storage/test stores).
+            if (sessions.Count == 0)
+            {
+                sessions = await _gameStatsStore.GetPlayerDailyGamesByNumberRangeAsync(playerId, startNumber, endNumber);
+            }
 
             var map = new Dictionary<int, DayStatus>();
 
-            // Build index by archive day number -> sessions using DailyNumber directly.
+            // Build index by archive day number -> sessions using PuzzleId directly.
             var firstDayNumber = _dayService.GetFirstDay().DayNumber;
             var byDay = sessions
-                .Where(s => s.DailyNumber.HasValue)
-                .GroupBy(s => firstDayNumber + s.DailyNumber!.Value - 1)
+                .Where(s => (s.PuzzleId ?? s.DailyNumber).HasValue)
+                .GroupBy(s => firstDayNumber + (s.PuzzleId ?? s.DailyNumber)!.Value - 1)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // For each calendar day in range, decide status
@@ -106,7 +121,7 @@ namespace QSMPDLE.Web.Services
 
                 if (includeLocalStorageFallback)
                 {
-                    map[abs] = map[abs].MergeWith(await GetLocalStorageStatusAsync(abs, cancellationToken));
+                    map[abs] = map[abs].MergeWith(await GetLocalStorageStatusAsync(abs - firstDayNumber + 1, cancellationToken));
                 }
             }
 

@@ -10,7 +10,7 @@ public sealed class ArchiveGameStateSource(ILocalStorageService localStorage) : 
 
     public async Task<GameState?> LoadAsync(GameMode mode, int dayNumber, CancellationToken cancellationToken = default)
     {
-        var key = mode switch
+        var legacyKey = mode switch
         {
             GameMode.Daily => $"{KeyPrefix}daily-{dayNumber}",
             GameMode.Archive => $"{KeyPrefix}archive-{dayNumber}",
@@ -19,7 +19,11 @@ public sealed class ArchiveGameStateSource(ILocalStorageService localStorage) : 
 
         try
         {
-            return await localStorage.GetItemAsync<GameState>(key);
+            // Canonical progress is shared by Daily and Archive. Fall back to
+            // the legacy per-mode key for a browser that has not been opened
+            // since the storage migration.
+            var canonical = await localStorage.GetItemAsync<GameState>($"{KeyPrefix}canonical-{dayNumber}");
+            return canonical ?? await localStorage.GetItemAsync<GameState>(legacyKey);
         }
         catch
         {

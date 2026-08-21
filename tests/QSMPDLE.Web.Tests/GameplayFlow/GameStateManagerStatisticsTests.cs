@@ -345,7 +345,7 @@ public sealed class GameStateManagerStatisticsTests
 
         var result = await setup.Manager.StartGameAsync(GameMode.Archive, 3);
 
-        result.Should().Be(Extensions.LoadGameResult.CreatedNew);
+        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
         setup.Manager.GameState.GameMode.Should().Be(GameMode.Archive);
         setup.Manager.GameState.IsFinished.Should().BeFalse();
     }

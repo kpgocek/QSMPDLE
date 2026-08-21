@@ -16,7 +16,7 @@ public sealed class DatabaseGameStatsStore(
         return await database.GameStats
             .AsNoTracking()
             .Where(game => game.PlayerId.Equals(playerId))
-            .Where(game => !(game.Mode == GameMode.Daily && DateOnly.FromDateTime(game.StartedOnUtc.UtcDateTime) == today))
+            .Where(game => game.SessionCategory == SessionCategory.Practice || game.PuzzleId == null || game.PuzzleId != GetCurrentPuzzleId(today))
             .ToListAsync();
     }
 
@@ -29,10 +29,11 @@ public sealed class DatabaseGameStatsStore(
         var numbers = await database.GameStats
             .AsNoTracking()
             .Where(gs => gs.PlayerId == playerId
-                         && gs.Mode == GameMode.Daily
+                         && gs.SessionCategory == SessionCategory.CanonicalPuzzle
+                         && !gs.IsLegacyDuplicate
                          && gs.FinishedOnUtc.HasValue
                          && !(gs.Mode == GameMode.Daily && DateOnly.FromDateTime(gs.StartedOnUtc.UtcDateTime) == today))
-            .Select(gs => gs.DailyNumber)
+            .Select(gs => gs.PuzzleId)
             .Where(n => n.HasValue)
             .Select(n => n!.Value)
             .Distinct()
@@ -45,7 +46,7 @@ public sealed class DatabaseGameStatsStore(
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
-        // Single batched query for the DailyNumber range
+        // Legacy compatibility query; canonical callers should use the method below.
         var sessions = await database.GameStats
             .AsNoTracking()
             .Where(gs => gs.PlayerId == playerId && gs.Mode == GameMode.Daily && gs.DailyNumber.HasValue && gs.DailyNumber >= startNumber && gs.DailyNumber <= endNumber)
@@ -68,6 +69,71 @@ public sealed class DatabaseGameStatsStore(
                 GuessedCharacterId = g.GuessedCharacterId
             }).ToList()
         }).ToList();
+    }
+
+    public async Task<List<GameSession>> GetPlayerCanonicalGamesByPuzzleRangeAsync(Guid playerId, int startPuzzleId, int endPuzzleId)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        return await database.GameStats
+            .AsNoTracking()
+            .Include(session => session.Guesses)
+            .Where(session => session.PlayerId == playerId
+                              && session.SessionCategory == SessionCategory.CanonicalPuzzle
+                              && !session.IsLegacyDuplicate
+                              && session.PuzzleId.HasValue
+                              && session.PuzzleId >= startPuzzleId
+                              && session.PuzzleId <= endPuzzleId)
+            .ToListAsync();
+    }
+
+    public async Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        return await database.GameStats
+            .AsNoTracking()
+            .Include(session => session.Guesses)
+            .SingleOrDefaultAsync(session => session.PlayerId == playerId
+                                              && session.SessionCategory == SessionCategory.CanonicalPuzzle
+                                              && !session.IsLegacyDuplicate
+                                              && session.PuzzleId == puzzleId);
+    }
+
+    public async Task<GameSession> ClaimCanonicalSessionAsync(GameSession proposedSession)
+    {
+        if (proposedSession.PlayerId == Guid.Empty || proposedSession.PuzzleId is null)
+            throw new InvalidOperationException("A canonical session requires a player and puzzle id.");
+
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        var existing = await database.GameStats
+            .AsNoTracking()
+            .Include(session => session.Guesses)
+            .SingleOrDefaultAsync(session => session.PlayerId == proposedSession.PlayerId
+                                              && session.SessionCategory == SessionCategory.CanonicalPuzzle
+                                              && !session.IsLegacyDuplicate
+                                              && session.PuzzleId == proposedSession.PuzzleId);
+        if (existing is not null)
+            return existing;
+
+        database.GameStats.Add(proposedSession);
+        try
+        {
+            await database.SaveChangesAsync();
+            return proposedSession;
+        }
+        catch (DbUpdateException)
+        {
+            database.ChangeTracker.Clear();
+            return await database.GameStats
+                .AsNoTracking()
+                .Include(session => session.Guesses)
+                .SingleAsync(session => session.PlayerId == proposedSession.PlayerId
+                                        && session.SessionCategory == SessionCategory.CanonicalPuzzle
+                                        && !session.IsLegacyDuplicate
+                                        && session.PuzzleId == proposedSession.PuzzleId);
+        }
     }
 
     public async Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
@@ -99,6 +165,8 @@ public sealed class DatabaseGameStatsStore(
         return stats ?? new GameSession { GameId = gameId };
     }
 
+    private static int GetCurrentPuzzleId(DateOnly today) => today.DayNumber - new DateOnly(2026, 6, 15).DayNumber + 1;
+
     public async Task SaveAsync(GameSession stats)
     {
         if (stats.PlayerId == Guid.Empty)
@@ -119,10 +187,16 @@ public sealed class DatabaseGameStatsStore(
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
+        var currentPuzzleId = GetCurrentPuzzleId(today);
         var query = database.GameStats
             .AsNoTracking()
             .Where(g => g.PlayerId != Guid.Empty)
-            .Where(g => !(g.Mode == GameMode.Daily && DateOnly.FromDateTime(g.StartedOnUtc.UtcDateTime) == today));
+            .Where(g => g.SessionCategory == SessionCategory.CanonicalPuzzle && !g.IsLegacyDuplicate)
+            .Where(g => g.PuzzleId != currentPuzzleId);
+
+        var practiceQuery = database.GameStats
+            .AsNoTracking()
+            .Where(g => g.PlayerId != Guid.Empty && g.SessionCategory == SessionCategory.Practice && !g.IsLegacyDuplicate);
 
         var totalGames = await query.CountAsync();
         var totalPlayers = await query.Select(g => g.PlayerId).Distinct().CountAsync();
@@ -148,25 +222,25 @@ public sealed class DatabaseGameStatsStore(
             })
             .ToListAsync();
 
-        // Sequential queries for guess distributions per mode (avoiding Task.WhenAll)
-        var dailyDistribution = new long[6];
-        var dailyDistributionData = await query
-            .Where(g => g.Mode == GameMode.Daily && g.IsWon)
+        // Canonical puzzles are the headline distribution; practice remains separate.
+        var canonicalDistribution = new long[6];
+        var canonicalDistributionData = await query
+            .Where(g => g.IsWon)
             .GroupBy(g => g.Guesses.Count)
             .Select(group => new { GuessCount = group.Key, Count = (long)group.Count() })
             .ToListAsync();
 
-        foreach (var item in dailyDistributionData)
+        foreach (var item in canonicalDistributionData)
         {
             if (item.GuessCount >= 1 && item.GuessCount <= 6)
             {
-                dailyDistribution[item.GuessCount - 1] = item.Count;
+                canonicalDistribution[item.GuessCount - 1] = item.Count;
             }
         }
 
         var practiceDistribution = new long[6];
-        var practiceDistributionData = await query
-            .Where(g => g.Mode == GameMode.Practice && g.IsWon)
+        var practiceDistributionData = await practiceQuery
+            .Where(g => g.IsWon)
             .GroupBy(g => g.Guesses.Count)
             .Select(group => new { GuessCount = group.Key, Count = (long)group.Count() })
             .ToListAsync();
@@ -188,7 +262,7 @@ public sealed class DatabaseGameStatsStore(
             AverageGuessesToWin = avgGuessesToWin,
             AverageGuessesPerCompletedGame = avgGuessesPerCompletedGame,
             ModePopularity = modePopularity,
-            DailyGuessDistribution = dailyDistribution,
+            DailyGuessDistribution = canonicalDistribution,
             PracticeGuessDistribution = practiceDistribution
         };
     }
@@ -199,7 +273,8 @@ public sealed class DatabaseGameStatsStore(
 
         var query = database.GameStats
             .AsNoTracking()
-            .Where(g => g.PlayerId != Guid.Empty);
+            .Where(g => g.PlayerId != Guid.Empty)
+            .Where(g => g.SessionCategory == SessionCategory.CanonicalPuzzle && !g.IsLegacyDuplicate);
 
         if (from.HasValue)
         {
@@ -209,8 +284,8 @@ public sealed class DatabaseGameStatsStore(
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // Exclude the current daily game (today's daily) from all stats
-        query = query.Where(g => !(g.Mode == GameMode.Daily && DateOnly.FromDateTime(g.StartedOnUtc.UtcDateTime) == today));
+        // Do not expose the scheduled puzzle before its UTC day has finished.
+        query = query.Where(g => g.PuzzleId != GetCurrentPuzzleId(today));
 
         return await query
             .GroupBy(g => DateOnly.FromDateTime(g.StartedOnUtc.UtcDateTime))
@@ -238,6 +313,7 @@ public sealed class DatabaseGameStatsStore(
                         DATE(MIN("StartedOnUtc" AT TIME ZONE 'UTC')) as "FirstGameDate"
                     FROM "GameStats"
                     WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
+                      AND "SessionCategory" = 0 AND NOT "IsLegacyDuplicate"
                       AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                     GROUP BY "PlayerId"
                 ),
@@ -249,6 +325,7 @@ public sealed class DatabaseGameStatsStore(
                     FROM "GameStats" gs
                     INNER JOIN PlayerFirstGame pfg ON gs."PlayerId" = pfg."PlayerId"
                     WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
+                      AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') >= {0}::date
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
@@ -281,6 +358,7 @@ public sealed class DatabaseGameStatsStore(
                         DATE(MIN("StartedOnUtc" AT TIME ZONE 'UTC')) as "FirstGameDate"
                     FROM "GameStats"
                     WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
+                      AND "SessionCategory" = 0 AND NOT "IsLegacyDuplicate"
                       AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                     GROUP BY "PlayerId"
                 ),
@@ -292,6 +370,7 @@ public sealed class DatabaseGameStatsStore(
                     FROM "GameStats" gs
                     INNER JOIN PlayerFirstGame pfg ON gs."PlayerId" = pfg."PlayerId"
                     WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
+                      AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
                 SELECT 
@@ -325,7 +404,8 @@ public sealed class DatabaseGameStatsStore(
         var playerGameCounts = await database.GameStats
             .AsNoTracking()
             .Where(g => g.PlayerId != Guid.Empty)
-            .Where(g => !(g.Mode == GameMode.Daily && DateOnly.FromDateTime(g.StartedOnUtc.UtcDateTime) == today))
+            .Where(g => g.SessionCategory == SessionCategory.CanonicalPuzzle && !g.IsLegacyDuplicate)
+            .Where(g => g.PuzzleId != GetCurrentPuzzleId(today))
             .GroupBy(g => g.PlayerId)
             .Select(g => new { PlayerId = g.Key, GameCount = g.Count() })
             .ToListAsync();
@@ -358,6 +438,7 @@ public sealed class DatabaseGameStatsStore(
                     COUNT(*) as "GameCount"
                 FROM "GameStats"
                 WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
+                  AND "SessionCategory" = 0 AND NOT "IsLegacyDuplicate"
                   AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 GROUP BY "PlayerId"
             )
@@ -391,6 +472,7 @@ public sealed class DatabaseGameStatsStore(
                     DATE(MIN("StartedOnUtc" AT TIME ZONE 'UTC')) as "CohortDate"
                 FROM "GameStats"
                 WHERE "PlayerId" != '00000000-0000-0000-0000-000000000000'
+                  AND "SessionCategory" = 0 AND NOT "IsLegacyDuplicate"
                   AND NOT ("Mode" = 0 AND DATE("StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 GROUP BY "PlayerId"
             ),
@@ -405,6 +487,7 @@ public sealed class DatabaseGameStatsStore(
                 WHERE EXISTS (
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
+                      AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '1 day'
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
@@ -420,6 +503,7 @@ public sealed class DatabaseGameStatsStore(
                 WHERE EXISTS (
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
+                      AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '7 days'
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
@@ -435,6 +519,7 @@ public sealed class DatabaseGameStatsStore(
                 WHERE EXISTS (
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
+                      AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = e."CohortDate" + INTERVAL '30 days'
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
@@ -445,6 +530,7 @@ public sealed class DatabaseGameStatsStore(
                 WHERE EXISTS (
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
+                      AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') >= e."CohortDate" + INTERVAL '1 day'
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
@@ -455,6 +541,7 @@ public sealed class DatabaseGameStatsStore(
                 WHERE EXISTS (
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
+                      AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') >= e."CohortDate" + INTERVAL '7 days'
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
@@ -465,6 +552,7 @@ public sealed class DatabaseGameStatsStore(
                 WHERE EXISTS (
                     SELECT 1 FROM "GameStats" gs
                     WHERE gs."PlayerId" = e."PlayerId"
+                      AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                       AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') >= e."CohortDate" + INTERVAL '30 days'
                       AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
                 )
@@ -520,7 +608,8 @@ public sealed class DatabaseGameStatsStore(
                 INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
                 WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
                   AND gg."GuessedCharacterId" != gs."TargetCharacterId"
-                  AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+                  AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
+                  AND gs."PuzzleId" <> ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - DATE '2026-06-15' + 1)
             ),
             counts AS (
                 SELECT "CharacterId",
@@ -550,7 +639,8 @@ public sealed class DatabaseGameStatsStore(
                 FROM "GameStats" gs
                 WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
                   AND gs."IsWon" = TRUE
-                  AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+                  AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
+                  AND gs."PuzzleId" <> ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - DATE '2026-06-15' + 1)
             ),
             counts AS (
                 SELECT "CharacterId",
@@ -582,6 +672,7 @@ public sealed class DatabaseGameStatsStore(
                 WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
                   AND gs."IsWon" = TRUE
                   AND gg."GuessedCharacterId" != gs."TargetCharacterId"
+                  AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                   AND NOT EXISTS (
                       SELECT 1 FROM "GameGuess" gg2
                       WHERE gg2."GameId" = gg."GameId"
@@ -627,6 +718,7 @@ public sealed class DatabaseGameStatsStore(
                   AND gs."IsWon" = TRUE
                   AND gg."GuessOrder" = 0
                   AND gg."GuessedCharacterId" != gs."TargetCharacterId"
+                  AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
                   AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
             ),
             counts AS (
@@ -659,7 +751,8 @@ public sealed class DatabaseGameStatsStore(
                 INNER JOIN "GameGuess" gg ON gg."GameId" = gs."GameId"
                 WHERE gs."PlayerId" != '00000000-0000-0000-0000-000000000000'
                   AND gs."IsWon" = TRUE
-                  AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+                  AND gs."SessionCategory" = 0 AND NOT gs."IsLegacyDuplicate"
+                  AND gs."PuzzleId" <> ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - DATE '2026-06-15' + 1)
                 GROUP BY gs."GameId", gs."TargetCharacterId", gs."StartedOnUtc"
             ),
             counts AS (
@@ -728,7 +821,9 @@ public sealed class DatabaseGameStatsStore(
             INNER JOIN "GameStats" gs ON gg."GameId" = gs."GameId"
             WHERE gs."PlayerId" = {0}
               AND gg."GuessedCharacterId" != gs."TargetCharacterId"
-              AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+              AND gs."SessionCategory" = 0
+              AND NOT gs."IsLegacyDuplicate"
+              AND gs."PuzzleId" <> ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - DATE '2026-06-15' + 1)
             GROUP BY gg."GuessedCharacterId"
             ORDER BY "Count" DESC
             LIMIT 1
@@ -742,7 +837,9 @@ public sealed class DatabaseGameStatsStore(
             FROM "GameStats" gs
             WHERE gs."PlayerId" = {0}
               AND gs."IsWon" = TRUE
-              AND NOT (gs."Mode" = 0 AND DATE(gs."StartedOnUtc" AT TIME ZONE 'UTC') = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)
+              AND gs."SessionCategory" = 0
+              AND NOT gs."IsLegacyDuplicate"
+              AND gs."PuzzleId" <> ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - DATE '2026-06-15' + 1)
             GROUP BY gs."TargetCharacterId"
             ORDER BY "Count" DESC
             LIMIT 1

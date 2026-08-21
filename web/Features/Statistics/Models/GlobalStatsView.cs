@@ -21,6 +21,7 @@ public sealed class GlobalStatsView
 
     public IReadOnlyList<ModePopularityEntry> ModePopularity { get; init; } = [];
 
+    /// <summary>Distribution for the combined Daily and Archive canonical puzzle set.</summary>
     public long[] DailyGuessDistribution { get; init; } = new long[6];
 
     public long[] PracticeGuessDistribution { get; init; } = new long[6];

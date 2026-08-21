@@ -8,6 +8,12 @@ public sealed class GameSession
     public required Guid GameId { get; set; } = Guid.NewGuid();
     public Guid PlayerId { get; set; }
 
+    public int? PuzzleId { get; set; }
+    public SessionCategory SessionCategory { get; set; }
+    public EntryPoint FirstEntryPoint { get; set; }
+    public bool IsLegacyDuplicate { get; set; }
+
+    // Compatibility data retained while existing telemetry is migrated.
     public GameMode Mode { get; set; }
     public int? DailyNumber { get; set; }
 

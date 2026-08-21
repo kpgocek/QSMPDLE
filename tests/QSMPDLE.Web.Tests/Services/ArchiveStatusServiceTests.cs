@@ -139,7 +139,7 @@ public sealed class ArchiveStatusServiceTests
     }
 
     [Fact]
-    public async Task RecordGameFinishedAsync_ArchiveGame_UpdatesArchiveTotalsOnly()
+    public async Task RecordGameFinishedAsync_ArchiveEntry_DoesNotCreateSeparateLocalTotals()
     {
         var playerId = Guid.NewGuid();
         var statsStore = new TestPlayerStatsStore(new PlayerStats { Id = playerId, GamesPlayed = 2, GamesWon = 1, CurrentStreak = 2, MaxStreak = 3, LastCompletedDayNumber = 10 });
@@ -152,6 +152,9 @@ public sealed class ArchiveStatusServiceTests
             GameId = gameId,
             PlayerId = playerId,
             GameMode = GameMode.Archive,
+            SessionCategory = SessionCategory.CanonicalPuzzle,
+            EntryPoint = EntryPoint.Archive,
+            PuzzleId = 1,
             TargetCharacterId = 15,
             DayNumber = 1,
             Timestamp = DateTimeOffset.UtcNow,
@@ -161,6 +164,9 @@ public sealed class ArchiveStatusServiceTests
             GameId = gameId,
             PlayerId = playerId,
             GameMode = GameMode.Archive,
+            SessionCategory = SessionCategory.CanonicalPuzzle,
+            EntryPoint = EntryPoint.Archive,
+            PuzzleId = 1,
             IsWon = true,
             GuessCount = 3,
             DayNumber = 15,
@@ -174,8 +180,8 @@ public sealed class ArchiveStatusServiceTests
         Assert.Equal(2, stats.CurrentStreak);
         Assert.Equal(3, stats.MaxStreak);
         Assert.Equal(10, stats.LastCompletedDayNumber);
-        Assert.Equal(1, stats.ArchiveGamesPlayed);
-        Assert.Equal(1, stats.ArchiveGamesWon);
+        Assert.Equal(0, stats.ArchiveGamesPlayed);
+        Assert.Equal(0, stats.ArchiveGamesWon);
         Assert.Equal(0, stats.ArchiveGamesLost);
     }
 
@@ -193,6 +199,9 @@ public sealed class ArchiveStatusServiceTests
             GameId = gameId,
             PlayerId = playerId,
             GameMode = GameMode.Daily,
+            SessionCategory = SessionCategory.CanonicalPuzzle,
+            EntryPoint = EntryPoint.Daily,
+            PuzzleId = 18,
             TargetCharacterId = 18,
             DayNumber = 1,
             Timestamp = DateTimeOffset.UtcNow,
@@ -202,6 +211,9 @@ public sealed class ArchiveStatusServiceTests
             GameId = gameId,
             PlayerId = playerId,
             GameMode = GameMode.Daily,
+            SessionCategory = SessionCategory.CanonicalPuzzle,
+            EntryPoint = EntryPoint.Daily,
+            PuzzleId = 18,
             IsWon = false,
             GuessCount = 6,
             DayNumber = 18,
@@ -332,7 +344,7 @@ public sealed class ArchiveStatusServiceTests
         var result = await svc.GetStatusesAsync(day, day);
 
         Assert.Single(result);
-        Assert.Equal(DayStatus.Won, result.Values.First());
+        Assert.Equal(DayStatus.InProgress, result.Values.First());
     }
 
     private sealed class TestArchiveGameStateSource : IArchiveGameStateSource
@@ -382,8 +394,20 @@ public sealed class ArchiveStatusServiceTests
             _sessions = sessions?.ToList() ?? new List<GameSession>();
         }
 
-        public Task<GameSession> LoadOrNewAsync(Guid gameId) => throw new NotImplementedException();
-        public Task SaveAsync(GameSession stats) => throw new NotImplementedException();
+        public Task<GameSession> LoadOrNewAsync(Guid gameId)
+        {
+            var existing = _sessions.FirstOrDefault(session => session.GameId == gameId);
+            if (existing is not null) return Task.FromResult(existing);
+            var created = new GameSession { GameId = gameId };
+            _sessions.Add(created);
+            return Task.FromResult(created);
+        }
+        public Task SaveAsync(GameSession stats)
+        {
+            _sessions.RemoveAll(session => session.GameId == stats.GameId);
+            _sessions.Add(stats);
+            return Task.CompletedTask;
+        }
         public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId) => throw new NotImplementedException();
         public Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber) => throw new NotImplementedException();
 
@@ -434,7 +458,18 @@ public sealed class ArchiveStatusServiceTests
             _stats = stats;
         }
 
-        public Task<PlayerStats> LoadAsync() => Task.FromResult(_stats);
+        public Task<PlayerStats> LoadAsync()
+        {
+            if (_stats.Id == Guid.Empty) _stats.Id = Guid.NewGuid();
+            if (_stats.Version < PlayerStats.CurrentVersion) _stats.Version = PlayerStats.CurrentVersion;
+            if (_stats.GuessDistribution.Length != 6)
+            {
+                var resized = new int[6];
+                Array.Copy(_stats.GuessDistribution, resized, Math.Min(_stats.GuessDistribution.Length, resized.Length));
+                _stats.GuessDistribution = resized;
+            }
+            return Task.FromResult(_stats);
+        }
 
         public Task SaveAsync(PlayerStats stats)
         {

@@ -52,9 +52,6 @@
     public DateOnly FirstDay { get; set; }
 
     [Parameter]
-    public HashSet<int>? CompletedDays { get; set; }
-
-    [Parameter]
     public EventCallback DateSelected { get; set; }
 
     [Parameter]
@@ -118,10 +115,10 @@
 
         EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(async ev =>
         {
-            if (!ev.DayNumber.HasValue)
+            if (!ev.PuzzleId.HasValue)
                 return;
 
-            var date = FirstDay.AddDays(ev.DayNumber.Value - 1);
+            var date = FirstDay.AddDays(ev.PuzzleId.Value - 1);
             await InvokeAsync(async () =>
             {
                 await LoadStatusesForDayAsync(date);

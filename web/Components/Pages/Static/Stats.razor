@@ -57,17 +57,13 @@
 
         <div class="mb-4">
             <MudButtonGroup Color="MudBlazor.Color.Primary" Variant="Variant.Outlined">
-                <MudButton OnClick="@(() => globalDistributionMode = "Daily")"
-                           Variant="@(globalDistributionMode == "Daily" ? Variant.Filled : Variant.Outlined)">
-                    Daily Mode
+                <MudButton OnClick="@(() => globalDistributionMode = "Canonical")"
+                           Variant="@(globalDistributionMode == "Canonical" ? Variant.Filled : Variant.Outlined)">
+                    Puzzle Games
                 </MudButton>
                 <MudButton OnClick="@(() => globalDistributionMode = "Practice")"
                            Variant="@(globalDistributionMode == "Practice" ? Variant.Filled : Variant.Outlined)">
                     Practice Mode
-                </MudButton>
-                <MudButton OnClick="@(() => globalDistributionMode = "Combined")"
-                           Variant="@(globalDistributionMode == "Combined" ? Variant.Filled : Variant.Outlined)">
-                    Combined
                 </MudButton>
             </MudButtonGroup>
         </div>
@@ -283,7 +279,7 @@
     private long[] DailyGuessDistribution { get; set; } = new long[6];
     private long[] PracticeGuessDistribution { get; set; } = new long[6];
     private IReadOnlyList<ModePopularityEntry> modePopularity = [];
-    private string globalDistributionMode = "Daily";
+    private string globalDistributionMode = "Canonical";
 
     private double[] GlobalGuessDistributionData
     {
@@ -291,9 +287,8 @@
         {
             return globalDistributionMode switch
             {
-                "Daily" => DailyGuessDistribution.Select(x => (double)x).ToArray(),
+                "Canonical" => DailyGuessDistribution.Select(x => (double)x).ToArray(),
                 "Practice" => PracticeGuessDistribution.Select(x => (double)x).ToArray(),
-                "Combined" => DailyGuessDistribution.Zip(PracticeGuessDistribution, (d, p) => (double)(d + p)).ToArray(),
                 _ => new double[6]
             };
         }

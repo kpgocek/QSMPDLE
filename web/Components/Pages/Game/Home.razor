@@ -37,7 +37,7 @@ else
 
     private async Task OnGameStateChange(GameState gameState)
     {
-        DailyNumber = gameState.Game.DayNumber ?? 0;
+        DailyNumber = gameState.Game.PuzzleId ?? 0;
     }
 
     private async Task OnGameLoaded()
@@ -48,7 +48,7 @@ else
     private async Task OnGameFinished(GameFinishedEvent eventData)
     {
         _refreshPending = true;
-        DailyNumber = eventData.DayNumber ?? DailyNumber;
+        DailyNumber = eventData.PuzzleId ?? DailyNumber;
         await InvokeAsync(RefreshDailyStateAsync);
     }
 

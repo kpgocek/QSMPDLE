@@ -9,6 +9,8 @@ public interface IStatisticsService
     Task RecordGameStartedAsync(GameStartedEvent eventData);
     Task RecordGuessMadeAsync(GuessMadeEvent eventData);
     Task RecordGameFinishedAsync(GameFinishedEvent eventData);
+    Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId) => Task.FromResult<GameSession?>(null);
+    Task<GameSession> ClaimCanonicalSessionAsync(GameSession proposedSession) => Task.FromResult(proposedSession);
 
 
     // ENDPOINTS

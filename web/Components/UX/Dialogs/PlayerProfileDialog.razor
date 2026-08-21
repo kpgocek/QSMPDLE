@@ -112,14 +112,13 @@
 
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
-                    <StatCard Title="Daily Games" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
+                    <StatCard Title="Puzzle Games" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
                               Value="@($"{DailyGamesPlayed}")" />
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
-                    <StatCard Title="Archive Games" Delay="100" Icon="@Icons.Material.Filled.History"
-                              Value="@($"{ArchiveGamesPlayed}")"
-                              Comment="@($"{ArchiveGamesWon} won, {ArchiveGamesLost} lost")" />
+                    <StatCard Title="Puzzle Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
+                              Value="@($"{DailyGamesWon}")" />
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
@@ -137,16 +136,6 @@
 
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
-                    <StatCard Title="Daily Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
-                              Value="@($"{DailyGamesWon}")" />
-                </MudItem>
-
-                <MudItem xs="6" sm="4" Style="display:flex;">
-                    <StatCard Title="Archive Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
-                              Value="@($"{ArchiveGamesWon}")" />
-                </MudItem>
-
-                <MudItem xs="6" sm="4" Style="display:flex;">
                     <StatCard Title="Practice Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
                               Value="@($"{PracticeGamesWon}")" />
                 </MudItem>
@@ -161,14 +150,8 @@
 
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
-                    <StatCard Title="Daily Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
+                    <StatCard Title="Puzzle Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
                               Value="@($"{DailyWinRate:0}%")" />
-                </MudItem>
-
-                <MudItem xs="6" sm="4" Style="display:flex;">
-                    <StatCard Title="Archive Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
-                              Value="@($"{ArchiveWinRate:0}%")"
-                              Comment="Archive games only" />
                 </MudItem>
 
                 <MudItem xs="6" sm="4" Style="display:flex;">
@@ -304,7 +287,15 @@
 
             var gameStats = await GameStatsStore.GetPlayerGames(playerId);
 
-            var practiceGames = gameStats.Where(game => game.Mode.Equals(GameMode.Practice)).Distinct();
+            var canonicalGames = gameStats.Where(game => game.SessionCategory == SessionCategory.CanonicalPuzzle && !game.IsLegacyDuplicate).ToList();
+            DailyGamesPlayed = canonicalGames.Count;
+            DailyGamesWon = canonicalGames.Count(game => game.IsWon);
+            DailyWinRate = DailyGamesPlayed == 0 ? 0 : DailyGamesWon * 100d / DailyGamesPlayed;
+            GuessDistribution = Enumerable.Range(1, 6)
+                .Select(count => canonicalGames.Count(game => game.IsWon && game.Guesses.Count == count))
+                .ToArray();
+
+            var practiceGames = gameStats.Where(game => game.SessionCategory == SessionCategory.Practice && !game.IsLegacyDuplicate).ToList();
 
             PracticeGamesStarted = practiceGames.Count();
 

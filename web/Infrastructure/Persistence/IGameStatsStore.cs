@@ -8,6 +8,9 @@ public interface IGameStatsStore
 
     Task SaveAsync(GameSession stats);
 
+    Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId) => Task.FromResult<GameSession?>(null);
+    Task<GameSession> ClaimCanonicalSessionAsync(GameSession proposedSession) => Task.FromResult(proposedSession);
+
     Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId);
 
     Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber);
@@ -40,4 +43,6 @@ public interface IGameStatsStore
     /// Implementations MUST perform a single batched database query for the range.
     /// </summary>
     Task<List<GameSession>> GetPlayerDailyGamesByNumberRangeAsync(Guid playerId, int startNumber, int endNumber);
+
+    Task<List<GameSession>> GetPlayerCanonicalGamesByPuzzleRangeAsync(Guid playerId, int startPuzzleId, int endPuzzleId) => Task.FromResult(new List<GameSession>());
 }

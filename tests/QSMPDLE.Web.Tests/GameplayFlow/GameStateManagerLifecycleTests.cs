@@ -27,6 +27,7 @@ public sealed class GameStateManagerLifecycleTests
     {
         var setup = CreateSetup();
         var restored = CreateState(Guid.NewGuid(), GameMode.Daily, setup.Target.Id, Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+        restored.Game.PuzzleId = new DayService().GetTodayDayNumber();
         setup.GameStateStore.State = restored;
         setup.PlayerStatsStore.Stats.Id = setup.PlayerId;
 
@@ -96,6 +97,95 @@ public sealed class GameStateManagerLifecycleTests
         setup.GameStateStore.State.Should().BeNull();
     }
 
+    [Fact]
+    public async Task DailyProgressIsContinuedByArchiveAsTheSameCanonicalSession()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        var puzzleId = setup.Manager.GameState.Game.PuzzleId!.Value;
+        var gameId = setup.Manager.GameState.GameId;
+
+        await setup.Manager.MakeGuessAsync(setup.Guess.Id);
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, puzzleId);
+
+        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        setup.Manager.GameState.GameId.Should().Be(gameId);
+        setup.Manager.GameState.Game.PuzzleId.Should().Be(puzzleId);
+        setup.Manager.GameState.GuessesMade.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task CompletedCanonicalPuzzleIsReplayOnlyFromArchive()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        var puzzleId = setup.Manager.GameState.Game.PuzzleId!.Value;
+        var gameId = setup.Manager.GameState.GameId;
+        await setup.Manager.MakeGuessAsync(setup.Target.Id);
+
+        await setup.Manager.StartGameAsync(GameMode.Archive, puzzleId);
+
+        setup.Manager.GameState.GameId.Should().Be(gameId);
+        setup.Manager.GameState.IsWon.Should().BeTrue();
+        setup.Manager.GameState.IsFinished.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task NewPracticeGameAlwaysCreatesAnIndependentSession()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartNewPracticeGameAsync();
+        var first = setup.Manager.GameState.GameId;
+
+        await setup.Manager.StartNewPracticeGameAsync();
+
+        setup.Manager.GameState.GameId.Should().NotBe(first);
+        setup.Manager.GameState.SessionCategory.Should().Be(SessionCategory.Practice);
+        setup.Manager.GameState.Game.PuzzleId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task FirstCanonicalGuessAdoptsTheSessionClaimedByAnotherClient()
+    {
+        var setup = CreateSetup(archiveDayNumber: 7);
+        await setup.Manager.StartGameAsync(GameMode.Archive, 7);
+        var otherGameId = Guid.NewGuid();
+        setup.StatisticsService.Sessions[otherGameId] = new GameSession
+        {
+            GameId = otherGameId,
+            PlayerId = setup.PlayerId,
+            PuzzleId = 7,
+            SessionCategory = SessionCategory.CanonicalPuzzle,
+            FirstEntryPoint = EntryPoint.Daily,
+            TargetCharacterId = setup.Target.Id,
+        };
+
+        var result = await setup.Manager.MakeGuessAsync(setup.Guess.Id);
+
+        result.Should().BeNull();
+        setup.Manager.GameState.GameId.Should().Be(otherGameId);
+        setup.Manager.GameState.GuessesMade.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LegacyDailyStateIsMigratedToCanonicalStorageOnStart()
+    {
+        var setup = CreateSetup(archiveDayNumber: 7);
+        var legacy = CreateState(Guid.NewGuid(), GameMode.Daily, setup.Target.Id, setup.PlayerId);
+        legacy.Game.PuzzleId = 7;
+        legacy.GuessesMade.Add(CreateGuess(setup.Guess.Id, setup.Guess.Name, false, false));
+        setup.GameStateStore.SetStateForKey("daily-7", legacy);
+
+        var result = await setup.Manager.StartGameAsync(GameMode.Archive, 7);
+
+        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        setup.GameStateStore.Key.Should().Be("canonical-7");
+        setup.GameStateStore.State!.Game.PuzzleId.Should().Be(7);
+        setup.GameStateStore.State.GuessesMade.Should().ContainSingle();
+        setup.GameStateStore.HasStateForKey("daily-7").Should().BeFalse();
+        setup.GameStateStore.HasStateForKey("canonical-7").Should().BeTrue();
+    }
+
     private static Setup CreateSetup(int? archiveDayNumber = null)
     {
         var target = CreateCharacter(1, "Target", joinDay: 10, languages: 2, pronouns: ["Any"], affiliations: ["Guild"], species: ["Human"]);
@@ -109,7 +199,7 @@ public sealed class GameStateManagerLifecycleTests
         var playerId = playerStatsStore.Stats.Id;
         var dayService = new DayService();
         var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, playerStatsStore, characterStore, new CharacterComparer(characterStore), statisticsService);
-        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, characterStore, target, guess, playerId);
+        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, statisticsService, characterStore, target, guess, playerId);
     }
 
     private static Character CreateCharacter(int id, string name, int joinDay, int languages, string[] pronouns, string[] affiliations, string[] species) => new()
@@ -129,7 +219,7 @@ public sealed class GameStateManagerLifecycleTests
     private static GameState CreateState(Guid gameId, GameMode mode, int targetId, Guid playerId) => new()
     {
         GameId = gameId,
-        Game = new Game { TargetId = targetId, PortraitUrl = "https://example.com/portrait.png", DayNumber = 1 },
+        Game = new Game { TargetId = targetId, PortraitUrl = "https://example.com/portrait.png", PuzzleId = mode == GameMode.Practice ? null : 1 },
         GameMode = mode,
         PlayerId = playerId,
     };
@@ -147,5 +237,5 @@ public sealed class GameStateManagerLifecycleTests
         Species = ComparisonResult.Correct,
     };
 
-    private sealed record Setup(GameStateManager Manager, InMemoryGameStateStore GameStateStore, InMemoryPlayerStatsStore PlayerStatsStore, InMemoryGameStatsStore GameStatsStore, InMemoryCharacterStore CharacterStore, Character Target, Character Guess, Guid PlayerId);
+    private sealed record Setup(GameStateManager Manager, InMemoryGameStateStore GameStateStore, InMemoryPlayerStatsStore PlayerStatsStore, InMemoryGameStatsStore GameStatsStore, InMemoryStatisticsService StatisticsService, InMemoryCharacterStore CharacterStore, Character Target, Character Guess, Guid PlayerId);
 }

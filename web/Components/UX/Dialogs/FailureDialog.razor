@@ -24,7 +24,7 @@
         }
 
         <div class="buttons">
-            @if (GameMode == GameMode.Daily)
+            @if (GameState.SessionCategory == GameModeSessionCategory)
             {
             <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary">
 
@@ -104,7 +104,8 @@
 
     [Parameter] public EventCallback OnClose { get; set; }
 
-    private int? DayNumber => GameState.Game.DayNumber;
+    private int? DayNumber => GameState.Game.PuzzleId;
+    private const SessionCategory GameModeSessionCategory = SessionCategory.CanonicalPuzzle;
 
     private async Task Share()
     {

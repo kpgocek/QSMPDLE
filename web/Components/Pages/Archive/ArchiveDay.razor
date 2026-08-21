@@ -5,12 +5,11 @@
 @using QSMPDLE.Web.Components.UX.Navigation
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Gameplay.Services
-@using QSMPDLE.Web.Features.Statistics.Services
 
 @inject IDayService DayService
-@inject IStatisticsService StatisticsService
 @inject QSMPDLE.Web.Features.Communication.GameEvents.IGameEventBus EventBus
 @inject NavigationManager NavigationManager
+@inject QSMPDLE.Web.Infrastructure.LocalStorage.ILegacyGameStateMigrationService LegacyGameStateMigrationService
 
 <HeadContent>
     <title>Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE</title>
@@ -67,7 +66,7 @@ else
 
         <div class="@(_showCalendar ? "" : "collapsed") mt-3">
             <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar"
-                              RefreshRequested="RefreshArchiveStateAsync" CompletedDays="@_completedDays" />
+                              RefreshRequested="RefreshArchiveStateAsync" />
         </div>
     }
 
@@ -120,12 +119,10 @@ else
     public int DayNumber { get; set; }
 
     private bool _isValidDay = true;
-    private bool _isArchiveCompletedDaily = false;
     private bool _isGameLoaded = false;
     private bool _showCalendar = false;
     private int _maxDay;
     private DateOnly _firstDay;
-    private HashSet<int>? _completedDays;
     private bool _isInitialized;
     private bool _refreshPending;
 
@@ -143,8 +140,6 @@ else
 
         _isGameLoaded = false;
         _showCalendar = false;
-        _isArchiveCompletedDaily = false;
-        _completedDays = null;
         _isInitialized = false;
     }
 
@@ -154,6 +149,7 @@ else
             return;
 
         _isInitialized = true;
+        await LegacyGameStateMigrationService.MigrateAsync();
         SubscribeToGameEvents();
         await LoadArchiveStateAsync();
     }
@@ -165,7 +161,7 @@ else
 
     private async Task OnGameFinishedAsync(QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent eventData)
     {
-        if (eventData.DayNumber != DayNumber)
+        if (eventData.PuzzleId != DayNumber)
             return;
 
         _refreshPending = true;
@@ -186,25 +182,12 @@ else
     {
         try
         {
-            var playerId = await GetPlayerIdAsync();
-            _isArchiveCompletedDaily = (await StatisticsService.GetPlayerCompletedDailyGameAsync(playerId, DayNumber)) is not null;
-
-            // Load the set of completed daily numbers for the current player in one query.
-            var completed = await StatisticsService.GetPlayerCompletedDailyNumbersAsync(playerId);
-            _completedDays = completed is null ? null : new HashSet<int>(completed);
-
             _isGameLoaded = true;
         }
         finally
         {
             await InvokeAsync(StateHasChanged);
         }
-    }
-
-    private async Task<Guid> GetPlayerIdAsync()
-    {
-        var playerStats = await StatisticsService.GetPlayerStatsAsync();
-        return playerStats.Id;
     }
 
     private Task OnGameStateChange(GameState gameState)

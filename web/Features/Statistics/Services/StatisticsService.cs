@@ -20,9 +20,12 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
         gameStats.StartedOnUtc = eventData.Timestamp;
         gameStats.DailyNumber = eventData.DayNumber;
         gameStats.TargetCharacterId = eventData.TargetCharacterId;
+        gameStats.PuzzleId = eventData.PuzzleId;
+        gameStats.SessionCategory = eventData.SessionCategory;
+        gameStats.FirstEntryPoint = eventData.EntryPoint;
         gameStats.Mode = eventData.GameMode;
 
-        if (eventData.GameMode == GameMode.Daily)
+        if (eventData.EntryPoint == EntryPoint.Daily && eventData.SessionCategory == SessionCategory.CanonicalPuzzle)
         {
             var playerStats = await GetPlayerStatsAsync();
 
@@ -66,9 +69,9 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 
         await SaveGameStatsAsync(gameStats);
 
-        if (eventData.GameMode == GameMode.Daily)
+        if (eventData.SessionCategory == SessionCategory.CanonicalPuzzle && eventData.EntryPoint == EntryPoint.Daily)
         {
-            var dayNumber = eventData.DayNumber
+            var dayNumber = eventData.PuzzleId
                 ?? throw new InvalidOperationException("Cannot record daily statistics without a day number.");
 
             var playerStats = await GetPlayerStatsAsync();
@@ -84,16 +87,19 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
             {
                 playerStats.GamesWon++;
 
-                if (playerStats.LastCompletedDayNumber is null || dayNumber - playerStats.LastCompletedDayNumber == 1)
+                if (IsOnPublicationDay(dayNumber, eventData.Timestamp))
                 {
-                    playerStats.CurrentStreak++;
-                }
-                else if (dayNumber != playerStats.LastCompletedDayNumber)
-                {
-                    playerStats.CurrentStreak = 1;
-                }
+                    if (playerStats.LastCompletedDayNumber is null || dayNumber - playerStats.LastCompletedDayNumber == 1)
+                    {
+                        playerStats.CurrentStreak++;
+                    }
+                    else if (dayNumber != playerStats.LastCompletedDayNumber)
+                    {
+                        playerStats.CurrentStreak = 1;
+                    }
 
-                playerStats.LastCompletedDayNumber = dayNumber;
+                    playerStats.LastCompletedDayNumber = dayNumber;
+                }
             }
             else
             {
@@ -107,28 +113,11 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
 
             await SavePlayerStatsAsync(playerStats);
         }
-        else if (eventData.GameMode == GameMode.Archive)
-        {
-            var playerStats = await GetPlayerStatsAsync();
-
-            ArgumentNullException.ThrowIfNull(playerStats);
-
-            playerStats.ArchiveGamesPlayed++;
-
-            if (eventData.IsWon)
-            {
-                playerStats.ArchiveGamesWon++;
-            }
-            else
-            {
-                playerStats.ArchiveGamesLost++;
-            }
-
-            await SavePlayerStatsAsync(playerStats);
-        }
     }
 
     public async Task<GameSession> GetGameStatsAsync(Guid gameId) => await GameStatsStore.LoadOrNewAsync(gameId);
+    public async Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId) => await GameStatsStore.GetActiveCanonicalSessionAsync(playerId, puzzleId);
+    public async Task<GameSession> ClaimCanonicalSessionAsync(GameSession proposedSession) => await GameStatsStore.ClaimCanonicalSessionAsync(proposedSession);
     public async Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber) => await GameStatsStore.GetPlayerCompletedDailyGameAsync(playerId, dailyNumber);
     public async Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId) => await GameStatsStore.GetPlayerCompletedDailyNumbersAsync(playerId);
     private async Task SaveGameStatsAsync(GameSession gameStats) => await GameStatsStore.SaveAsync(gameStats);
@@ -143,4 +132,7 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
             throw new InvalidOperationException("Cannot record telemetry without a valid player id.");
         }
     }
+
+    private static bool IsOnPublicationDay(int puzzleId, DateTimeOffset timestamp) =>
+        DateOnly.FromDateTime(timestamp.UtcDateTime) == new DateOnly(2026, 6, 15).AddDays(puzzleId - 1);
 }
