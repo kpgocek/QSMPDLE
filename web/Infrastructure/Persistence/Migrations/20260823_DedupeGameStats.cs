@@ -26,8 +26,9 @@ public partial class DedupeGameStats : Migration
               FROM "GameStats" gs
               WHERE gs."PuzzleId" IS NOT NULL AND NOT gs."IsLegacyDuplicate"
             )
-            DELETE FROM "GameStats"
-            WHERE "Id" IN (SELECT "Id" FROM ranked WHERE rn > 1);
+            UPDATE "GameStats" gs
+            SET "IsLegacyDuplicate" = TRUE
+            WHERE gs."Id" IN (SELECT "Id" FROM ranked WHERE rn > 1);
         """);
 
         // Note: Creating index concurrently is recommended on large tables, but EF migrations run inside a transaction by default.
