@@ -190,7 +190,7 @@ namespace QSMPDLE.Web.Migrations
 
                     b.HasIndex("PlayerId", "PuzzleId")
                         .IsUnique()
-                        .HasFilter("\"PuzzleId\" IS NOT NULL AND NOT \"IsLegacyDuplicate\"");
+                        .HasFilter("\"PuzzleId\" IS NOT NULL AND \"SessionCategory\" = 0 AND NOT \"IsLegacyDuplicate\"");
 
                     b.ToTable("GameStats", t =>
                         {

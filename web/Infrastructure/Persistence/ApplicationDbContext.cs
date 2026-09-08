@@ -17,7 +17,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         {
             entity.HasIndex(x => x.GameId).IsUnique();
             entity.HasIndex(x => new { x.PlayerId, x.PuzzleId })
-                .HasFilter("\"PuzzleId\" IS NOT NULL AND NOT \"IsLegacyDuplicate\"")
+                .HasFilter("\"PuzzleId\" IS NOT NULL AND \"SessionCategory\" = 0 AND NOT \"IsLegacyDuplicate\"")
                 .IsUnique();
 
             entity.ToTable(table => table.HasCheckConstraint(

@@ -67,7 +67,7 @@ public partial class CanonicalSessions : Migration
             table: "GameStats",
             columns: new[] { "PlayerId", "PuzzleId" },
             unique: true,
-            filter: "\"PuzzleId\" IS NOT NULL AND NOT \"IsLegacyDuplicate\"");
+            filter: "\"PuzzleId\" IS NOT NULL AND \"SessionCategory\" = 0 AND NOT \"IsLegacyDuplicate\"");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
