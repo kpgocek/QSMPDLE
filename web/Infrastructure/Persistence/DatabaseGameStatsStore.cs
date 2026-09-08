@@ -11,12 +11,11 @@ public sealed class DatabaseGameStatsStore(
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
         return await database.GameStats
             .AsNoTracking()
+            .Include(game => game.Guesses)
             .Where(game => game.PlayerId.Equals(playerId))
-            .Where(game => game.SessionCategory == SessionCategory.Practice || game.PuzzleId == null || game.PuzzleId != GetCurrentPuzzleId(today))
+            .Where(game => !game.IsLegacyDuplicate)
             .ToListAsync();
     }
 

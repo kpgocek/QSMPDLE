@@ -3,86 +3,42 @@ using QSMPDLE.Web.Features.Statistics.Models;
 
 namespace QSMPDLE.Web.Infrastructure.LocalStorage;
 
-public sealed class LocalStoragePlayerStatsStore(ILocalStorageService LocalStorage) : IPlayerStatsStore
+/// <summary>Stores only the anonymous browser identity; gameplay statistics live in PostgreSQL.</summary>
+public sealed class LocalStoragePlayerStatsStore(ILocalStorageService localStorage) : IPlayerStatsStore
 {
     private const string Key = "qsmpdle-player-stats";
-    private const int GuessDistributionSize = 6;
 
     public async Task<PlayerStats> LoadAsync()
     {
-        var stats = await LocalStorage.GetItemAsync<PlayerStats>(Key);
-        var shouldSave = false;
+        var identity = await localStorage.GetItemAsync<LocalPlayerIdentity>(Key);
+        identity ??= new LocalPlayerIdentity();
+        if (identity.Id == Guid.Empty)
+            identity.Id = Guid.NewGuid();
+        identity.Version = PlayerStats.CurrentVersion;
 
-        if (stats is null)
-        {
-            stats = new PlayerStats();
-            shouldSave = true;
-        }
+        // Rewrite the legacy PlayerStats object as identity-only data on the first read.
+        await localStorage.SetItemAsync(Key, identity);
 
-        if (stats.Id == Guid.Empty)
-        {
-            stats.Id = Guid.NewGuid();
-            shouldSave = true;
-        }
-
-        if (stats.GuessDistribution is not { Length: GuessDistributionSize })
-        {
-            stats.GuessDistribution = ResizeGuessDistribution(stats.GuessDistribution);
-            shouldSave = true;
-        }
-
-        if (stats.Version < PlayerStats.CurrentVersion)
-        {
-            stats.Version = PlayerStats.CurrentVersion;
-            shouldSave = true;
-        }
-
-        if (stats.ArchiveGamesPlayed < 0 || stats.ArchiveGamesWon < 0 || stats.ArchiveGamesLost < 0)
-        {
-            stats.ArchiveGamesPlayed = Math.Max(0, stats.ArchiveGamesPlayed);
-            stats.ArchiveGamesWon = Math.Max(0, stats.ArchiveGamesWon);
-            stats.ArchiveGamesLost = Math.Max(0, stats.ArchiveGamesLost);
-            shouldSave = true;
-        }
-
-        if (shouldSave)
-        {
-            await SaveAsync(stats);
-        }
-
-        return stats;
+        return new PlayerStats { Id = identity.Id, Version = identity.Version };
     }
 
     public async Task SaveAsync(PlayerStats stats)
     {
         if (stats.Id == Guid.Empty)
-        {
             stats.Id = Guid.NewGuid();
-        }
 
-        if (stats.GuessDistribution is not { Length: GuessDistributionSize })
+        await localStorage.SetItemAsync(Key, new LocalPlayerIdentity
         {
-            stats.GuessDistribution = ResizeGuessDistribution(stats.GuessDistribution);
-        }
-
-        stats.Version = PlayerStats.CurrentVersion;
-
-        await LocalStorage.SetItemAsync(Key, stats);
+            Id = stats.Id,
+            Version = PlayerStats.CurrentVersion,
+        });
     }
 
-    public async Task ClearAsync()
-    {
-        await LocalStorage.ClearAsync();
-    }
+    public Task ClearAsync() => localStorage.ClearAsync().AsTask();
 
-    private static int[] ResizeGuessDistribution(int[]? guessDistribution)
+    private sealed class LocalPlayerIdentity
     {
-        var resized = new int[GuessDistributionSize];
-        if (guessDistribution is not null)
-        {
-            Array.Copy(guessDistribution, resized, Math.Min(guessDistribution.Length, GuessDistributionSize));
-        }
-
-        return resized;
+        public int Version { get; set; } = PlayerStats.CurrentVersion;
+        public Guid Id { get; set; } = Guid.NewGuid();
     }
 }
