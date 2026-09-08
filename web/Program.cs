@@ -16,6 +16,11 @@ using QSMPDLE.Web.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Prevent Npgsql from probing for GSSAPI (Kerberos) native libraries on
+// managed hosts where libgssapi_krb5.so.2 may be missing. This must run
+// before any DbContext or Npgsql connection is created.
+Environment.SetEnvironmentVariable("NPGSQL_DISABLE_GSSAPI", "true");
+
 builder.Services.AddLocalStorageServices();
 
 builder.Services.AddMemoryCache();
