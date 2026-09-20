@@ -8,7 +8,7 @@ namespace QSMPDLE.Web.Services;
 public sealed class ArchiveStatusCache : IArchiveStatusCache, IDisposable
 {
     public const int Capacity = 4096;
-    private readonly object gate = new();
+    private readonly Lock gate = new();
     private readonly Dictionary<(DateOnly Start, DateOnly End), Entry> entries = [];
     private readonly TimeProvider clock;
     private readonly RuntimeCounters? counters;
@@ -27,7 +27,8 @@ public sealed class ArchiveStatusCache : IArchiveStatusCache, IDisposable
         {
             Task InvalidateDay(int? day)
             {
-                if (!day.HasValue) return Task.CompletedTask;
+                if (!day.HasValue)
+                    return Task.CompletedTask;
                 var date = dayService.GetArchiveDate(day.Value);
                 return InvalidateAsync(date, date);
             }
@@ -56,9 +57,11 @@ public sealed class ArchiveStatusCache : IArchiveStatusCache, IDisposable
         lock (gate)
         {
             // Do not cache a fetch invalidated by a guess, or finishing after scope disposal.
-            if (disposed || version != generation) return new(created);
+            if (disposed || version != generation)
+                return new(created);
             var cost = Math.Max(1, created.Count);
-            if (cost > Capacity) return new(created);
+            if (cost > Capacity)
+                return new(created);
             Remove((start, end));
             while (size + cost > Capacity)
                 Remove(entries.MinBy(e => e.Value.Expires).Key);
@@ -83,7 +86,8 @@ public sealed class ArchiveStatusCache : IArchiveStatusCache, IDisposable
 
     private void Remove((DateOnly Start, DateOnly End) key)
     {
-        if (!entries.Remove(key, out var entry)) return;
+        if (!entries.Remove(key, out var entry))
+            return;
         size -= entry.Size;
         counters?.AddArchiveEntries(-1);
     }
@@ -92,13 +96,15 @@ public sealed class ArchiveStatusCache : IArchiveStatusCache, IDisposable
     {
         lock (gate)
         {
-            if (disposed) return;
+            if (disposed)
+                return;
             disposed = true;
             counters?.AddArchiveEntries(-entries.Count);
             entries.Clear();
             size = 0;
         }
-        foreach (var subscription in subscriptions) subscription.Dispose();
+        foreach (var subscription in subscriptions)
+            subscription.Dispose();
         subscriptions.Clear();
     }
 }

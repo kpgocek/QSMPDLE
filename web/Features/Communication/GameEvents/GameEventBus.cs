@@ -3,7 +3,7 @@ namespace QSMPDLE.Web.Features.Communication.GameEvents;
 
 public sealed class GameEventBus(ILogger<GameEventBus> logger, RuntimeCounters counters) : IGameEventBus, IDisposable
 {
-    private readonly object gate = new();
+    private readonly Lock gate = new();
     private readonly List<Subscription> subscriptions = [];
     private bool disposed;
 

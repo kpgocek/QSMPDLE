@@ -192,8 +192,7 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
     public Task<List<GameSession>> GetPlayerDailyGamesByNumberRangeAsync(Guid playerId, int startNumber, int endNumber)
     {
         var list = Sessions.Values
-            .Where(s => s.PlayerId == playerId && s.Mode == GameMode.Daily && s.DailyNumber.HasValue)
-            .Where(s => s.DailyNumber!.Value >= startNumber && s.DailyNumber!.Value <= endNumber)
+            .Where(s => s.PlayerId == playerId && s.Mode == GameMode.Daily && s.DailyNumber.HasValue && s.DailyNumber.Value >= startNumber && s.DailyNumber.Value <= endNumber)
             .Select(Clone)
             .ToList();
 

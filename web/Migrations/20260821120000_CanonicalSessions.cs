@@ -10,6 +10,8 @@ namespace QSMPDLE.Web.Migrations;
 [Migration("20260821120000_CanonicalSessions")]
 public partial class CanonicalSessions : Migration
 {
+    private static readonly string[] GameStatsPlayerPuzzleColumns = ["PlayerId", "PuzzleId"];
+
     protected override void Up(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.AddColumn<int>(name: "PuzzleId", table: "GameStats", type: "integer", nullable: true);
@@ -65,7 +67,7 @@ public partial class CanonicalSessions : Migration
         migrationBuilder.CreateIndex(
             name: "IX_GameStats_PlayerId_PuzzleId_ActiveCanonical",
             table: "GameStats",
-            columns: new[] { "PlayerId", "PuzzleId" },
+            columns: GameStatsPlayerPuzzleColumns,
             unique: true,
             filter: "\"PuzzleId\" IS NOT NULL AND \"SessionCategory\" = 0 AND NOT \"IsLegacyDuplicate\"");
     }

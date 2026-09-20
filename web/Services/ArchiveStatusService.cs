@@ -6,22 +6,18 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Services
 {
     // Production implementation that queries the game stats store to determine per-day statuses for the current player.
-    public sealed class ArchiveStatusService : IArchiveStatusService
+    public sealed class ArchiveStatusService(
+        IStatisticsService statisticsService,
+        IGameStatsStore gameStatsStore,
+        QSMPDLE.Web.Features.Gameplay.Services.IDayService dayService,
+        IArchiveGameStateSource gameStateSource,
+        IArchiveStatusCache? cache = null) : IArchiveStatusService
     {
-        private readonly IArchiveStatusCache _cache;
-        private readonly IStatisticsService _statisticsService;
-        private readonly IGameStatsStore _gameStatsStore;
-        private readonly QSMPDLE.Web.Features.Gameplay.Services.IDayService _dayService;
-        private readonly IArchiveGameStateSource _gameStateSource;
-
-        public ArchiveStatusService(IStatisticsService statisticsService, IGameStatsStore gameStatsStore, QSMPDLE.Web.Features.Gameplay.Services.IDayService dayService, IArchiveGameStateSource gameStateSource, IArchiveStatusCache? cache = null)
-        {
-            _cache = cache ?? new ArchiveStatusCache();
-            _statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
-            _gameStatsStore = gameStatsStore ?? throw new ArgumentNullException(nameof(gameStatsStore));
-            _dayService = dayService ?? throw new ArgumentNullException(nameof(dayService));
-            _gameStateSource = gameStateSource ?? throw new ArgumentNullException(nameof(gameStateSource));
-        }
+        private readonly IArchiveStatusCache _cache = cache ?? new ArchiveStatusCache();
+        private readonly IStatisticsService _statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
+        private readonly IGameStatsStore _gameStatsStore = gameStatsStore ?? throw new ArgumentNullException(nameof(gameStatsStore));
+        private readonly QSMPDLE.Web.Features.Gameplay.Services.IDayService _dayService = dayService ?? throw new ArgumentNullException(nameof(dayService));
+        private readonly IArchiveGameStateSource _gameStateSource = gameStateSource ?? throw new ArgumentNullException(nameof(gameStateSource));
 
         public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, CancellationToken cancellationToken = default)
         {

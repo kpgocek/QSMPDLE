@@ -13,7 +13,7 @@ public sealed class RuntimeLifetimeTests
     public async Task EventScopesAreIsolatedAndDisposedSubscriptionsAreReleased()
     {
         var services = new ServiceCollection().AddLogging().AddInternalCommunication();
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         using var first = provider.CreateScope();
         using var second = provider.CreateScope();
         var bus = first.ServiceProvider.GetRequiredService<IGameEventBus>();

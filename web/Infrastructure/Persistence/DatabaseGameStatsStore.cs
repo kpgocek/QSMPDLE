@@ -51,7 +51,7 @@ public sealed class DatabaseGameStatsStore(
             .Where(gs => gs.PlayerId == playerId && gs.Mode == GameMode.Daily && gs.DailyNumber.HasValue && gs.DailyNumber >= startNumber && gs.DailyNumber <= endNumber)
             .ToListAsync();
 
-        return sessions.Select(s => new GameSession
+        return sessions.ConvertAll(s => new GameSession
         {
             GameId = s.GameId,
             PlayerId = s.PlayerId,

@@ -8,12 +8,19 @@ namespace QSMPDLE.Web.Tests.GameplayFlow;
 
 public sealed class GameStateManagerArchiveReplayTests
 {
+    private static readonly string[] AnyPronouns = ["Any"];
+    private static readonly string[] GuildAffiliations = ["Guild"];
+    private static readonly string[] HumanSpecies = ["Human"];
+    private static readonly string[] HeHimPronouns = ["He/Him"];
+    private static readonly string[] OtherAffiliations = ["Other"];
+    private static readonly string[] UnknownSpecies = ["Unknown"];
+
     [Fact]
     public async Task ArchiveReplay_UsesCharacterComparerResults()
     {
         // Arrange - create store/service/fakes like existing tests
-        var target = CreateCharacter(1, "Target", joinDay: 10, languages: 2, pronouns: new[] { "Any" }, affiliations: new[] { "Guild" }, species: new[] { "Human" });
-        var guessOne = CreateCharacter(2, "GuessOne", joinDay: 20, languages: 4, pronouns: new[] { "He/Him" }, affiliations: new[] { "Other" }, species: new[] { "Unknown" });
+        var target = CreateCharacter(1, "Target", joinDay: 10, languages: 2, pronouns: AnyPronouns, affiliations: GuildAffiliations, species: HumanSpecies);
+        var guessOne = CreateCharacter(2, "GuessOne", joinDay: 20, languages: 4, pronouns: HeHimPronouns, affiliations: OtherAffiliations, species: UnknownSpecies);
         var characters = new[] { target, guessOne };
         var characterStore = new InMemoryCharacterStore(characters, target.Id);
 

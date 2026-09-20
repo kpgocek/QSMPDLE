@@ -1,5 +1,5 @@
-using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Communication.GameEvents;
+using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Models;
 using QSMPDLE.Web.Features.Statistics.Services;
@@ -35,11 +35,16 @@ public sealed class ArchiveStatusServiceTests
     {
         var playerId = Guid.NewGuid();
         var statsService = new TestStatsService(playerId);
-        var session = new GameSession { GameId = Guid.NewGuid(), PlayerId = playerId, Mode = Features.Gameplay.Models.GameMode.Daily };
-        session.StartedOnUtc = DateTimeOffset.UtcNow;
-        // assign daily number consistent with TestGameService first day
         var dayService = new DayService();
-        session.DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(session.StartedOnUtc.UtcDateTime));
+        var startedOnUtc = DateTimeOffset.UtcNow;
+        var session = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = playerId,
+            Mode = Features.Gameplay.Models.GameMode.Daily,
+            StartedOnUtc = startedOnUtc,
+            DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(startedOnUtc.UtcDateTime))
+        };
 
         var store = new TestGameStatsStore(new[] { session });
         var svc = new ArchiveStatusService(statsService, store, dayService, new TestArchiveGameStateSource());
@@ -56,11 +61,18 @@ public sealed class ArchiveStatusServiceTests
     {
         var playerId = Guid.NewGuid();
         var statsService = new TestStatsService(playerId);
-        var session = new GameSession { GameId = Guid.NewGuid(), PlayerId = playerId, Mode = Features.Gameplay.Models.GameMode.Daily, IsWon = true };
-        session.StartedOnUtc = DateTimeOffset.UtcNow.AddDays(-1);
-        session.FinishedOnUtc = session.StartedOnUtc.AddMinutes(5);
         var dayService = new DayService();
-        session.DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(session.StartedOnUtc.UtcDateTime));
+        var startedOnUtc = DateTimeOffset.UtcNow.AddDays(-1);
+        var session = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = playerId,
+            Mode = Features.Gameplay.Models.GameMode.Daily,
+            IsWon = true,
+            StartedOnUtc = startedOnUtc,
+            FinishedOnUtc = startedOnUtc.AddMinutes(5),
+            DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(startedOnUtc.UtcDateTime))
+        };
 
         var store = new TestGameStatsStore(new[] { session });
         var svc = new ArchiveStatusService(statsService, store, dayService, new TestArchiveGameStateSource());
@@ -77,11 +89,18 @@ public sealed class ArchiveStatusServiceTests
     {
         var playerId = Guid.NewGuid();
         var statsService = new TestStatsService(playerId);
-        var session = new GameSession { GameId = Guid.NewGuid(), PlayerId = playerId, Mode = Features.Gameplay.Models.GameMode.Daily, IsWon = false };
-        session.StartedOnUtc = DateTimeOffset.UtcNow.AddDays(-1);
-        session.FinishedOnUtc = session.StartedOnUtc.AddMinutes(5);
         var dayService = new DayService();
-        session.DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(session.StartedOnUtc.UtcDateTime));
+        var startedOnUtc = DateTimeOffset.UtcNow.AddDays(-1);
+        var session = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = playerId,
+            Mode = Features.Gameplay.Models.GameMode.Daily,
+            IsWon = false,
+            StartedOnUtc = startedOnUtc,
+            FinishedOnUtc = startedOnUtc.AddMinutes(5),
+            DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(startedOnUtc.UtcDateTime))
+        };
 
         var store = new TestGameStatsStore(new[] { session });
         var svc = new ArchiveStatusService(statsService, store, dayService, new TestArchiveGameStateSource());
@@ -100,11 +119,18 @@ public sealed class ArchiveStatusServiceTests
         var statsService = new TestStatsService(playerId);
         var other = Guid.NewGuid();
 
-        var session = new GameSession { GameId = Guid.NewGuid(), PlayerId = other, Mode = Features.Gameplay.Models.GameMode.Daily, IsWon = true };
-        session.StartedOnUtc = DateTimeOffset.UtcNow.AddDays(-1);
-        session.FinishedOnUtc = session.StartedOnUtc.AddMinutes(5);
         var dayService = new DayService();
-        session.DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(session.StartedOnUtc.UtcDateTime));
+        var startedOnUtc = DateTimeOffset.UtcNow.AddDays(-1);
+        var session = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = other,
+            Mode = Features.Gameplay.Models.GameMode.Daily,
+            IsWon = true,
+            StartedOnUtc = startedOnUtc,
+            FinishedOnUtc = startedOnUtc.AddMinutes(5),
+            DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(startedOnUtc.UtcDateTime))
+        };
 
         var store = new TestGameStatsStore(new[] { session });
         var svc = new ArchiveStatusService(statsService, store, dayService, new TestArchiveGameStateSource());
@@ -121,11 +147,18 @@ public sealed class ArchiveStatusServiceTests
     {
         var playerId = Guid.NewGuid();
         var statsService = new TestStatsService(playerId);
-        var session = new GameSession { GameId = Guid.NewGuid(), PlayerId = playerId, Mode = Features.Gameplay.Models.GameMode.Daily, IsWon = true };
-        session.StartedOnUtc = DateTimeOffset.UtcNow.AddDays(-2);
-        session.FinishedOnUtc = session.StartedOnUtc.AddMinutes(5);
         var dayService = new DayService();
-        session.DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(session.StartedOnUtc.UtcDateTime));
+        var startedOnUtc = DateTimeOffset.UtcNow.AddDays(-2);
+        var session = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            PlayerId = playerId,
+            Mode = Features.Gameplay.Models.GameMode.Daily,
+            IsWon = true,
+            StartedOnUtc = startedOnUtc,
+            FinishedOnUtc = startedOnUtc.AddMinutes(5),
+            DailyNumber = dayService.GetArchiveDayNumber(DateOnly.FromDateTime(startedOnUtc.UtcDateTime))
+        };
 
         var store = new TestGameStatsStore(new[] { session });
         var svc = new ArchiveStatusService(statsService, store, dayService, new TestArchiveGameStateSource());
@@ -133,7 +166,7 @@ public sealed class ArchiveStatusServiceTests
         var start = DateOnly.FromDateTime(session.StartedOnUtc.UtcDateTime).AddDays(-1);
         var end = start.AddDays(3);
 
-        var result = await svc.GetStatusesAsync(start, end);
+        _ = await svc.GetStatusesAsync(start, end);
 
         Assert.Equal(1, store.QueryCount);
     }
@@ -252,16 +285,17 @@ public sealed class ArchiveStatusServiceTests
         var playerId = Guid.NewGuid();
         var statsService = new TestStatsService(playerId);
         var dayService = new DayService();
-        var archiveDay = 4;
+        const int archiveDay = 4;
+        var finishedOnUtc = DateTimeOffset.UtcNow;
         var session = new GameSession
         {
             GameId = Guid.NewGuid(),
             PlayerId = playerId,
             Mode = Features.Gameplay.Models.GameMode.Daily,
             IsWon = true,
-            DailyNumber = archiveDay
+            DailyNumber = archiveDay,
+            FinishedOnUtc = finishedOnUtc
         };
-        session.FinishedOnUtc = DateTimeOffset.UtcNow;
 
         var store = new TestGameStatsStore(new[] { session });
         var svc = new ArchiveStatusService(statsService, store, new DayService(), new TestArchiveGameStateSource());
@@ -279,7 +313,7 @@ public sealed class ArchiveStatusServiceTests
         var playerId = Guid.NewGuid();
         var statsService = new TestStatsService(playerId);
         var dayService = new DayService();
-        var archiveDay = 5;
+        const int archiveDay = 5;
 
         var store = new TestGameStatsStore();
         var localSource = new TestArchiveGameStateSource
@@ -310,9 +344,9 @@ public sealed class ArchiveStatusServiceTests
     {
         var playerId = Guid.NewGuid();
         var statsService = new TestStatsService(playerId);
-        var testGameService = new TestGameService();
         var dayService = new DayService();
-        var archiveDay = 6;
+        const int archiveDay = 6;
+        var startedOnUtc = DateTimeOffset.UtcNow;
 
         var session = new GameSession
         {
@@ -320,9 +354,9 @@ public sealed class ArchiveStatusServiceTests
             PlayerId = playerId,
             Mode = Features.Gameplay.Models.GameMode.Daily,
             IsWon = false,
-            DailyNumber = archiveDay
+            DailyNumber = archiveDay,
+            StartedOnUtc = startedOnUtc
         };
-        session.StartedOnUtc = DateTimeOffset.UtcNow;
 
         var store = new TestGameStatsStore(new[] { session });
         var localSource = new TestArchiveGameStateSource
@@ -367,13 +401,9 @@ public sealed class ArchiveStatusServiceTests
         public DateOnly GetFirstDay() => _firstDay;
     }
 
-    private sealed class TestStatsService : IStatisticsService
+    private sealed class TestStatsService(Guid playerId) : IStatisticsService
     {
-        private readonly PlayerStats _playerStats;
-        public TestStatsService(Guid playerId)
-        {
-            _playerStats = new PlayerStats { Id = playerId };
-        }
+        private readonly PlayerStats _playerStats = new() { Id = playerId };
 
         public Task RecordGameStartedAsync(Features.Communication.GameEvents.GameStartedEvent eventData) => throw new NotImplementedException();
         public Task RecordGuessMadeAsync(Features.Communication.GameEvents.GuessMadeEvent eventData) => throw new NotImplementedException();
@@ -384,20 +414,16 @@ public sealed class ArchiveStatusServiceTests
         public Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId) => throw new NotImplementedException();
     }
 
-    private sealed class TestGameStatsStore : IGameStatsStore
+    private sealed class TestGameStatsStore(IEnumerable<GameSession>? sessions = null) : IGameStatsStore
     {
-        private readonly List<GameSession> _sessions;
+        private readonly List<GameSession> _sessions = sessions?.ToList() ?? [];
         public int QueryCount { get; private set; }
-
-        public TestGameStatsStore(IEnumerable<GameSession>? sessions = null)
-        {
-            _sessions = sessions?.ToList() ?? new List<GameSession>();
-        }
 
         public Task<GameSession> LoadOrNewAsync(Guid gameId)
         {
             var existing = _sessions.FirstOrDefault(session => session.GameId == gameId);
-            if (existing is not null) return Task.FromResult(existing);
+            if (existing is not null)
+                return Task.FromResult(existing);
             var created = new GameSession { GameId = gameId };
             _sessions.Add(created);
             return Task.FromResult(created);
@@ -416,8 +442,7 @@ public sealed class ArchiveStatusServiceTests
             QueryCount++;
 
             var list = _sessions
-                .Where(s => s.PlayerId == playerId && s.Mode == Features.Gameplay.Models.GameMode.Daily && s.DailyNumber.HasValue)
-                .Where(s => s.DailyNumber!.Value >= startNumber && s.DailyNumber!.Value <= endNumber)
+                .Where(s => s.PlayerId == playerId && s.Mode == Features.Gameplay.Models.GameMode.Daily && s.DailyNumber.HasValue && s.DailyNumber.Value >= startNumber && s.DailyNumber.Value <= endNumber)
                 .ToList();
 
             return Task.FromResult(list);
@@ -449,19 +474,16 @@ public sealed class ArchiveStatusServiceTests
         }
     }
 
-    private sealed class TestPlayerStatsStore : IPlayerStatsStore
+    private sealed class TestPlayerStatsStore(PlayerStats stats) : IPlayerStatsStore
     {
-        private PlayerStats _stats;
-
-        public TestPlayerStatsStore(PlayerStats stats)
-        {
-            _stats = stats;
-        }
+        private PlayerStats _stats = stats;
 
         public Task<PlayerStats> LoadAsync()
         {
-            if (_stats.Id == Guid.Empty) _stats.Id = Guid.NewGuid();
-            if (_stats.Version < PlayerStats.CurrentVersion) _stats.Version = PlayerStats.CurrentVersion;
+            if (_stats.Id == Guid.Empty)
+                _stats.Id = Guid.NewGuid();
+            if (_stats.Version < PlayerStats.CurrentVersion)
+                _stats.Version = PlayerStats.CurrentVersion;
             if (_stats.GuessDistribution.Length != 6)
             {
                 var resized = new int[6];

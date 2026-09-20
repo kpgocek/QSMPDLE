@@ -51,7 +51,7 @@ public sealed class GameStateManager(
             {
                 // The server state is authoritative once a first guess was recorded, but
                 // still retire any browser-only legacy copies during this compatibility release.
-                var legacyCopies = await LoadLegacyStateAsync(puzzleId.Value, cancellationToken);
+                var legacyCopies = await LoadLegacyStateAsync(puzzleId.Value);
                 GameState = await CreateStateFromSessionAsync(persisted, entryPoint, cancellationToken);
                 await gameStateStore.SaveAsync(GameState);
                 if (legacyCopies is not null)
@@ -64,7 +64,7 @@ public sealed class GameStateManager(
 
         var local = await gameStateStore.GetAsync();
         var legacy = local is null && category == SessionCategory.CanonicalPuzzle
-            ? await LoadLegacyStateAsync(puzzleId!.Value, cancellationToken)
+            ? await LoadLegacyStateAsync(puzzleId!.Value)
             : null;
         local ??= legacy?.State;
         if (local is not null && IsCompatible(local, category, puzzleId))
@@ -233,7 +233,7 @@ public sealed class GameStateManager(
         await gameStateStore.SaveAsync(GameState);
     }
 
-    private async Task<LegacyGameState?> LoadLegacyStateAsync(int puzzleId, CancellationToken cancellationToken)
+    private async Task<LegacyGameState?> LoadLegacyStateAsync(int puzzleId)
     {
         var daily = await gameStateStore.GetByKeyAsync($"daily-{puzzleId}");
         var archive = await gameStateStore.GetByKeyAsync($"archive-{puzzleId}");
