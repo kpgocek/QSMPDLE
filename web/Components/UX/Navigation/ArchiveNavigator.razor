@@ -1,3 +1,4 @@
+@implements IDisposable
 @using MudBlazor
 @inject NavigationManager NavigationManager
 @inject QSMPDLE.Web.Services.IArchiveStatusService StatusService
@@ -97,13 +98,22 @@
     }
 
     private DateOnly? _loadOnFirstRender;
+    private IDisposable? _guessSubscription, _finishedSubscription;
+    private bool _disposed;
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _guessSubscription?.Dispose();
+        _finishedSubscription?.Dispose();
+    }
 
     protected override Task OnInitializedAsync()
     {
         // Subscribe to internal game events so we can refresh month/day statuses when local game state changes.
-        EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GuessMadeEvent>(async ev =>
+        _guessSubscription = EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GuessMadeEvent>(async ev =>
         {
-            if (!ev.DayNumber.HasValue)
+            if (_disposed || !ev.DayNumber.HasValue)
                 return;
 
             var date = FirstDay.AddDays(ev.DayNumber.Value - 1);
@@ -113,9 +123,9 @@
             });
         });
 
-        EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(async ev =>
+        _finishedSubscription = EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(async ev =>
         {
-            if (!ev.PuzzleId.HasValue)
+            if (_disposed || !ev.PuzzleId.HasValue)
                 return;
 
             var date = FirstDay.AddDays(ev.PuzzleId.Value - 1);
@@ -141,7 +151,7 @@
         {
             await LoadMonthForDateAsync(_loadOnFirstRender.Value);
             _loadOnFirstRender = null;
-            await InvokeAsync(StateHasChanged);
+            if (!_disposed) await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -187,7 +197,7 @@
             // ignore errors
         }
 
-        await InvokeAsync(StateHasChanged);
+        if (!_disposed) await InvokeAsync(StateHasChanged);
     }
 
 
@@ -235,18 +245,6 @@
     {
         var monthKey = date.Year * 100 + date.Month;
 
-        lock (_loadLock)
-        {
-            if (_loadedMonthKeys.Contains(monthKey))
-                return;
-
-            if (_ongoingLoads.TryGetValue(monthKey, out var existing))
-            {
-                // Another request is already in progress for this month; await it outside the lock.
-                System.Threading.Tasks.Task.Run(() => { }).Wait(0); // noop to satisfy pattern
-            }
-        }
-
         System.Threading.Tasks.Task loadTask;
 
         lock (_loadLock)
@@ -267,7 +265,7 @@
 
         try
         {
-            await loadTask.ConfigureAwait(false);
+            await loadTask;
         }
         finally
         {
@@ -296,7 +294,6 @@
                 if (archiveDay >= 1 && archiveDay <= MaxDay)
                 {
                     _dayStatuses[archiveDay] = kv.Value;
-                    Console.WriteLine($"Loaded status for archive day {archiveDay}: {kv.Value}");
                 }
             }
 
@@ -311,7 +308,7 @@
         }
         finally
         {
-            await InvokeAsync(StateHasChanged);
+            if (!_disposed) await InvokeAsync(StateHasChanged);
         }
     }
 }

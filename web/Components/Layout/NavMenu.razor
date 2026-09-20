@@ -1,4 +1,5 @@
-﻿@using MudBlazor
+@rendermode InteractiveServer
+@using MudBlazor
 @using QSMPDLE.Web.Components.UX.Dialogs
 @inject NavigationManager Nav
 @inject IDialogService DialogService
@@ -11,7 +12,7 @@
 
         <div class="mobile-menu">
             <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Size="Size.Large"
-                           OnClick="@ToggleMenu" AriaLabel="Toggle Menu" />
+                           OnClick="@ToggleMenu" aria-label="Toggle Menu" />
         </div>
 
         <nav class="links @MenuVisibilityClass">

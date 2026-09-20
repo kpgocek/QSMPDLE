@@ -1,34 +1,69 @@
-﻿namespace QSMPDLE.Web.Features.Communication.GameEvents;
+using QSMPDLE.Web.Diagnostics;
+namespace QSMPDLE.Web.Features.Communication.GameEvents;
 
-public class GameEventBus : IGameEventBus
+public sealed class GameEventBus(ILogger<GameEventBus> logger, RuntimeCounters counters) : IGameEventBus, IDisposable
 {
-    private readonly Dictionary<Type, List<Func<object, Task>>> handlers = [];
+    private readonly object gate = new();
+    private readonly List<Subscription> subscriptions = [];
+    private bool disposed;
 
-    public void Subscribe<TEvent>(Func<TEvent, Task> handler) where TEvent : class
+    public IDisposable Subscribe<TEvent>(Func<TEvent, Task> handler) where TEvent : class
     {
-        var eventType = typeof(TEvent);
-
-        // New list for the event type if it doesn't exist
-        if (!handlers.TryGetValue(eventType, out var list))
+        lock (gate)
         {
-            list = [];
-            handlers[eventType] = list;
+            ObjectDisposedException.ThrowIf(disposed, this);
+            var subscription = new Subscription(this, typeof(TEvent), value => handler((TEvent)value));
+            subscriptions.Add(subscription);
+            counters.AddSubscriptions(1);
+            return subscription;
         }
-
-        list.Add(x => handler((TEvent)x));
     }
 
     public async Task PublishAsync<TEvent>(TEvent eventData) where TEvent : class
     {
-        if (!handlers.TryGetValue(typeof(TEvent), out var list))
+        Subscription[] snapshot;
+        lock (gate)
+            snapshot = subscriptions.Where(s => s.EventType == typeof(TEvent)).ToArray();
+        foreach (var subscription in snapshot)
         {
-            return;
-        }
-
-        foreach (var handler in list)
-        {
-            await handler(eventData);
+            var handler = subscription.Handler;
+            if (handler is null) continue;
+            try { await handler(eventData); }
+            catch (Exception exception)
+            {
+                // UI notifications must not abort persistence or another subscriber.
+                logger.LogError(exception, "Game notification failed for {EventType}", typeof(TEvent).Name);
+            }
         }
     }
-}
 
+    private void Remove(Subscription subscription)
+    {
+        lock (gate)
+        {
+            subscription.Clear();
+            if (subscriptions.Remove(subscription)) counters.AddSubscriptions(-1);
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (gate)
+        {
+            if (disposed) return;
+            disposed = true;
+            foreach (var subscription in subscriptions) subscription.Clear();
+            counters.AddSubscriptions(-subscriptions.Count);
+            subscriptions.Clear();
+        }
+    }
+
+    private sealed class Subscription(GameEventBus owner, Type eventType, Func<object, Task> handler) : IDisposable
+    {
+        private Func<object, Task>? callback = handler;
+        public Type EventType { get; } = eventType;
+        public Func<object, Task>? Handler => Volatile.Read(ref callback);
+        public void Clear() => Interlocked.Exchange(ref callback, null);
+        public void Dispose() => owner.Remove(this);
+    }
+}

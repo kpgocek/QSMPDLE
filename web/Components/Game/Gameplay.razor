@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using QSMPDLE.Web.Components.Game.Modules
 @using QSMPDLE.Web.Components.UX.Dialogs
 @using QSMPDLE.Web.Features.Communication.GameEvents
@@ -6,6 +6,7 @@
 @using QSMPDLE.Web.Features.Gameplay.Services
 
 @inject IGameStateManager GameStateManager
+
 <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
     @if (!IsGameLoaded)
     {
@@ -150,11 +151,9 @@ null)
 
         try
         {
-            var result = await GameStateManager.MakeGuessAsync(guessedCharacterId);
+            await GameStateManager.MakeGuessAsync(guessedCharacterId);
 
-            if (result is null)
-                return;
-
+            // A competing canonical session can replace state without accepting this guess.
             if (GameStateManager.GameState.IsFinished)
             {
                 TargetName = await GameStateManager.GetTargetName();

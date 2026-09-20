@@ -14,12 +14,12 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 using QSMPDLE.Web.Themes;
 using QSMPDLE.Web.Workers;
 
-var builder = WebApplication.CreateBuilder(args);
-
 // Prevent Npgsql from probing for GSSAPI (Kerberos) native libraries on
 // managed hosts where libgssapi_krb5.so.2 may be missing. This must run
 // before any DbContext or Npgsql connection is created.
 Environment.SetEnvironmentVariable("NPGSQL_DISABLE_GSSAPI", "true");
+
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddLocalStorageServices();
 
@@ -27,6 +27,8 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ISitemapService, SitemapService>();
 
 builder.Services.AddHostedService<StatisticsRefreshWorker>();
+builder.Services.AddHostedService<MemoryDiagnosticsWorker>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler, QSMPDLE.Web.Diagnostics.CountingCircuitHandler>();
 
 builder.Services.AddMudServices();
 builder.Services.AddBlazorBootstrap();
@@ -56,11 +58,19 @@ builder.Services.AddStatistics();
 
 // Archive status service used by ArchiveNavigator to lazily load per-day statuses for the calendar.
 builder.Services.AddScoped<QSMPDLE.Web.Services.IArchiveStatusService, QSMPDLE.Web.Services.ArchiveStatusService>();
-builder.Services.AddSingleton<QSMPDLE.Web.Services.IArchiveStatusCache, QSMPDLE.Web.Services.ArchiveStatusCache>();
+builder.Services.AddScoped<QSMPDLE.Web.Services.IArchiveStatusCache, QSMPDLE.Web.Services.ArchiveStatusCache>();
 
 builder.Services
     .AddRazorComponents()
-    .AddInteractiveServerComponents(options => options.DetailedErrors = true);
+    .AddInteractiveServerComponents(options =>
+    {
+        options.DetailedErrors = builder.Environment.IsDevelopment();
+
+        options.DisconnectedCircuitRetentionPeriod =
+            TimeSpan.FromSeconds(builder.Configuration.GetValue("Circuits:DisconnectedRetentionSeconds", 30));
+
+        options.DisconnectedCircuitMaxRetained = builder.Configuration.GetValue("Circuits:MaxDisconnected", 100);
+    });
 
 var app = builder.Build();
 

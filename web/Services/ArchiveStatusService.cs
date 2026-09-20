@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Services;
@@ -17,7 +16,7 @@ namespace QSMPDLE.Web.Services
 
         public ArchiveStatusService(IStatisticsService statisticsService, IGameStatsStore gameStatsStore, QSMPDLE.Web.Features.Gameplay.Services.IDayService dayService, IArchiveGameStateSource gameStateSource, IArchiveStatusCache? cache = null)
         {
-            _cache = cache ?? new ArchiveStatusCache(new MemoryCache(new MemoryCacheOptions()));
+            _cache = cache ?? new ArchiveStatusCache();
             _statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
             _gameStatsStore = gameStatsStore ?? throw new ArgumentNullException(nameof(gameStatsStore));
             _dayService = dayService ?? throw new ArgumentNullException(nameof(dayService));

@@ -1,4 +1,5 @@
-﻿@page "/stats"
+@page "/stats"
+@rendermode InteractiveServer
 
 @using MudBlazor
 @using QSMPDLE.Web.Components.Statistics
@@ -513,12 +514,12 @@
 
     private async Task ExecuteWithDiagnosticsAsync(string operationName, Func<Task> operation)
     {
-        Logger.LogInformation("Stats load {Operation} START", operationName);
+        Logger.LogDebug("Stats load {Operation} START", operationName);
 
         try
         {
             await operation();
-            Logger.LogInformation("Stats load {Operation} SUCCESS", operationName);
+            Logger.LogDebug("Stats load {Operation} SUCCESS", operationName);
         }
         catch (Exception exception)
         {
@@ -527,7 +528,7 @@
         }
         finally
         {
-            Logger.LogInformation("Stats load {Operation} END", operationName);
+            Logger.LogDebug("Stats load {Operation} END", operationName);
         }
     }
 

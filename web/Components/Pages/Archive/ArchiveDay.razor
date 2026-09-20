@@ -1,4 +1,7 @@
 @page "/archive/day/{DayNumber:int}"
+@rendermode InteractiveServer
+@implements IDisposable
+
 @using MudBlazor
 @using QSMPDLE.Web.Components.Game
 @using QSMPDLE.Web.Components.Layout
@@ -11,8 +14,9 @@
 @inject NavigationManager NavigationManager
 @inject QSMPDLE.Web.Infrastructure.LocalStorage.ILegacyGameStateMigrationService LegacyGameStateMigrationService
 
+<PageTitle>Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE</PageTitle>
+
 <HeadContent>
-    <title>Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE</title>
     <meta name="description"
           content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy")). Guess the QSMP2 character from the past daily challenge." />
 
@@ -125,6 +129,13 @@ else
     private DateOnly _firstDay;
     private bool _isInitialized;
     private bool _refreshPending;
+    private IDisposable? _finishedSubscription;
+    private bool _disposed;
+    public void Dispose()
+    {
+        _disposed = true;
+        _finishedSubscription?.Dispose();
+    }
 
     private DateOnly ArchiveDate => DayService.GetArchiveDate(DayNumber);
 
@@ -156,12 +167,12 @@ else
 
     private void SubscribeToGameEvents()
     {
-        EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(OnGameFinishedAsync);
+        _finishedSubscription ??= EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(OnGameFinishedAsync);
     }
 
     private async Task OnGameFinishedAsync(QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent eventData)
     {
-        if (eventData.PuzzleId != DayNumber)
+        if (_disposed || eventData.PuzzleId != DayNumber)
             return;
 
         _refreshPending = true;
@@ -186,7 +197,7 @@ else
         }
         finally
         {
-            await InvokeAsync(StateHasChanged);
+            if (!_disposed) await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -198,7 +209,7 @@ else
     private async Task OnGameLoaded()
     {
         _isGameLoaded = true;
-        await InvokeAsync(StateHasChanged);
+        if (!_disposed) await InvokeAsync(StateHasChanged);
     }
 
     private void NavigateToPrevious()

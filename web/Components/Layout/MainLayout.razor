@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using BlazorBootstrap
 @using QSMPDLE.Web.Themes
 
@@ -6,11 +6,8 @@
 
 @inherits LayoutComponentBase
 
-<MudPopoverProvider />
-<MudBreakpointProvider />
 <MudThemeProvider Theme="@Themes.CurrentTheme" IsDarkMode="@Themes.IsDarkMode" />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<InteractiveProviders />
 
 <div class="page">
 

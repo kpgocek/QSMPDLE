@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using QSMPDLE.Web.Infrastructure.Persistence;
 
 namespace QSMPDLE.Web.Workers;
@@ -12,11 +12,11 @@ public class StatisticsRefreshWorker(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await using var db = await dbContextFactory.CreateDbContextAsync(stoppingToken);
-
-            await db.Database.ExecuteSqlRawAsync(
-                "REFRESH MATERIALIZED VIEW global_stats;",
-                stoppingToken);
+            await using (var db = await dbContextFactory.CreateDbContextAsync(stoppingToken))
+            {
+                await db.Database.ExecuteSqlRawAsync(
+                    "REFRESH MATERIALIZED VIEW global_stats;", stoppingToken);
+            }
 
             await Task.Delay(
                 TimeSpan.FromMinutes(5),

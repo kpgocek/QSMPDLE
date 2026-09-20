@@ -17,7 +17,8 @@ public sealed class GameStateManager(
     ICharacterStore characterStore,
     ICharacterComparer characterComparer,
     IStatisticsService statisticsService,
-    IGameEventBus? eventBus = null) : IGameStateManager
+    IGameEventBus? eventBus = null,
+    ILogger<GameStateManager>? logger = null) : IGameStateManager
 {
     private const int MaxGuesses = 6;
 
@@ -115,81 +116,106 @@ public sealed class GameStateManager(
         if (GameState.IsFinished || GameState.GuessesMade.Any(guess => guess.Character.Id == characterId))
             return null;
 
-        var isFirstGuess = GameState.GuessesMade.Count == 0;
-        if (isFirstGuess && GameState.SessionCategory == SessionCategory.CanonicalPuzzle)
+        var startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        var stage = "claim-session";
+        var localSaved = false;
+        var guessRecorded = false;
+        var completionRecorded = false;
+        try
         {
-            var claimed = await statisticsService.ClaimCanonicalSessionAsync(CreateSessionForStart());
-            if (claimed.GameId != GameState.GameId)
+            var isFirstGuess = GameState.GuessesMade.Count == 0;
+            if (isFirstGuess && GameState.SessionCategory == SessionCategory.CanonicalPuzzle)
             {
-                GameState = await CreateStateFromSessionAsync(claimed, GameState.EntryPoint, cancellationToken);
-                await gameStateStore.SaveAsync(GameState);
-                return null;
+                var claimed = await statisticsService.ClaimCanonicalSessionAsync(CreateSessionForStart());
+                if (claimed.GameId != GameState.GameId)
+                {
+                    GameState = await CreateStateFromSessionAsync(claimed, GameState.EntryPoint, cancellationToken);
+                    stage = "save-reconciled-local";
+                    await gameStateStore.SaveAsync(GameState);
+                    localSaved = true;
+                    return null;
+                }
             }
-        }
 
-        var result = await characterComparer.CompareAsync(GameState.Game.TargetId, characterId, cancellationToken);
-        GameState.GuessesMade.Add(new GuessResult
-        {
-            Character = result.Character,
-            IsCorrect = result.IsCorrect,
-            IsFirstGuess = isFirstGuess,
-            IsLastAllowedGuess = !result.IsCorrect && GameState.GuessesMade.Count + 1 == MaxGuesses,
-            Pronouns = result.Pronouns,
-            Languages = result.Languages,
-            Joined = result.Joined,
-            Affiliation = result.Affiliation,
-            Species = result.Species,
-        });
+            stage = "compare";
+            var result = await characterComparer.CompareAsync(GameState.Game.TargetId, characterId, cancellationToken);
+            GameState.GuessesMade.Add(new GuessResult
+            {
+                Character = result.Character,
+                IsCorrect = result.IsCorrect,
+                IsFirstGuess = isFirstGuess,
+                IsLastAllowedGuess = !result.IsCorrect && GameState.GuessesMade.Count + 1 == MaxGuesses,
+                Pronouns = result.Pronouns,
+                Languages = result.Languages,
+                Joined = result.Joined,
+                Affiliation = result.Affiliation,
+                Species = result.Species,
+            });
 
-        if (result.IsCorrect)
-            GameState.IsWon = true;
-        else if (GameState.GuessesMade.Count >= MaxGuesses)
-            GameState.IsLost = true;
+            if (result.IsCorrect)
+                GameState.IsWon = true;
+            else if (GameState.GuessesMade.Count >= MaxGuesses)
+                GameState.IsLost = true;
 
-        await gameStateStore.SaveAsync(GameState);
+            stage = "save-local";
+            await gameStateStore.SaveAsync(GameState);
+            localSaved = true;
 
-        if (isFirstGuess)
-        {
-            var started = CreateStartedEvent();
-            await statisticsService.RecordGameStartedAsync(started);
-            if (eventBus is not null)
-                await eventBus.PublishAsync(started);
-        }
+            if (isFirstGuess)
+            {
+                var started = CreateStartedEvent();
+                stage = "record-start";
+                await statisticsService.RecordGameStartedAsync(started);
+                if (eventBus is not null)
+                    await eventBus.PublishAsync(started);
+            }
 
-        var guessEvent = new GuessMadeEvent
-        {
-            Timestamp = DateTime.UtcNow,
-            PlayerId = GameState.PlayerId,
-            GameId = GameState.GameId,
-            GuessedCharacterId = characterId,
-            DayNumber = GameState.Game.PuzzleId
-        };
-        await statisticsService.RecordGuessMadeAsync(guessEvent);
-        if (eventBus is not null)
-            await eventBus.PublishAsync(guessEvent);
-
-        if (GameState.IsFinished && !GameState.StatsRecorded)
-        {
-            var finished = new GameFinishedEvent
+            var guessEvent = new GuessMadeEvent
             {
                 Timestamp = DateTime.UtcNow,
                 PlayerId = GameState.PlayerId,
                 GameId = GameState.GameId,
-                GameMode = ToLegacyMode(GameState.EntryPoint),
-                SessionCategory = GameState.SessionCategory,
-                EntryPoint = GameState.FirstEntryPoint,
-                PuzzleId = GameState.Game.PuzzleId,
-                DayNumber = GameState.Game.PuzzleId,
-                GuessCount = GameState.GuessesMade.Count,
-                IsWon = GameState.IsWon,
+                GuessedCharacterId = characterId,
+                DayNumber = GameState.Game.PuzzleId
             };
-            await statisticsService.RecordGameFinishedAsync(finished);
+            stage = "record-guess";
+            await statisticsService.RecordGuessMadeAsync(guessEvent);
+            guessRecorded = true;
             if (eventBus is not null)
-                await eventBus.PublishAsync(finished);
-            await MarkStatsRecordedAsync(cancellationToken);
-        }
+                await eventBus.PublishAsync(guessEvent);
 
-        return GameState.GuessesMade[^1];
+            if (GameState.IsFinished && !GameState.StatsRecorded)
+            {
+                var finished = new GameFinishedEvent
+                {
+                    Timestamp = DateTime.UtcNow,
+                    PlayerId = GameState.PlayerId,
+                    GameId = GameState.GameId,
+                    GameMode = ToLegacyMode(GameState.EntryPoint),
+                    SessionCategory = GameState.SessionCategory,
+                    EntryPoint = GameState.FirstEntryPoint,
+                    PuzzleId = GameState.Game.PuzzleId,
+                    DayNumber = GameState.Game.PuzzleId,
+                    GuessCount = GameState.GuessesMade.Count,
+                    IsWon = GameState.IsWon,
+                };
+                stage = "record-completion";
+                await statisticsService.RecordGameFinishedAsync(finished);
+                completionRecorded = true;
+                if (eventBus is not null)
+                    await eventBus.PublishAsync(finished);
+                stage = "mark-local-completion";
+                await MarkStatsRecordedAsync(cancellationToken);
+            }
+
+            return GameState.GuessesMade[^1];
+        }
+        catch (Exception exception)
+        {
+            logger?.LogError(exception, "Guess failed Stage={Stage} LocalSaved={LocalSaved} GuessRecorded={GuessRecorded} CompletionRecorded={CompletionRecorded} ElapsedMs={ElapsedMs}",
+                stage, localSaved, guessRecorded, completionRecorded, System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
+            throw;
+        }
     }
 
     public async Task<string> GetTargetName(CancellationToken cancellationToken = default) =>

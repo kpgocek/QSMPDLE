@@ -32,7 +32,14 @@ async function retry() {
         if (!successful) {
             // We have been able to reach the server, but the circuit is no longer available.
             // We'll reload the page so the user can continue using the app as quickly as possible.
-            const resumeSuccessful = await Blazor.resumeCircuit();
+            let resumeSuccessful = false;
+            try {
+                resumeSuccessful = await Blazor.resumeCircuit();
+            } catch {
+                // The old circuit was rejected: a fresh page can recover persisted progress.
+                location.reload();
+                return;
+            }
             if (!resumeSuccessful) {
                 location.reload();
             } else {
@@ -52,7 +59,7 @@ async function resume() {
             location.reload();
         }
     } catch {
-        reconnectModal.classList.replace("components-reconnect-paused", "components-reconnect-resume-failed");
+        location.reload();
     }
 }
 

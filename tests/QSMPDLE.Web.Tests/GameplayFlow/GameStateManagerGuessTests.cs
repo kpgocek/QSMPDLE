@@ -1,3 +1,6 @@
+using QSMPDLE.Web.Features.Communication.GameEvents;
+using QSMPDLE.Web.Diagnostics;
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
@@ -133,7 +136,45 @@ public sealed class GameStateManagerGuessTests
         setup.GameStateStore.State!.GuessesMade.Select(guess => guess.Character.Id).Should().Equal(setup.ExpectedGuessOrder);
     }
 
-    private static Setup CreateSetup()
+    [Fact]
+    public async Task ThrowingUiSubscribersCannotInterruptPersistedWinningGuess()
+    {
+        using var bus = new GameEventBus(NullLogger<GameEventBus>.Instance, new RuntimeCounters());
+        bus.Subscribe<GuessMadeEvent>(_ => throw new InvalidOperationException("Disposed UI"));
+        bus.Subscribe<GameFinishedEvent>(_ => throw new InvalidOperationException("Disposed UI"));
+        var setup = CreateSetup(bus);
+        await setup.Manager.StartGameAsync(GameMode.Practice);
+        var result = await setup.Manager.MakeGuessAsync(setup.CorrectGuess.Id);
+        Assert.NotNull(result);
+        var saved = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
+        Assert.Single(saved.Guesses);
+        Assert.True(saved.IsWon);
+        Assert.NotNull(saved.FinishedOnUtc);
+        Assert.True(setup.GameStateStore.State!.StatsRecorded);
+    }
+
+    [Fact]
+    public async Task CompetingCanonicalSessionReplacesStateWithoutAddingGuess()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        var state = setup.Manager.GameState;
+        var existing = new GameSession
+        {
+            GameId = Guid.NewGuid(), PlayerId = state.PlayerId,
+            SessionCategory = SessionCategory.CanonicalPuzzle, PuzzleId = state.Game.PuzzleId,
+            TargetCharacterId = setup.CorrectGuess.Id, IsWon = true,
+            FinishedOnUtc = DateTimeOffset.UtcNow,
+            Guesses = [new GameGuess { GuessedCharacterId = setup.CorrectGuess.Id, GuessOrder = 1 }]
+        };
+        setup.GameStatsStore.Sessions[existing.GameId] = existing;
+        Assert.Null(await setup.Manager.MakeGuessAsync(setup.GuessOne.Id));
+        Assert.Equal(existing.GameId, setup.Manager.GameState.GameId);
+        Assert.True(setup.Manager.GameState.IsWon);
+        Assert.Single(setup.GameStateStore.State!.GuessesMade);
+    }
+
+    private static Setup CreateSetup(IGameEventBus? eventBus = null)
     {
         var target = CreateCharacter(1, "Target", joinDay: 10, languages: 2, pronouns: ["Any"], affiliations: ["Guild"], species: ["Human"]);
         var guessOne = CreateCharacter(2, "GuessOne", joinDay: 20, languages: 4, pronouns: ["He/Him"], affiliations: ["Other"], species: ["Unknown"]);
@@ -150,7 +191,7 @@ public sealed class GameStateManagerGuessTests
         var gameStatsStore = new InMemoryGameStatsStore();
         var statisticsService = new StatisticsService(playerStatsStore, gameStatsStore);
         var dayService = new DayService();
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), statisticsService);
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), statisticsService, eventBus);
 
         return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, target, guessOne, guessTwo, guessThree, guessFour, guessFive, guessSix, scenarioGuess, [guessOne.Id, guessTwo.Id, guessThree.Id]);
     }
