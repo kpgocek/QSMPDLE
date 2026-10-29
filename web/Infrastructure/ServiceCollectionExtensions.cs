@@ -1,4 +1,5 @@
-﻿using QSMPDLE.Web.Infrastructure.LocalStorage;
+﻿using QSMPDLE.Web.Features.Statistics.Services;
+using QSMPDLE.Web.Infrastructure.LocalStorage;
 using QSMPDLE.Web.Infrastructure.Persistence;
 
 namespace QSMPDLE.Web.Infrastructure;
