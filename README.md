@@ -1,4 +1,4 @@
-# QSMPDLE 1.2.1
+# ☑️ QSMPDLE 1.2.1
 
 A daily character guessing game based on QSMP2.
 
@@ -8,30 +8,34 @@ A daily character guessing game based on QSMP2.
 
 ![Gameplay Screenshot](./docs/table.png)
 
-## Features
-
-- [x] Daily Mode
-- [x] Practice Mode
-- [ ] Archive Mode
-
-- [x] Responsive Mobile Layout
-- [x] Optimized Image Loading
-
-- [x] Offline Progress Persistence
-
-- [x] Global Statistics
-- [x] Anonymous Gameplay Analytics
-- [ ] Personal Stats Page
-
-- [ ] Advanced Animations
-
-## Built with
+**Built with:**
 
 ![.NET](https://img.shields.io/badge/.NET_10-purple)
 ![SQLite](https://img.shields.io/badge/SQLite-skyblue)
 ![Blazor](https://img.shields.io/badge/Blazor-purple)
 ![MudBlazor](https://img.shields.io/badge/MudBlazor-brown)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-forestgreen)
+
+## Features
+
+**Game Modes:**
+
+- [x] Daily Mode
+- [x] Practice Mode
+- [x] Archive Mode
+
+**User Interface:**
+
+- [x] Responsive Mobile Layout
+- [x] Optimized Image Loading
+- [x] Advanced Animations
+
+**Game State:**
+
+- [x] Global Statistics
+- [x] Anonymous Gameplay Analytics
+- [x] Offline Progress Persistence
+- [x] Personal Stats Page
 
 ## Privacy
 
