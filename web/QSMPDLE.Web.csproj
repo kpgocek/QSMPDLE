@@ -24,13 +24,13 @@
 	<!-- Blazor & UI-->
 	<PackageReference Include="Blazor-ApexCharts" Version="3.5.0" />
 	<PackageReference Include="Blazor.Bootstrap" Version="3.5.0" />
-	<PackageReference Include="Blazor.LocalStorage" Version="10.0.0" />
+	<PackageReference Include="Blazor.LocalStorage" Version="10.1.0" />
 
-	<!-- EF Core & SQLite -->
-	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
-	<PackageReference Include="MudBlazor" Version="9.6.0" />
-	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
+	<!-- EF Core & PostgreSQL -->
+	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.14" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" />
+	<PackageReference Include="MudBlazor" Version="9.11.0" />
+	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
 
 	<!-- Analyzers -->
 	<PackageReference Include="Roslynator.Analyzers" Version="4.15.0" />

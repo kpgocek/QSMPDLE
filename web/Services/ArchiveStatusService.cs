@@ -24,17 +24,17 @@ namespace QSMPDLE.Web.Services
             return await GetStatusesAsync(start, end, includeLocalStorageFallback: true, cancellationToken);
         }
 
-    public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default)
-    {
-        // Local Storage belongs to this browser/circuit, not to the singleton
-        // server cache. Caching it by month would show another browser's stale
-        // state (or a pre-migration NotStarted value), so read it live.
-        if (includeLocalStorageFallback)
+        public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default)
         {
-            return await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken);
-        }
+            // Local Storage belongs to this browser/circuit, not to the singleton
+            // server cache. Caching it by month would show another browser's stale
+            // state (or a pre-migration NotStarted value), so read it live.
+            if (includeLocalStorageFallback)
+            {
+                return await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken);
+            }
 
-        return await _cache.GetStatusesAsync(start, end, async () => await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken), cancellationToken);
+            return await _cache.GetStatusesAsync(start, end, async () => await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken), cancellationToken);
         }
 
         private async Task<Dictionary<int, DayStatus>> GetStatusesCoreAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken)

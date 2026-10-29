@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main, demo]
+  pull_request:
+    branches: [main, demo]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore QSMPDLE.sln
+
+      - name: Build
+        run: dotnet build QSMPDLE.sln --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test QSMPDLE.sln --no-build --configuration Release
+
+      - name: Format
+        run: dotnet format QSMPDLE.sln --verify-no-changes --no-restore --exclude tools
