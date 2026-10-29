@@ -35,15 +35,7 @@ builder.Services.AddBlazorBootstrap();
 
 builder.Services.AddScoped<ThemeService>();
 
-var connectionString = new NpgsqlConnectionStringBuilder
-{
-    Host = builder.Configuration["PGHOST"],
-    Port = int.Parse(builder.Configuration["PGPORT"]!),
-    Database = builder.Configuration["PGDATABASE"],
-    Username = builder.Configuration["PGUSER"],
-    Password = builder.Configuration["PGPASSWORD"]
-}.ConnectionString;
-
+var connectionString = ResolveConnectionString(builder.Configuration);
 
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
 
@@ -108,6 +100,32 @@ app.MapSitemap();
 await app.MigrateDatabasesAsync();
 
 app.Run();
+
+// Locally ConnectionStrings:qsmpdle comes from the web project's user secrets;
+// Railway supplies the libpq-style PG* variables instead.
+static string ResolveConnectionString(IConfiguration configuration)
+{
+    var connectionString = configuration.GetConnectionString("qsmpdle");
+    if (!string.IsNullOrWhiteSpace(connectionString))
+        return connectionString;
+
+    var host = configuration["PGHOST"];
+    if (string.IsNullOrWhiteSpace(host))
+    {
+        throw new InvalidOperationException(
+            "No database configured. Locally run: dotnet user-secrets set \"ConnectionStrings:qsmpdle\" \"<connection string>\" --project web. "
+            + "In production set the PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD variables.");
+    }
+
+    return new NpgsqlConnectionStringBuilder
+    {
+        Host = host,
+        Port = int.TryParse(configuration["PGPORT"], out var port) ? port : 5432,
+        Database = configuration["PGDATABASE"],
+        Username = configuration["PGUSER"],
+        Password = configuration["PGPASSWORD"]
+    }.ConnectionString;
+}
 
 static bool IsBrowserCacheableAsset(string extension) =>
     extension.Equals(".webp", StringComparison.OrdinalIgnoreCase)

@@ -7,23 +7,12 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/WikiScraperQSMP.csproj",
+                "${workspaceFolder}/web/QSMPDLE.Web.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "publish",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "publish",
-                "${workspaceFolder}/WikiScraperQSMP.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary;ForceNoAlign"
-            ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "group": { "kind": "build", "isDefault": true }
         },
         {
             "label": "watch",
@@ -31,11 +20,24 @@
             "type": "process",
             "args": [
                 "watch",
-                "run",
                 "--project",
-                "${workspaceFolder}/WikiScraperQSMP.csproj"
+                "${workspaceFolder}/web/QSMPDLE.Web.csproj",
+                "--launch-profile",
+                "http"
             ],
+            "isBackground": true,
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "test",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "test",
+                "${workspaceFolder}/QSMPDLE.sln"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": { "kind": "test", "isDefault": true }
         }
     ]
 }

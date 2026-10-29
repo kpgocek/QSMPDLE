@@ -1,4 +1,4 @@
-# ☑️ QSMPDLE 1.2.1
+# ☑️ QSMPDLE 2.0
 
 A daily character guessing game based on QSMP2.
 
