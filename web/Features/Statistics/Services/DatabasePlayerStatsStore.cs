@@ -22,6 +22,8 @@ public sealed class DatabasePlayerStatsStore(
         return PlayerStatsProjection.Create(localIdentity, games, dayService);
     }
 
+    public Task<Guid> GetPlayerIdAsync() => localIdentityStore.GetPlayerIdAsync();
+
     public Task SaveAsync(PlayerStats stats) => localIdentityStore.SaveAsync(stats);
 
     public Task ClearAsync() => localIdentityStore.ClearAsync();

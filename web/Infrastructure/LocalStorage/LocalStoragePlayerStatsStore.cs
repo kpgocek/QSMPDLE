@@ -11,16 +11,21 @@ public sealed class LocalStoragePlayerStatsStore(ILocalStorageService localStora
     public async Task<PlayerStats> LoadAsync()
     {
         var identity = await localStorage.GetItemAsync<LocalPlayerIdentity>(Key);
-        identity ??= new LocalPlayerIdentity();
-        if (identity.Id == Guid.Empty)
-            identity.Id = Guid.NewGuid();
-        identity.Version = PlayerStats.CurrentVersion;
+        if (identity is null || identity.Id == Guid.Empty || identity.Version != PlayerStats.CurrentVersion)
+        {
+            identity ??= new LocalPlayerIdentity();
+            if (identity.Id == Guid.Empty)
+                identity.Id = Guid.NewGuid();
+            identity.Version = PlayerStats.CurrentVersion;
 
-        // Rewrite the legacy PlayerStats object as identity-only data on the first read.
-        await localStorage.SetItemAsync(Key, identity);
+            // Rewrite a missing or legacy PlayerStats object as identity-only data once, not on every read.
+            await localStorage.SetItemAsync(Key, identity);
+        }
 
         return new PlayerStats { Id = identity.Id, Version = identity.Version };
     }
+
+    public async Task<Guid> GetPlayerIdAsync() => (await LoadAsync()).Id;
 
     public async Task SaveAsync(PlayerStats stats)
     {

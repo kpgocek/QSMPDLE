@@ -163,6 +163,69 @@ public sealed class DatabaseGameStatsStore(
         await database.SaveChangesAsync();
     }
 
+    public async Task AddGuessAsync(Guid gameId, Guid playerId, int guessedCharacterId)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        var session = await database.GameStats
+            .AsNoTracking()
+            .Where(stats => stats.GameId == gameId)
+            .Select(stats => new
+            {
+                stats.Id,
+                GuessCount = stats.Guesses.Count,
+                AlreadyGuessed = stats.Guesses.Any(guess => guess.GuessedCharacterId == guessedCharacterId),
+            })
+            .FirstOrDefaultAsync();
+
+        if (session is null)
+        {
+            var newSession = new GameSession { GameId = gameId, PlayerId = playerId };
+            newSession.AddGuess(guessedCharacterId);
+            database.GameStats.Add(newSession);
+            await database.SaveChangesAsync();
+            return;
+        }
+
+        if (session.AlreadyGuessed)
+            return;
+
+        var guess = new GameGuess
+        {
+            GameId = gameId,
+            GuessOrder = session.GuessCount,
+            GuessedCharacterId = guessedCharacterId,
+        };
+        database.GameGuess.Add(guess);
+        database.Entry(guess).Property("GameSessionId").CurrentValue = session.Id;
+
+        await database.SaveChangesAsync();
+    }
+
+    public async Task MarkFinishedAsync(Guid gameId, Guid playerId, DateTimeOffset finishedOnUtc, bool isWon)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        // The FinishedOnUtc filter makes completion idempotent without a read-modify-write.
+        var updated = await database.GameStats
+            .Where(stats => stats.GameId == gameId && stats.FinishedOnUtc == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(stats => stats.FinishedOnUtc, finishedOnUtc)
+                .SetProperty(stats => stats.IsWon, isWon));
+
+        if (updated > 0 || await database.GameStats.AnyAsync(stats => stats.GameId == gameId))
+            return;
+
+        database.GameStats.Add(new GameSession
+        {
+            GameId = gameId,
+            PlayerId = playerId,
+            FinishedOnUtc = finishedOnUtc,
+            IsWon = isWon,
+        });
+        await database.SaveChangesAsync();
+    }
+
     public async Task<GlobalStatsView> GetGlobalStatsAsync()
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();

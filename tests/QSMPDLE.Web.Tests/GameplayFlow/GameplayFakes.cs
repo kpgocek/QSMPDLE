@@ -106,6 +106,8 @@ internal sealed class InMemoryPlayerStatsStore : IPlayerStatsStore
         return Task.FromResult(Clone(Stats));
     }
 
+    public Task<Guid> GetPlayerIdAsync() => Task.FromResult(Stats.Id);
+
     public Task SaveAsync(PlayerStats stats)
     {
         SaveCount++;

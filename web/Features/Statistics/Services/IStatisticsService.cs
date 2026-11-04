@@ -15,6 +15,7 @@ public interface IStatisticsService
 
     // ENDPOINTS
     Task<PlayerStats> GetPlayerStatsAsync();
+    async Task<Guid> GetPlayerIdAsync() => (await GetPlayerStatsAsync()).Id;
     Task<GameSession> GetGameStatsAsync(Guid gameId);
     Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId);
 }

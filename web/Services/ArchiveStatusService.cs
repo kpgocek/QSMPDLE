@@ -40,8 +40,7 @@ namespace QSMPDLE.Web.Services
         private async Task<Dictionary<int, DayStatus>> GetStatusesCoreAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken)
         {
             // Get current player id from statistics service (which uses the same player store as GameStateManager)
-            var playerStats = await _statisticsService.GetPlayerStatsAsync();
-            var playerId = playerStats?.Id ?? Guid.Empty;
+            var playerId = await _statisticsService.GetPlayerIdAsync();
 
             if (playerId == Guid.Empty)
             {
