@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 using MudBlazor.Services;
@@ -37,7 +38,8 @@ builder.Services.AddScoped<ThemeService>();
 
 var connectionString = ResolveConnectionString(builder.Configuration);
 
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+// Pooled contexts avoid re-creating DbContext internals on every short-lived operation during traffic spikes.
+builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddInfrastructure();
 
@@ -61,7 +63,7 @@ builder.Services
         options.DisconnectedCircuitRetentionPeriod =
             TimeSpan.FromSeconds(builder.Configuration.GetValue("Circuits:DisconnectedRetentionSeconds", 30));
 
-        options.DisconnectedCircuitMaxRetained = builder.Configuration.GetValue("Circuits:MaxDisconnected", 100);
+        options.DisconnectedCircuitMaxRetained = builder.Configuration.GetValue("Circuits:MaxDisconnected", 500);
     });
 
 var app = builder.Build();
@@ -73,8 +75,20 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Railway terminates TLS at its proxy; trust its forwarded scheme so HTTPS-only features and
+// generated absolute URLs (sitemap) see the public request. The proxy address is not fixed.
+var forwardedHeaders = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeaders.KnownIPNetworks.Clear();
+forwardedHeaders.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaders);
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
+// Plain URLs (character images, fonts) keep a 30-day cache here; @Assets[...] URLs in App.razor
+// are fingerprinted and fall through to MapStaticAssets, which serves them precompressed and immutable.
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context =>
@@ -91,8 +105,12 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
+// Explicitly after UseStaticFiles: otherwise routing runs first, MapStaticAssets claims every
+// wwwroot path, and plain URLs lose the 30-day cache above.
+app.UseRouting();
 app.UseAntiforgery();
 
+app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.MapSitemap();
@@ -107,7 +125,7 @@ static string ResolveConnectionString(IConfiguration configuration)
 {
     var connectionString = configuration.GetConnectionString("qsmpdle");
     if (!string.IsNullOrWhiteSpace(connectionString))
-        return connectionString;
+        return ApplyPoolSettings(new NpgsqlConnectionStringBuilder(connectionString), configuration);
 
     var host = configuration["PGHOST"];
     if (string.IsNullOrWhiteSpace(host))
@@ -117,14 +135,24 @@ static string ResolveConnectionString(IConfiguration configuration)
             + "In production set the PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD variables.");
     }
 
-    return new NpgsqlConnectionStringBuilder
+    return ApplyPoolSettings(new NpgsqlConnectionStringBuilder
     {
         Host = host,
         Port = int.TryParse(configuration["PGPORT"], out var port) ? port : 5432,
         Database = configuration["PGDATABASE"],
         Username = configuration["PGUSER"],
         Password = configuration["PGPASSWORD"]
-    }.ConnectionString;
+    }, configuration);
+}
+
+// Cap the pool below Postgres' max_connections (~100 on Railway) so a spike queues briefly
+// in the app instead of exhausting the server; fail fast rather than hang circuits.
+static string ApplyPoolSettings(NpgsqlConnectionStringBuilder builder, IConfiguration configuration)
+{
+    builder.MaxPoolSize = configuration.GetValue("Database:MaxPoolSize", 40);
+    builder.Timeout = configuration.GetValue("Database:ConnectTimeoutSeconds", 15);
+    builder.CommandTimeout = configuration.GetValue("Database:CommandTimeoutSeconds", 30);
+    return builder.ConnectionString;
 }
 
 static bool IsBrowserCacheableAsset(string extension) =>
