@@ -48,7 +48,7 @@ public sealed class DatabaseGameStatsStore(
         // Legacy compatibility query; canonical callers should use the method below.
         var sessions = await database.GameStats
             .AsNoTracking()
-            .Where(gs => gs.PlayerId == playerId && gs.Mode == GameMode.Daily && gs.DailyNumber.HasValue && gs.DailyNumber >= startNumber && gs.DailyNumber <= endNumber)
+            .Where(gs => gs.PlayerId == playerId && gs.Mode == GameMode.Daily && gs.DailyNumber.HasValue && gs.DailyNumber >= startNumber && gs.DailyNumber <= endNumber && !gs.IsLegacyDuplicate)
             .ToListAsync();
 
         return sessions.ConvertAll(s => new GameSession
@@ -133,23 +133,6 @@ public sealed class DatabaseGameStatsStore(
                                         && !session.IsLegacyDuplicate
                                         && session.PuzzleId == proposedSession.PuzzleId);
         }
-    }
-
-    public async Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
-    {
-        await using var database = await DbContextFactory.CreateDbContextAsync();
-
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        return await database.GameStats
-            .AsNoTracking()
-            .Include(stats => stats.Guesses)
-            .FirstOrDefaultAsync(game =>
-                game.PlayerId == playerId &&
-                game.Mode == GameMode.Daily &&
-                game.DailyNumber == dailyNumber &&
-                game.FinishedOnUtc.HasValue &&
-                !(game.Mode == GameMode.Daily && DateOnly.FromDateTime(game.StartedOnUtc.UtcDateTime) == today));
     }
 
     public async Task<GameSession> LoadOrNewAsync(Guid gameId)
@@ -872,7 +855,7 @@ public sealed class DatabaseGameStatsStore(
 
         var earliest = await database.GameStats
             .AsNoTracking()
-            .Where(g => g.PlayerId == playerId)
+            .Where(g => g.PlayerId == playerId && !g.IsLegacyDuplicate)
             .Select(g => (DateTimeOffset?)g.StartedOnUtc)
             .MinAsync();
 

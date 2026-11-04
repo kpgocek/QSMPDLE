@@ -13,8 +13,6 @@ public interface IGameStatsStore
 
     Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId);
 
-    Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber);
-
     Task<GlobalStatsView> GetGlobalStatsAsync();
 
     Task<List<DailyActivePlayersData>> GetDailyActivePlayersAsync(DateOnly? from);

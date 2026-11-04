@@ -343,14 +343,6 @@ internal sealed class InMemoryStatisticsService : IStatisticsService
         return Task.FromResult(proposedSession);
     }
     public Task<GameSession> GetGameStatsAsync(Guid gameId) => Task.FromResult(LoadOrCreate(gameId));
-    public Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
-    {
-        return Task.FromResult(Sessions.Values.FirstOrDefault(session =>
-            session.PlayerId == playerId &&
-            session.Mode == GameMode.Daily &&
-            session.DailyNumber == dailyNumber &&
-            session.FinishedOnUtc.HasValue));
-    }
 
     public Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId)
     {

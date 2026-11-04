@@ -118,7 +118,6 @@ public sealed class StatisticsService(IPlayerStatsStore PlayerStatsStore, IGameS
     public async Task<GameSession> GetGameStatsAsync(Guid gameId) => await GameStatsStore.LoadOrNewAsync(gameId);
     public async Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId) => await GameStatsStore.GetActiveCanonicalSessionAsync(playerId, puzzleId);
     public async Task<GameSession> ClaimCanonicalSessionAsync(GameSession proposedSession) => await GameStatsStore.ClaimCanonicalSessionAsync(proposedSession);
-    public async Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber) => await GameStatsStore.GetPlayerCompletedDailyGameAsync(playerId, dailyNumber);
     public async Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId) => await GameStatsStore.GetPlayerCompletedDailyNumbersAsync(playerId);
     private async Task SaveGameStatsAsync(GameSession gameStats) => await GameStatsStore.SaveAsync(gameStats);
 

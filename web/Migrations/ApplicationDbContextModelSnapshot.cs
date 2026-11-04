@@ -188,6 +188,10 @@ namespace QSMPDLE.Web.Migrations
                     b.HasIndex("GameId")
                         .IsUnique();
 
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("IX_GameStats_PlayerId")
+                        .HasFilter("NOT \"IsLegacyDuplicate\"");
+
                     b.HasIndex("PlayerId", "PuzzleId")
                         .IsUnique()
                         .HasFilter("\"PuzzleId\" IS NOT NULL AND \"SessionCategory\" = 0 AND NOT \"IsLegacyDuplicate\"");

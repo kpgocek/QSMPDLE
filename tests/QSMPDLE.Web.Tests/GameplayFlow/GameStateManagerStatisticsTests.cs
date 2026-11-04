@@ -175,7 +175,6 @@ public sealed class GameStateManagerStatisticsTests
         var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
 
         numbers.Should().ContainSingle().Which.Should().Be(completedDayValue);
-        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().NotBeNull();
     }
 
     [Fact]
@@ -196,7 +195,6 @@ public sealed class GameStateManagerStatisticsTests
         var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
 
         numbers.Should().ContainSingle().Which.Should().Be(completedDayValue);
-        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().NotBeNull();
     }
 
     [Fact]
@@ -213,7 +211,6 @@ public sealed class GameStateManagerStatisticsTests
         var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
 
         numbers.Should().BeEmpty();
-        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().BeNull();
     }
 
     [Fact]
@@ -230,7 +227,6 @@ public sealed class GameStateManagerStatisticsTests
         var completedDayValue = setup.Manager.GameState.Game.DayNumber!.Value;
 
         (await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(otherPlayerId)).Should().BeEmpty();
-        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(otherPlayerId, completedDayValue)).Should().BeNull();
         (await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(playerId)).Should().ContainSingle();
     }
 
