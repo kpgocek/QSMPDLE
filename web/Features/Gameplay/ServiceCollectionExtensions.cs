@@ -11,6 +11,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICharacterComparer, CharacterComparer>();
         services.AddScoped<IGameStateManager, GameStateManager>();
 
+        services.AddHostedService<CharacterCacheWarmup>();
+
         return services;
     }
 }
