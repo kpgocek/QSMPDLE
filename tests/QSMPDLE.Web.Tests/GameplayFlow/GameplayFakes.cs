@@ -139,6 +139,9 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
 {
     public Dictionary<Guid, GameSession> Sessions { get; } = [];
     public List<GameSession> SavedSessions { get; } = [];
+    public PlayerCharacterStats CharacterStats { get; set; } = new();
+    public DateOnly? FirstGameDate { get; set; }
+    public int PlayerGamesLoadCount { get; private set; }
 
     public Task<GameSession> LoadOrNewAsync(Guid gameId)
     {
@@ -171,14 +174,10 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
     }
 
     public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId)
-        => Task.FromResult<IEnumerable<GameSession>>(Sessions.Values.Where(session => session.PlayerId == playerId).ToList());
-
-    public Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
-        => Task.FromResult(Sessions.Values.FirstOrDefault(session =>
-            session.PlayerId == playerId &&
-            session.Mode == GameMode.Daily &&
-            session.DailyNumber == dailyNumber &&
-            session.FinishedOnUtc.HasValue));
+    {
+        PlayerGamesLoadCount++;
+        return Task.FromResult<IEnumerable<GameSession>>(Sessions.Values.Where(session => session.PlayerId == playerId).ToList());
+    }
 
     public Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId)
     {
@@ -212,8 +211,8 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
     public Task<GamesPerPlayerStats> GetGamesPerPlayerStatsAsync() => throw new NotImplementedException();
     public Task<RetentionStats> GetRetentionStatsAsync() => throw new NotImplementedException();
     public Task<GlobalCharacterStats> GetGlobalCharacterStatsAsync() => throw new NotImplementedException();
-    public Task<PlayerCharacterStats> GetPlayerCharacterStatsAsync(Guid playerId) => throw new NotImplementedException();
-    public Task<DateOnly?> GetPlayerFirstGameDateAsync(Guid playerId) => throw new NotImplementedException();
+    public Task<PlayerCharacterStats> GetPlayerCharacterStatsAsync(Guid playerId) => Task.FromResult(CharacterStats);
+    public Task<DateOnly?> GetPlayerFirstGameDateAsync(Guid playerId) => Task.FromResult(FirstGameDate);
 
     private static GameSession Clone(GameSession stats) => new()
     {

@@ -1,16 +1,10 @@
 @using MudBlazor
 @using QSMPDLE.Web.Components.Statistics
 @using QSMPDLE.Web.Components.UX.StatDisplay
-@using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Statistics.Models
 @using QSMPDLE.Web.Features.Statistics.Services
-@using QSMPDLE.Web.Infrastructure.LocalStorage
-@using QSMPDLE.Web.Infrastructure.Persistence
 
-@inject IPlayerStatsStore PlayerStatsStore
-@inject IGameStatsStore GameStatsStore
-@inject IGlobalStatsService GlobalStatsService
-@inject ICharacterStore CharacterStore
+@inject IPlayerProfileService PlayerProfileService
 
 <MudDialog Class="pop-up pt-0">
     <DialogActions>
@@ -274,70 +268,29 @@
 
         try
         {
-            var stats = await PlayerStatsStore.LoadAsync();
+            var profile = await PlayerProfileService.GetProfileAsync();
+            var stats = profile.Stats;
+
             playerId = stats.Id;
-            DailyGamesPlayed = stats.GamesPlayed;
-            DailyGamesWon = stats.GamesWon;
             CurrentStreak = stats.CurrentStreak;
             LongestStreak = stats.MaxStreak;
-            DailyWinRate = stats.WinRate;
             ArchiveGamesPlayed = stats.ArchiveGamesPlayed;
             ArchiveGamesWon = stats.ArchiveGamesWon;
             ArchiveGamesLost = stats.ArchiveGamesLost;
             ArchiveWinRate = stats.ArchiveWinRate;
-            GuessDistribution = stats.GuessDistribution;
 
-            var gameStats = await GameStatsStore.GetPlayerGames(playerId);
+            DailyGamesPlayed = profile.DailyGamesPlayed;
+            DailyGamesWon = profile.DailyGamesWon;
+            DailyWinRate = profile.DailyWinRate;
+            GuessDistribution = profile.GuessDistribution;
 
-            var canonicalGames = gameStats.Where(game => game.SessionCategory == SessionCategory.CanonicalPuzzle && !game.IsLegacyDuplicate).ToList();
-            DailyGamesPlayed = canonicalGames.Count;
-            DailyGamesWon = canonicalGames.Count(game => game.IsWon);
-            DailyWinRate = DailyGamesPlayed == 0 ? 0 : DailyGamesWon * 100d / DailyGamesPlayed;
-            GuessDistribution = Enumerable.Range(1, 6)
-                .Select(count => canonicalGames.Count(game => game.IsWon && game.Guesses.Count == count))
-                .ToArray();
+            PracticeGamesStarted = profile.PracticeGamesStarted;
+            PracticeGamesFinished = profile.PracticeGamesFinished;
+            PracticeGamesWon = profile.PracticeGamesWon;
 
-            var practiceGames = gameStats.Where(game => game.SessionCategory == SessionCategory.Practice && !game.IsLegacyDuplicate).ToList();
-
-            PracticeGamesStarted = practiceGames.Count();
-
-            var finishedPracticeGames = practiceGames.Where(game => game.FinishedOnUtc is not null);
-
-            PracticeGamesFinished = finishedPracticeGames.Count();
-
-            PracticeGamesWon = finishedPracticeGames.Count(game => game.IsWon);
-
-            memberSince = await GameStatsStore.GetPlayerFirstGameDateAsync(playerId);
-
-            globalStats = await GlobalStatsService.GetGlobalStatsAsync();
-
-            if (playerId != Guid.Empty)
-            {
-                var rawPlayerCharStats = await GameStatsStore.GetPlayerCharacterStatsAsync(playerId);
-                var lookups = await CharacterStore.GetLookupsAsync();
-
-                playerCharacterStats = new PlayerCharacterStats
-                {
-                    MostGuessedCharacterId = rawPlayerCharStats.MostGuessedCharacterId,
-                    MostGuessedCharacterName = rawPlayerCharStats.MostGuessedCharacterId.HasValue
-                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostGuessedCharacterId.Value)?.Name ??
-rawPlayerCharStats.MostGuessedCharacterId.Value.ToString())
-                        : null,
-                    MostGuessedIconUrl = rawPlayerCharStats.MostGuessedCharacterId.HasValue
-                        ? lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostGuessedCharacterId.Value)?.CharacterIconUrl
-                        : null,
-                    MostGuessedCount = rawPlayerCharStats.MostGuessedCount,
-                    MostCorrectlyGuessedCharacterId = rawPlayerCharStats.MostCorrectlyGuessedCharacterId,
-                    MostCorrectlyGuessedCharacterName = rawPlayerCharStats.MostCorrectlyGuessedCharacterId.HasValue
-                        ? (lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value)?.Name ??
-rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value.ToString())
-                        : null,
-                    MostCorrectlyGuessedIconUrl = rawPlayerCharStats.MostCorrectlyGuessedCharacterId.HasValue
-                        ? lookups.FirstOrDefault(l => l.Id == rawPlayerCharStats.MostCorrectlyGuessedCharacterId.Value)?.CharacterIconUrl
-                        : null,
-                    MostCorrectlyGuessedCount = rawPlayerCharStats.MostCorrectlyGuessedCount,
-                };
-            }
+            memberSince = profile.MemberSince;
+            globalStats = profile.GlobalStats;
+            playerCharacterStats = profile.CharacterStats;
         }
         finally
         {
