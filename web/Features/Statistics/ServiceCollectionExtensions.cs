@@ -15,9 +15,6 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IGlobalStatsService, CachedGlobalStatsService>();
 
-        services.TryAddSingleton(TimeProvider.System);
-        services.AddSingleton<IGlobalStatsService, CachedGlobalStatsService>();
-
         return services;
     }
 }
