@@ -1,8 +1,9 @@
 using QSMPDLE.Web.Diagnostics;
+using QSMPDLE.Web.Features.Archive.Models;
 using QSMPDLE.Web.Features.Communication.GameEvents;
 using QSMPDLE.Web.Features.Gameplay.Services;
 
-namespace QSMPDLE.Web.Services;
+namespace QSMPDLE.Web.Features.Archive.Services;
 
 // Owned by one DI scope. Expiry is checked on access; the hard budget also bounds idle caches.
 public sealed class ArchiveStatusCache : IArchiveStatusCache, IDisposable

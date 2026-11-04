@@ -4,16 +4,16 @@ using Microsoft.Net.Http.Headers;
 using MudBlazor.Services;
 using Npgsql;
 using QSMPDLE.Web.Components;
+using QSMPDLE.Web.Diagnostics;
+using QSMPDLE.Web.Features.Archive;
 using QSMPDLE.Web.Features.Communication;
 using QSMPDLE.Web.Features.Gameplay;
 using QSMPDLE.Web.Features.Sharing;
 using QSMPDLE.Web.Features.Sitemap;
-using QSMPDLE.Web.Features.Sitemap.Services;
 using QSMPDLE.Web.Features.Statistics;
 using QSMPDLE.Web.Infrastructure;
 using QSMPDLE.Web.Infrastructure.Persistence;
 using QSMPDLE.Web.Themes;
-using QSMPDLE.Web.Workers;
 
 // Prevent Npgsql from probing for GSSAPI (Kerberos) native libraries on
 // managed hosts where libgssapi_krb5.so.2 may be missing. This must run
@@ -25,15 +25,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddLocalStorageServices();
 
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped<ISitemapService, SitemapService>();
 
-builder.Services.AddHostedService<MemoryDiagnosticsWorker>();
-builder.Services.AddScoped<Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler, QSMPDLE.Web.Diagnostics.CountingCircuitHandler>();
+builder.Services.AddDiagnostics();
 
 builder.Services.AddMudServices();
 builder.Services.AddBlazorBootstrap();
 
-builder.Services.AddScoped<ThemeService>();
+builder.Services.AddThemes();
 
 var connectionString = ResolveConnectionString(builder.Configuration);
 
@@ -48,10 +46,8 @@ builder.Services.AddGameplay();
 
 builder.Services.AddSharingFeature();
 builder.Services.AddStatistics();
-
-// Archive status service used by ArchiveNavigator to lazily load per-day statuses for the calendar.
-builder.Services.AddScoped<QSMPDLE.Web.Services.IArchiveStatusService, QSMPDLE.Web.Services.ArchiveStatusService>();
-builder.Services.AddScoped<QSMPDLE.Web.Services.IArchiveStatusCache, QSMPDLE.Web.Services.ArchiveStatusCache>();
+builder.Services.AddArchive();
+builder.Services.AddSitemap();
 
 builder.Services
     .AddRazorComponents()

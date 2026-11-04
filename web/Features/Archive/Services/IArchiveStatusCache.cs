@@ -1,4 +1,6 @@
-namespace QSMPDLE.Web.Services;
+using QSMPDLE.Web.Features.Archive.Models;
+
+namespace QSMPDLE.Web.Features.Archive.Services;
 
 public interface IArchiveStatusCache
 {

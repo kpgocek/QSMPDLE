@@ -1,9 +1,10 @@
+using QSMPDLE.Web.Features.Archive.Models;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Services;
 using QSMPDLE.Web.Infrastructure.Persistence;
 
-namespace QSMPDLE.Web.Services
+namespace QSMPDLE.Web.Features.Archive.Services
 {
     // Production implementation that queries the game stats store to determine per-day statuses for the current player.
     public sealed class ArchiveStatusService(

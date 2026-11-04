@@ -1,6 +1,6 @@
 using QSMPDLE.Web.Features.Gameplay.Models;
 
-namespace QSMPDLE.Web.Services;
+namespace QSMPDLE.Web.Features.Archive.Services;
 
 public interface IArchiveGameStateSource
 {

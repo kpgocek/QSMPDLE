@@ -1,7 +1,6 @@
 ﻿using QSMPDLE.Web.Features.Statistics.Services;
 using QSMPDLE.Web.Infrastructure.LocalStorage;
 using QSMPDLE.Web.Infrastructure.Persistence;
-using QSMPDLE.Web.Services;
 
 namespace QSMPDLE.Web.Infrastructure;
 
@@ -15,7 +14,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LocalStoragePlayerStatsStore>();
         services.AddScoped<IPlayerStatsStore, DatabasePlayerStatsStore>();
         services.AddScoped<IGameStatsStore, DatabaseGameStatsStore>();
-        services.AddScoped<IArchiveGameStateSource, ArchiveGameStateSource>();
 
         return services;
     }

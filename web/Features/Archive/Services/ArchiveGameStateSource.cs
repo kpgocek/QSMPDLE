@@ -2,7 +2,7 @@ using Microsoft.JSInterop;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Infrastructure.LocalStorage;
 
-namespace QSMPDLE.Web.Services;
+namespace QSMPDLE.Web.Features.Archive.Services;
 
 public sealed class ArchiveGameStateSource(ILocalStorageService localStorage) : IArchiveGameStateSource
 {
