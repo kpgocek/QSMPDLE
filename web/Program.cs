@@ -27,7 +27,6 @@ builder.Services.AddLocalStorageServices();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ISitemapService, SitemapService>();
 
-builder.Services.AddHostedService<StatisticsRefreshWorker>();
 builder.Services.AddHostedService<MemoryDiagnosticsWorker>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler, QSMPDLE.Web.Diagnostics.CountingCircuitHandler>();
 

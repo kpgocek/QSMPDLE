@@ -3,11 +3,13 @@
 @using QSMPDLE.Web.Components.UX.StatDisplay
 @using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Statistics.Models
+@using QSMPDLE.Web.Features.Statistics.Services
 @using QSMPDLE.Web.Infrastructure.LocalStorage
 @using QSMPDLE.Web.Infrastructure.Persistence
 
 @inject IPlayerStatsStore PlayerStatsStore
 @inject IGameStatsStore GameStatsStore
+@inject IGlobalStatsService GlobalStatsService
 @inject ICharacterStore CharacterStore
 
 <MudDialog Class="pop-up pt-0">
@@ -307,7 +309,7 @@
 
             memberSince = await GameStatsStore.GetPlayerFirstGameDateAsync(playerId);
 
-            globalStats = await GameStatsStore.GetGlobalStatsAsync();
+            globalStats = await GlobalStatsService.GetGlobalStatsAsync();
 
             if (playerId != Guid.Empty)
             {

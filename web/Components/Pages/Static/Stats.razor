@@ -5,9 +5,10 @@
 @using QSMPDLE.Web.Components.Statistics
 @using QSMPDLE.Web.Components.UX.StatDisplay
 @using QSMPDLE.Web.Features.Statistics.Models
+@using QSMPDLE.Web.Features.Statistics.Services
 @using QSMPDLE.Web.Infrastructure.Persistence
 
-@inject IGameStatsStore GameStatsStore
+@inject IGlobalStatsService GlobalStatsService
 @inject ICharacterStore CharacterStore
 @inject ILogger<Stats> Logger
 
@@ -380,7 +381,7 @@
 
     private async Task CollectGlobalDataAsync()
     {
-        var globalData = await GameStatsStore.GetGlobalStatsAsync();
+        var globalData = await GlobalStatsService.GetGlobalStatsAsync();
 
         TotalPlayers = globalData.TotalPlayers;
         TotalGamesPlayed = globalData.TotalGames;
@@ -401,8 +402,8 @@
         try
         {
             await LoadRangeDependentActivityDataAsync(selectedDays);
-            activityDistribution = await GameStatsStore.GetPlayerActivityDistributionAsync();
-            gamesPerPlayer = await GameStatsStore.GetGamesPerPlayerStatsAsync();
+            activityDistribution = await GlobalStatsService.GetPlayerActivityDistributionAsync();
+            gamesPerPlayer = await GlobalStatsService.GetGamesPerPlayerStatsAsync();
         }
         finally
         {
@@ -416,7 +417,7 @@
 
         try
         {
-            retention = await GameStatsStore.GetRetentionStatsAsync();
+            retention = await GlobalStatsService.GetRetentionStatsAsync();
         }
         finally
         {
@@ -430,7 +431,7 @@
 
         try
         {
-            var raw = await GameStatsStore.GetGlobalCharacterStatsAsync();
+            var raw = await GlobalStatsService.GetGlobalCharacterStatsAsync();
             var lookups = await CharacterStore.GetLookupsAsync();
 
             IReadOnlyList<CharacterStatEntry> Resolve(IReadOnlyList<CharacterStatEntry> entries) =>
@@ -508,8 +509,8 @@
     {
         var from = CalculateFromDate(days);
 
-        dauData = await GameStatsStore.GetDailyActivePlayersAsync(from);
-        newVsReturningData = await GameStatsStore.GetNewVsReturningPlayersAsync(from);
+        dauData = await GlobalStatsService.GetDailyActivePlayersAsync(from);
+        newVsReturningData = await GlobalStatsService.GetNewVsReturningPlayersAsync(from);
     }
 
     private async Task ExecuteWithDiagnosticsAsync(string operationName, Func<Task> operation)
