@@ -17,6 +17,10 @@ on:
   schedule:
     - cron: '37 13 * * 2'
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   SCS:
     runs-on: windows-latest
@@ -33,6 +37,11 @@ jobs:
 
       - name: Build
         run: dotnet build --no-restore
+
+      # sarif.multitool in the action below only runs on .NET Core 3.1
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 3.1.x
 
       - name: Convert sarif for uploading to GitHub
         uses: security-code-scan/security-code-scan-results-action@cdb3d5e639054395e45bf401cba8688fcaf7a687
