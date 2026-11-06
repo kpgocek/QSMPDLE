@@ -6,17 +6,23 @@
 <div class="selection-area">
     <div class="input-field">
         <input type="text" @bind="SearchText" @bind:event="oninput" @onkeydown="HandleKeyDown"
-               placeholder="Type in character's name" disabled="@IsDisabled" />
+               placeholder="Type in character's name" disabled="@IsDisabled"
+               aria-label="Guess a character" autocomplete="off" spellcheck="false"
+               role="combobox" aria-autocomplete="list" aria-controls="character-suggestions"
+               aria-expanded="@(HasSuggestions ? "true" : "false")"
+               aria-activedescendant="@(HasSuggestions ? $"character-suggestion-{ActiveSuggestionIndex}" : null)" />
     </div>
 
-    @if (!IsDisabled && Suggestions.Any())
+    @if (HasSuggestions)
     {
-        <div class="suggestions">
+        <div id="character-suggestions" class="suggestions" role="listbox" aria-label="Matching characters">
             @foreach (var item in Suggestions.Select((m, i) => new { Character = m, Index = i }))
             {
-                <button type="button" class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
+                <button type="button" id="character-suggestion-@item.Index" role="option" tabindex="-1"
+                        aria-selected="@(item.Index == ActiveSuggestionIndex ? "true" : "false")"
+                        class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
                         @onclick="() => SelectAndGuess(item.Character)">
-                    <img src="@CharacterImageHelper.GetHeadSrc(item.Character)" alt="@item.Character.Name" loading="lazy" decoding="async" />
+                    <img src="@CharacterImageHelper.GetHeadSrc(item.Character)" alt="" loading="lazy" decoding="async" />
                     <div class="names">
                         <span>@item.Character.Name</span>
                     </div>
@@ -138,6 +144,8 @@
 
     private bool IsDisabled => IsGuessed || IsBusy;
 
+    private bool HasSuggestions => !IsDisabled && Suggestions.Any();
+
     private IReadOnlyList<CharacterLookup> Characters = [];
 
     protected override async Task OnInitializedAsync()
@@ -176,6 +184,10 @@
 
             case "Enter":
                 await SelectAndGuess(suggestions[ActiveSuggestionIndex]);
+                break;
+
+            case "Escape":
+                SearchText = "";
                 break;
 
             default:

@@ -212,7 +212,7 @@
                     <MudCard Style="width:100%;border-radius:0;">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <h5>🧱 Hardest to Guess</h5>
+                                <h4 class="ranking-title">🧱 Hardest to Guess</h4>
                                 <small>Required the most guesses on average</small>
                             </CardHeaderContent>
                         </MudCardHeader>
@@ -226,7 +226,7 @@
                     <MudCard Style="width:100%;border-radius:0;">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <h5>🤔 Most Confusing</h5>
+                                <h4 class="ranking-title">🤔 Most Confusing</h4>
                                 <small>Guessed most often as the wrong answer</small>
                             </CardHeaderContent>
                         </MudCardHeader>
@@ -240,7 +240,7 @@
                     <MudCard Style="width:100%;border-radius:0;">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <h5>💡 The Indicator</h5>
+                                <h4 class="ranking-title">💡 The Indicator</h4>
                                 <small>Guess that led to a win on the very next guess</small>
                             </CardHeaderContent>
                         </MudCardHeader>
@@ -254,7 +254,7 @@
                     <MudCard Style="width:100%;border-radius:0;">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <h5>🚀 The Opener</h5>
+                                <h4 class="ranking-title">🚀 The Opener</h4>
                                 <small>Most common first guess in winning games</small>
                             </CardHeaderContent>
                         </MudCardHeader>
@@ -339,7 +339,7 @@
                     <div class="d-flex align-center mb-2" style="gap:8px;">
                         <span style="font-size:1.2rem;">@rankBadge</span>
                         <MudAvatar Style="width:32px;height:32px;" Square="true">
-                            <MudImage Src="@($"/graphics/mini-heads/{entry.CharacterName}.webp")" />
+                            <MudImage Src="@($"/graphics/mini-heads/{entry.CharacterName}.webp")" Alt="" />
                         </MudAvatar>
                         <div style="flex:1;">
                             <MudText Typo="Typo.body1">@entry.CharacterName</MudText>

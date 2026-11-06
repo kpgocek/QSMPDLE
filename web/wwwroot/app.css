@@ -75,12 +75,17 @@ a {
     color: var(--text);
 }
 
-a:focus,
 h1:focus,
 h2:focus,
 h3:focus,
 h4:focus {
     outline: none;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: .125rem solid var(--primary);
+    outline-offset: .125rem;
 }
 
 h1 {
