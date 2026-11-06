@@ -1,18 +1,19 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 using MudBlazor.Services;
 using Npgsql;
 using QSMPDLE.Web.Components;
+using QSMPDLE.Web.Diagnostics;
+using QSMPDLE.Web.Features.Archive;
 using QSMPDLE.Web.Features.Communication;
 using QSMPDLE.Web.Features.Gameplay;
 using QSMPDLE.Web.Features.Sharing;
 using QSMPDLE.Web.Features.Sitemap;
-using QSMPDLE.Web.Features.Sitemap.Services;
 using QSMPDLE.Web.Features.Statistics;
 using QSMPDLE.Web.Infrastructure;
 using QSMPDLE.Web.Infrastructure.Persistence;
 using QSMPDLE.Web.Themes;
-using QSMPDLE.Web.Workers;
 
 // Prevent Npgsql from probing for GSSAPI (Kerberos) native libraries on
 // managed hosts where libgssapi_krb5.so.2 may be missing. This must run
@@ -24,28 +25,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddLocalStorageServices();
 
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped<ISitemapService, SitemapService>();
 
-builder.Services.AddHostedService<StatisticsRefreshWorker>();
-builder.Services.AddHostedService<MemoryDiagnosticsWorker>();
-builder.Services.AddScoped<Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler, QSMPDLE.Web.Diagnostics.CountingCircuitHandler>();
+builder.Services.AddDiagnostics();
 
 builder.Services.AddMudServices();
 builder.Services.AddBlazorBootstrap();
 
-builder.Services.AddScoped<ThemeService>();
+builder.Services.AddThemes();
 
-var connectionString = new NpgsqlConnectionStringBuilder
-{
-    Host = builder.Configuration["PGHOST"],
-    Port = int.Parse(builder.Configuration["PGPORT"]!),
-    Database = builder.Configuration["PGDATABASE"],
-    Username = builder.Configuration["PGUSER"],
-    Password = builder.Configuration["PGPASSWORD"]
-}.ConnectionString;
+var connectionString = ResolveConnectionString(builder.Configuration);
 
-
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+// Pooled contexts avoid re-creating DbContext internals on every short-lived operation during traffic spikes.
+builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddInfrastructure();
 
@@ -55,10 +46,8 @@ builder.Services.AddGameplay();
 
 builder.Services.AddSharingFeature();
 builder.Services.AddStatistics();
-
-// Archive status service used by ArchiveNavigator to lazily load per-day statuses for the calendar.
-builder.Services.AddScoped<QSMPDLE.Web.Services.IArchiveStatusService, QSMPDLE.Web.Services.ArchiveStatusService>();
-builder.Services.AddScoped<QSMPDLE.Web.Services.IArchiveStatusCache, QSMPDLE.Web.Services.ArchiveStatusCache>();
+builder.Services.AddArchive();
+builder.Services.AddSitemap();
 
 builder.Services
     .AddRazorComponents()
@@ -69,7 +58,7 @@ builder.Services
         options.DisconnectedCircuitRetentionPeriod =
             TimeSpan.FromSeconds(builder.Configuration.GetValue("Circuits:DisconnectedRetentionSeconds", 30));
 
-        options.DisconnectedCircuitMaxRetained = builder.Configuration.GetValue("Circuits:MaxDisconnected", 100);
+        options.DisconnectedCircuitMaxRetained = builder.Configuration.GetValue("Circuits:MaxDisconnected", 500);
     });
 
 var app = builder.Build();
@@ -81,8 +70,20 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Railway terminates TLS at its proxy; trust its forwarded scheme so HTTPS-only features and
+// generated absolute URLs (sitemap) see the public request. The proxy address is not fixed.
+var forwardedHeaders = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeaders.KnownIPNetworks.Clear();
+forwardedHeaders.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaders);
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
+// Plain URLs (character images, fonts) keep a 30-day cache here; @Assets[...] URLs in App.razor
+// are fingerprinted and fall through to MapStaticAssets, which serves them precompressed and immutable.
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context =>
@@ -99,8 +100,12 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
+// Explicitly after UseStaticFiles: otherwise routing runs first, MapStaticAssets claims every
+// wwwroot path, and plain URLs lose the 30-day cache above.
+app.UseRouting();
 app.UseAntiforgery();
 
+app.MapStaticAssets();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.MapSitemap();
@@ -108,6 +113,42 @@ app.MapSitemap();
 await app.MigrateDatabasesAsync();
 
 app.Run();
+
+// Locally ConnectionStrings:qsmpdle comes from the web project's user secrets;
+// Railway supplies the libpq-style PG* variables instead.
+static string ResolveConnectionString(IConfiguration configuration)
+{
+    var connectionString = configuration.GetConnectionString("qsmpdle");
+    if (!string.IsNullOrWhiteSpace(connectionString))
+        return ApplyPoolSettings(new NpgsqlConnectionStringBuilder(connectionString), configuration);
+
+    var host = configuration["PGHOST"];
+    if (string.IsNullOrWhiteSpace(host))
+    {
+        throw new InvalidOperationException(
+            "No database configured. Locally run: dotnet user-secrets set \"ConnectionStrings:qsmpdle\" \"<connection string>\" --project web. "
+            + "In production set the PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD variables.");
+    }
+
+    return ApplyPoolSettings(new NpgsqlConnectionStringBuilder
+    {
+        Host = host,
+        Port = int.TryParse(configuration["PGPORT"], out var port) ? port : 5432,
+        Database = configuration["PGDATABASE"],
+        Username = configuration["PGUSER"],
+        Password = configuration["PGPASSWORD"]
+    }, configuration);
+}
+
+// Cap the pool below Postgres' max_connections (~100 on Railway) so a spike queues briefly
+// in the app instead of exhausting the server; fail fast rather than hang circuits.
+static string ApplyPoolSettings(NpgsqlConnectionStringBuilder builder, IConfiguration configuration)
+{
+    builder.MaxPoolSize = configuration.GetValue("Database:MaxPoolSize", 40);
+    builder.Timeout = configuration.GetValue("Database:ConnectTimeoutSeconds", 15);
+    builder.CommandTimeout = configuration.GetValue("Database:CommandTimeoutSeconds", 30);
+    return builder.ConnectionString;
+}
 
 static bool IsBrowserCacheableAsset(string extension) =>
     extension.Equals(".webp", StringComparison.OrdinalIgnoreCase)

@@ -1,9 +1,10 @@
+using QSMPDLE.Web.Features.Archive.Models;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Services;
 using QSMPDLE.Web.Infrastructure.Persistence;
 
-namespace QSMPDLE.Web.Services
+namespace QSMPDLE.Web.Features.Archive.Services
 {
     // Production implementation that queries the game stats store to determine per-day statuses for the current player.
     public sealed class ArchiveStatusService(
@@ -24,24 +25,23 @@ namespace QSMPDLE.Web.Services
             return await GetStatusesAsync(start, end, includeLocalStorageFallback: true, cancellationToken);
         }
 
-    public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default)
-    {
-        // Local Storage belongs to this browser/circuit, not to the singleton
-        // server cache. Caching it by month would show another browser's stale
-        // state (or a pre-migration NotStarted value), so read it live.
-        if (includeLocalStorageFallback)
+        public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default)
         {
-            return await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken);
-        }
+            // Local Storage belongs to this browser/circuit, not to the singleton
+            // server cache. Caching it by month would show another browser's stale
+            // state (or a pre-migration NotStarted value), so read it live.
+            if (includeLocalStorageFallback)
+            {
+                return await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken);
+            }
 
-        return await _cache.GetStatusesAsync(start, end, async () => await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken), cancellationToken);
+            return await _cache.GetStatusesAsync(start, end, async () => await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken), cancellationToken);
         }
 
         private async Task<Dictionary<int, DayStatus>> GetStatusesCoreAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken)
         {
             // Get current player id from statistics service (which uses the same player store as GameStateManager)
-            var playerStats = await _statisticsService.GetPlayerStatsAsync();
-            var playerId = playerStats?.Id ?? Guid.Empty;
+            var playerId = await _statisticsService.GetPlayerIdAsync();
 
             if (playerId == Guid.Empty)
             {

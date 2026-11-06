@@ -1,4 +1,5 @@
 using FluentAssertions;
+using QSMPDLE.Web.Features.Communication.GameEvents;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Models;
@@ -30,7 +31,7 @@ public sealed class GameStateManagerStatisticsTests
         var session = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
         session.Guesses.Should().ContainSingle();
         session.Guesses.First().GuessedCharacterId.Should().Be(setup.IncorrectGuess.Id);
-        setup.PlayerStatsStore.Stats.LastPlayedDailyGameId.Should().Be(setup.Manager.GameState.GameId);
+        setup.ProjectedStats().LastPlayedDailyGameId.Should().Be(setup.Manager.GameState.GameId);
     }
 
     [Fact]
@@ -44,8 +45,8 @@ public sealed class GameStateManagerStatisticsTests
         var session = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
         session.FinishedOnUtc.Should().NotBeNull();
         session.IsWon.Should().BeTrue();
-        setup.PlayerStatsStore.Stats.GamesWon.Should().Be(1);
-        setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(1);
+        setup.ProjectedStats().GamesWon.Should().Be(1);
+        setup.ProjectedStats().GamesPlayed.Should().Be(1);
     }
 
     [Fact]
@@ -63,8 +64,8 @@ public sealed class GameStateManagerStatisticsTests
         session.FinishedOnUtc.Should().NotBeNull();
         session.IsWon.Should().BeFalse();
         session.Guesses.Should().HaveCount(6);
-        setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(1);
-        setup.PlayerStatsStore.Stats.GamesWon.Should().Be(0);
+        setup.ProjectedStats().GamesPlayed.Should().Be(1);
+        setup.ProjectedStats().GamesWon.Should().Be(0);
     }
 
     [Fact]
@@ -76,7 +77,7 @@ public sealed class GameStateManagerStatisticsTests
         await setup.Manager.MakeGuessAsync(setup.IncorrectGuess.Id);
 
         setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId].FinishedOnUtc.Should().BeNull();
-        setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(0);
+        setup.ProjectedStats().GamesPlayed.Should().Be(0);
     }
 
     [Fact]
@@ -107,6 +108,39 @@ public sealed class GameStateManagerStatisticsTests
     }
 
     [Fact]
+    public async Task DailyGame_ResolvesPlayerId_WithoutLoadingPlayerHistory()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+
+        foreach (var guess in setup.LosingGuesses)
+        {
+            await setup.Manager.MakeGuessAsync(guess.Id);
+        }
+
+        // LoadAsync projects the full session history in production; page loads and guesses must not need it.
+        setup.PlayerStatsStore.LoadCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RecordGameFinished_CalledTwice_KeepsFirstResult()
+    {
+        var setup = CreateSetup();
+        await setup.Manager.StartGameAsync(GameMode.Daily);
+        await setup.Manager.MakeGuessAsync(setup.IncorrectGuess.Id);
+        var gameId = setup.Manager.GameState.GameId;
+        var playerId = setup.PlayerStatsStore.Stats.Id;
+        var firstFinish = DateTimeOffset.UtcNow;
+
+        await setup.StatisticsService.RecordGameFinishedAsync(new GameFinishedEvent { GameId = gameId, PlayerId = playerId, Timestamp = firstFinish, GuessCount = 1, IsWon = true });
+        await setup.StatisticsService.RecordGameFinishedAsync(new GameFinishedEvent { GameId = gameId, PlayerId = playerId, Timestamp = firstFinish.AddMinutes(1), GuessCount = 2, IsWon = false });
+
+        var session = setup.GameStatsStore.Sessions[gameId];
+        session.IsWon.Should().BeTrue();
+        session.FinishedOnUtc.Should().Be(firstFinish);
+    }
+
+    [Fact]
     public async Task DailyPlayerStatsAreUpdatedAccordingToCurrentSemantics()
     {
         var setup = CreateSetup();
@@ -116,11 +150,11 @@ public sealed class GameStateManagerStatisticsTests
 
         var dayNumber = setup.Manager.GameState.Game.DayNumber;
 
-        setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(1);
-        setup.PlayerStatsStore.Stats.GamesWon.Should().Be(1);
-        setup.PlayerStatsStore.Stats.LastCompletedDayNumber.Should().Be(dayNumber);
-        setup.PlayerStatsStore.Stats.LastPlayedDailyGameId.Should().Be(setup.Manager.GameState.GameId);
-        setup.PlayerStatsStore.Stats.GuessDistribution[0].Should().Be(1);
+        setup.ProjectedStats().GamesPlayed.Should().Be(1);
+        setup.ProjectedStats().GamesWon.Should().Be(1);
+        setup.ProjectedStats().LastCompletedDayNumber.Should().Be(dayNumber);
+        setup.ProjectedStats().LastPlayedDailyGameId.Should().Be(setup.Manager.GameState.GameId);
+        setup.ProjectedStats().GuessDistribution[0].Should().Be(1);
     }
 
     [Fact]
@@ -175,7 +209,6 @@ public sealed class GameStateManagerStatisticsTests
         var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
 
         numbers.Should().ContainSingle().Which.Should().Be(completedDayValue);
-        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().NotBeNull();
     }
 
     [Fact]
@@ -196,7 +229,6 @@ public sealed class GameStateManagerStatisticsTests
         var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
 
         numbers.Should().ContainSingle().Which.Should().Be(completedDayValue);
-        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().NotBeNull();
     }
 
     [Fact]
@@ -213,7 +245,6 @@ public sealed class GameStateManagerStatisticsTests
         var numbers = await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(setup.PlayerStatsStore.Stats.Id);
 
         numbers.Should().BeEmpty();
-        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(setup.PlayerStatsStore.Stats.Id, completedDayValue)).Should().BeNull();
     }
 
     [Fact]
@@ -230,7 +261,6 @@ public sealed class GameStateManagerStatisticsTests
         var completedDayValue = setup.Manager.GameState.Game.DayNumber!.Value;
 
         (await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(otherPlayerId)).Should().BeEmpty();
-        (await setup.StatisticsService.GetPlayerCompletedDailyGameAsync(otherPlayerId, completedDayValue)).Should().BeNull();
         (await setup.StatisticsService.GetPlayerCompletedDailyNumbersAsync(playerId)).Should().ContainSingle();
     }
 
@@ -246,20 +276,20 @@ public sealed class GameStateManagerStatisticsTests
         {
             Version = setup.PlayerStatsStore.Stats.Version,
             Id = setup.PlayerStatsStore.Stats.Id,
-            GamesPlayed = setup.PlayerStatsStore.Stats.GamesPlayed,
-            GamesWon = setup.PlayerStatsStore.Stats.GamesWon,
-            CurrentStreak = setup.PlayerStatsStore.Stats.CurrentStreak,
-            MaxStreak = setup.PlayerStatsStore.Stats.MaxStreak,
-            LastCompletedDayNumber = setup.PlayerStatsStore.Stats.LastCompletedDayNumber,
-            LastPlayedDailyGameId = setup.PlayerStatsStore.Stats.LastPlayedDailyGameId,
-            GuessDistribution = setup.PlayerStatsStore.Stats.GuessDistribution.ToArray(),
+            GamesPlayed = setup.ProjectedStats().GamesPlayed,
+            GamesWon = setup.ProjectedStats().GamesWon,
+            CurrentStreak = setup.ProjectedStats().CurrentStreak,
+            MaxStreak = setup.ProjectedStats().MaxStreak,
+            LastCompletedDayNumber = setup.ProjectedStats().LastCompletedDayNumber,
+            LastPlayedDailyGameId = setup.ProjectedStats().LastPlayedDailyGameId,
+            GuessDistribution = setup.ProjectedStats().GuessDistribution.ToArray(),
         };
         await setup.Manager.StartGameAsync(GameMode.Archive, setup.Manager.GameState.Game.DayNumber!.Value);
 
-        setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(beforeStats.GamesPlayed);
-        setup.PlayerStatsStore.Stats.GamesWon.Should().Be(beforeStats.GamesWon);
-        setup.PlayerStatsStore.Stats.CurrentStreak.Should().Be(beforeStats.CurrentStreak);
-        setup.PlayerStatsStore.Stats.LastCompletedDayNumber.Should().Be(beforeStats.LastCompletedDayNumber);
+        setup.ProjectedStats().GamesPlayed.Should().Be(beforeStats.GamesPlayed);
+        setup.ProjectedStats().GamesWon.Should().Be(beforeStats.GamesWon);
+        setup.ProjectedStats().CurrentStreak.Should().Be(beforeStats.CurrentStreak);
+        setup.ProjectedStats().LastCompletedDayNumber.Should().Be(beforeStats.LastCompletedDayNumber);
     }
 
     [Fact]
@@ -441,13 +471,13 @@ public sealed class GameStateManagerStatisticsTests
         };
         setup.GameStatsStore.Sessions[completedDaily.GameId] = completedDaily;
 
-        var beforeStreak = setup.PlayerStatsStore.Stats.CurrentStreak;
-        var beforeGamesPlayed = setup.PlayerStatsStore.Stats.GamesPlayed;
+        var beforeStreak = setup.ProjectedStats().CurrentStreak;
+        var beforeGamesPlayed = setup.ProjectedStats().GamesPlayed;
 
         await setup.Manager.StartGameAsync(GameMode.Archive, 3);
 
-        setup.PlayerStatsStore.Stats.CurrentStreak.Should().Be(beforeStreak);
-        setup.PlayerStatsStore.Stats.GamesPlayed.Should().Be(beforeGamesPlayed);
+        setup.ProjectedStats().CurrentStreak.Should().Be(beforeStreak);
+        setup.ProjectedStats().GamesPlayed.Should().Be(beforeGamesPlayed);
     }
 
     [Fact]
@@ -483,7 +513,7 @@ public sealed class GameStateManagerStatisticsTests
         var statisticsService = new StatisticsService(playerStatsStore, gameStatsStore);
         var dayService = new DayService();
         var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, playerStatsStore, characterStore, new CharacterComparer(characterStore), statisticsService);
-        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, statisticsService, target, incorrectGuess, [incorrectGuess, lose4, lose5, lose6, lose7, lose8, lose9]);
+        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, statisticsService, dayService, target, incorrectGuess, [incorrectGuess, lose4, lose5, lose6, lose7, lose8, lose9]);
     }
 
     private static Character CreateCharacter(int id, string name, int joinDay, int languages, string[] pronouns, string[] affiliations, string[] species) => new()
@@ -506,7 +536,12 @@ public sealed class GameStateManagerStatisticsTests
         InMemoryPlayerStatsStore PlayerStatsStore,
         InMemoryGameStatsStore GameStatsStore,
         StatisticsService StatisticsService,
+        DayService DayService,
         Character Target,
         Character IncorrectGuess,
-        IReadOnlyList<Character> LosingGuesses);
+        IReadOnlyList<Character> LosingGuesses)
+    {
+        // Production derives player statistics from persisted sessions, never from incremental counters.
+        public PlayerStats ProjectedStats() => PlayerStatsProjection.Create(PlayerStatsStore.Stats, GameStatsStore.Sessions.Values, DayService);
+    }
 }

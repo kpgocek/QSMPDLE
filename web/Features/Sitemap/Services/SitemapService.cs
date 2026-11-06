@@ -8,7 +8,7 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Features.Sitemap.Services;
 
 public sealed class SitemapService(
-    ApplicationDbContext db,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IMemoryCache cache)
     : ISitemapService
 {
@@ -31,6 +31,8 @@ public sealed class SitemapService(
         CancellationToken cancellationToken)
     {
         var baseUrl = $"{context.Request.Scheme}://{context.Request.Host}";
+
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         var archiveGames = await db.DailyGames
             .AsNoTracking()

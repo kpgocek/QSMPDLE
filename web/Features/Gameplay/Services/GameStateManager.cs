@@ -351,8 +351,8 @@ public sealed class GameStateManager(
 
     private async Task<Guid> GetPlayerIdAsync()
     {
-        var player = await playerStatsStore.LoadAsync();
-        return player.Id == Guid.Empty ? throw new InvalidOperationException("Player identity was not initialized.") : player.Id;
+        var playerId = await playerStatsStore.GetPlayerIdAsync();
+        return playerId == Guid.Empty ? throw new InvalidOperationException("Player identity was not initialized.") : playerId;
     }
 
     private static EntryPoint ToEntryPoint(GameMode mode) => mode switch

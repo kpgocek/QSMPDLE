@@ -1,3 +1,5 @@
+using QSMPDLE.Web.Features.Archive.Models;
+using QSMPDLE.Web.Features.Archive.Services;
 using QSMPDLE.Web.Features.Communication.GameEvents;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
@@ -5,7 +7,6 @@ using QSMPDLE.Web.Features.Statistics.Models;
 using QSMPDLE.Web.Features.Statistics.Services;
 using QSMPDLE.Web.Infrastructure.LocalStorage;
 using QSMPDLE.Web.Infrastructure.Persistence;
-using QSMPDLE.Web.Services;
 
 namespace QSMPDLE.Web.Tests.Services;
 
@@ -219,10 +220,10 @@ public sealed class ArchiveStatusServiceTests
     }
 
     [Fact]
-    public async Task RecordGameFinishedAsync_DailyGame_LeavesArchiveTotalsUnchanged()
+    public async Task RecordGameFinishedAsync_DailyGame_DoesNotCountAsArchiveGame()
     {
         var playerId = Guid.NewGuid();
-        var statsStore = new TestPlayerStatsStore(new PlayerStats { Id = playerId, ArchiveGamesPlayed = 4, ArchiveGamesWon = 2, ArchiveGamesLost = 2 });
+        var statsStore = new TestPlayerStatsStore(new PlayerStats { Id = playerId });
         var gameStatsStore = new TestGameStatsStore();
         var service = new StatisticsService(statsStore, gameStatsStore);
 
@@ -253,15 +254,16 @@ public sealed class ArchiveStatusServiceTests
             Timestamp = DateTimeOffset.UtcNow.AddMinutes(4),
         });
 
-        var stats = await statsStore.LoadAsync();
+        // Player statistics are projected from sessions; a Daily finish must not count as an archive game.
+        var stats = PlayerStatsProjection.Create(await statsStore.LoadAsync(), await gameStatsStore.GetPlayerGames(playerId), new DayService());
 
         Assert.Equal(1, stats.GamesPlayed);
         Assert.Equal(0, stats.GamesWon);
         Assert.Equal(0, stats.CurrentStreak);
         Assert.Equal(0, stats.MaxStreak);
-        Assert.Equal(4, stats.ArchiveGamesPlayed);
-        Assert.Equal(2, stats.ArchiveGamesWon);
-        Assert.Equal(2, stats.ArchiveGamesLost);
+        Assert.Equal(0, stats.ArchiveGamesPlayed);
+        Assert.Equal(0, stats.ArchiveGamesWon);
+        Assert.Equal(0, stats.ArchiveGamesLost);
     }
 
     [Fact]
@@ -410,7 +412,6 @@ public sealed class ArchiveStatusServiceTests
         public Task RecordGameFinishedAsync(Features.Communication.GameEvents.GameFinishedEvent eventData) => throw new NotImplementedException();
         public Task<PlayerStats> GetPlayerStatsAsync() => Task.FromResult(_playerStats);
         public Task<GameSession> GetGameStatsAsync(Guid gameId) => throw new NotImplementedException();
-        public Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber) => throw new NotImplementedException();
         public Task<List<int>> GetPlayerCompletedDailyNumbersAsync(Guid playerId) => throw new NotImplementedException();
     }
 
@@ -434,8 +435,7 @@ public sealed class ArchiveStatusServiceTests
             _sessions.Add(stats);
             return Task.CompletedTask;
         }
-        public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId) => throw new NotImplementedException();
-        public Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber) => throw new NotImplementedException();
+        public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId) => Task.FromResult<IEnumerable<GameSession>>(_sessions.Where(session => session.PlayerId == playerId).ToList());
 
         public Task<List<GameSession>> GetPlayerDailyGamesByNumberRangeAsync(Guid playerId, int startNumber, int endNumber)
         {

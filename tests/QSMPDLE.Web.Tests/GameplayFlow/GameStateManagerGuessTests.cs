@@ -1,7 +1,7 @@
-using QSMPDLE.Web.Features.Communication.GameEvents;
-using QSMPDLE.Web.Diagnostics;
-using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
+using QSMPDLE.Web.Diagnostics;
+using QSMPDLE.Web.Features.Communication.GameEvents;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Models;
@@ -161,9 +161,12 @@ public sealed class GameStateManagerGuessTests
         var state = setup.Manager.GameState;
         var existing = new GameSession
         {
-            GameId = Guid.NewGuid(), PlayerId = state.PlayerId,
-            SessionCategory = SessionCategory.CanonicalPuzzle, PuzzleId = state.Game.PuzzleId,
-            TargetCharacterId = setup.CorrectGuess.Id, IsWon = true,
+            GameId = Guid.NewGuid(),
+            PlayerId = state.PlayerId,
+            SessionCategory = SessionCategory.CanonicalPuzzle,
+            PuzzleId = state.Game.PuzzleId,
+            TargetCharacterId = setup.CorrectGuess.Id,
+            IsWon = true,
             FinishedOnUtc = DateTimeOffset.UtcNow,
             Guesses = [new GameGuess { GuessedCharacterId = setup.CorrectGuess.Id, GuessOrder = 1 }]
         };

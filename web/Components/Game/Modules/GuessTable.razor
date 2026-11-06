@@ -277,11 +277,11 @@
     [Parameter]
     public int MaxGuesses { get; set; } = 6;
 
-    private Dictionary<int, Character> CharactersById { get; set; } = [];
+    private IReadOnlyDictionary<int, Character> CharactersById { get; set; } = new Dictionary<int, Character>();
 
     protected override async Task OnInitializedAsync()
     {
-        CharactersById = (await CharacterStore.GetCharactersAsync()).ToDictionary(character => character.Id);
+        CharactersById = await CharacterStore.GetCharacterMapAsync();
     }
 
     private static string DisplayList(IEnumerable<string> values)

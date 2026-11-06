@@ -1,9 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using QSMPDLE.Web.Diagnostics;
+using QSMPDLE.Web.Features.Archive.Models;
+using QSMPDLE.Web.Features.Archive.Services;
 using QSMPDLE.Web.Features.Communication;
 using QSMPDLE.Web.Features.Communication.GameEvents;
-using QSMPDLE.Web.Services;
 
 namespace QSMPDLE.Web.Tests.Services;
 
@@ -136,8 +137,11 @@ public sealed class RuntimeLifetimeTests
             () => Task.FromResult(new Dictionary<int, DayStatus> { [start.DayNumber] = DayStatus.NotStarted }));
         await bus.PublishAsync(new GuessMadeEvent
         {
-            Timestamp = DateTimeOffset.UtcNow, PlayerId = Guid.NewGuid(), GameId = Guid.NewGuid(),
-            GuessedCharacterId = 1, DayNumber = 1
+            Timestamp = DateTimeOffset.UtcNow,
+            PlayerId = Guid.NewGuid(),
+            GameId = Guid.NewGuid(),
+            GuessedCharacterId = 1,
+            DayNumber = 1
         });
         Assert.Equal(0, counters.ArchiveEntries);
         Assert.Equal(2, counters.Subscriptions);

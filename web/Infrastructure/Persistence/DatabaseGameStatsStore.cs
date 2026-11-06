@@ -48,7 +48,7 @@ public sealed class DatabaseGameStatsStore(
         // Legacy compatibility query; canonical callers should use the method below.
         var sessions = await database.GameStats
             .AsNoTracking()
-            .Where(gs => gs.PlayerId == playerId && gs.Mode == GameMode.Daily && gs.DailyNumber.HasValue && gs.DailyNumber >= startNumber && gs.DailyNumber <= endNumber)
+            .Where(gs => gs.PlayerId == playerId && gs.Mode == GameMode.Daily && gs.DailyNumber.HasValue && gs.DailyNumber >= startNumber && gs.DailyNumber <= endNumber && !gs.IsLegacyDuplicate)
             .ToListAsync();
 
         return sessions.ConvertAll(s => new GameSession
@@ -135,23 +135,6 @@ public sealed class DatabaseGameStatsStore(
         }
     }
 
-    public async Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber)
-    {
-        await using var database = await DbContextFactory.CreateDbContextAsync();
-
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        return await database.GameStats
-            .AsNoTracking()
-            .Include(stats => stats.Guesses)
-            .FirstOrDefaultAsync(game =>
-                game.PlayerId == playerId &&
-                game.Mode == GameMode.Daily &&
-                game.DailyNumber == dailyNumber &&
-                game.FinishedOnUtc.HasValue &&
-                !(game.Mode == GameMode.Daily && DateOnly.FromDateTime(game.StartedOnUtc.UtcDateTime) == today));
-    }
-
     public async Task<GameSession> LoadOrNewAsync(Guid gameId)
     {
         await using var database = await DbContextFactory.CreateDbContextAsync();
@@ -177,6 +160,69 @@ public sealed class DatabaseGameStatsStore(
 
         database.GameStats.Update(stats);
 
+        await database.SaveChangesAsync();
+    }
+
+    public async Task AddGuessAsync(Guid gameId, Guid playerId, int guessedCharacterId)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        var session = await database.GameStats
+            .AsNoTracking()
+            .Where(stats => stats.GameId == gameId)
+            .Select(stats => new
+            {
+                stats.Id,
+                GuessCount = stats.Guesses.Count,
+                AlreadyGuessed = stats.Guesses.Any(guess => guess.GuessedCharacterId == guessedCharacterId),
+            })
+            .FirstOrDefaultAsync();
+
+        if (session is null)
+        {
+            var newSession = new GameSession { GameId = gameId, PlayerId = playerId };
+            newSession.AddGuess(guessedCharacterId);
+            database.GameStats.Add(newSession);
+            await database.SaveChangesAsync();
+            return;
+        }
+
+        if (session.AlreadyGuessed)
+            return;
+
+        var guess = new GameGuess
+        {
+            GameId = gameId,
+            GuessOrder = session.GuessCount,
+            GuessedCharacterId = guessedCharacterId,
+        };
+        database.GameGuess.Add(guess);
+        database.Entry(guess).Property("GameSessionId").CurrentValue = session.Id;
+
+        await database.SaveChangesAsync();
+    }
+
+    public async Task MarkFinishedAsync(Guid gameId, Guid playerId, DateTimeOffset finishedOnUtc, bool isWon)
+    {
+        await using var database = await DbContextFactory.CreateDbContextAsync();
+
+        // The FinishedOnUtc filter makes completion idempotent without a read-modify-write.
+        var updated = await database.GameStats
+            .Where(stats => stats.GameId == gameId && stats.FinishedOnUtc == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(stats => stats.FinishedOnUtc, finishedOnUtc)
+                .SetProperty(stats => stats.IsWon, isWon));
+
+        if (updated > 0 || await database.GameStats.AnyAsync(stats => stats.GameId == gameId))
+            return;
+
+        database.GameStats.Add(new GameSession
+        {
+            GameId = gameId,
+            PlayerId = playerId,
+            FinishedOnUtc = finishedOnUtc,
+            IsWon = isWon,
+        });
         await database.SaveChangesAsync();
     }
 
@@ -872,7 +918,7 @@ public sealed class DatabaseGameStatsStore(
 
         var earliest = await database.GameStats
             .AsNoTracking()
-            .Where(g => g.PlayerId == playerId)
+            .Where(g => g.PlayerId == playerId && !g.IsLegacyDuplicate)
             .Select(g => (DateTimeOffset?)g.StartedOnUtc)
             .MinAsync();
 

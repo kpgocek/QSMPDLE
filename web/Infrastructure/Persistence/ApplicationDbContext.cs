@@ -19,6 +19,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.HasIndex(x => new { x.PlayerId, x.PuzzleId })
                 .HasFilter("\"PuzzleId\" IS NOT NULL AND \"SessionCategory\" = 0 AND NOT \"IsLegacyDuplicate\"")
                 .IsUnique();
+            entity.HasIndex(x => x.PlayerId)
+                .HasDatabaseName("IX_GameStats_PlayerId")
+                .HasFilter("NOT \"IsLegacyDuplicate\"");
 
             entity.ToTable(table => table.HasCheckConstraint(
                 "CK_GameStats_PlayerId_NotEmpty",
@@ -31,21 +34,6 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         modelBuilder.Entity<DailyGame>()
             .HasIndex(x => x.Date)
             .IsUnique();
-
-        modelBuilder.Entity<GlobalStatsView>(view =>
-        {
-            view.HasNoKey();
-            view.ToView("global_stats");
-
-            view.Property(x => x.TotalGames)
-                .HasColumnName("total_games");
-
-            view.Property(x => x.TotalPlayers)
-                .HasColumnName("total_players");
-
-            view.Property(x => x.TotalWins)
-                .HasColumnName("total_wins");
-        });
 
         base.OnModelCreating(modelBuilder);
     }

@@ -8,12 +8,32 @@ public interface IGameStatsStore
 
     Task SaveAsync(GameSession stats);
 
+    /// <summary>Records one guess without rewriting the rest of the session graph.</summary>
+    async Task AddGuessAsync(Guid gameId, Guid playerId, int guessedCharacterId)
+    {
+        var stats = await LoadOrNewAsync(gameId);
+        stats.PlayerId = playerId;
+        stats.AddGuess(guessedCharacterId);
+        await SaveAsync(stats);
+    }
+
+    /// <summary>Marks the session finished once; later calls leave the first result in place.</summary>
+    async Task MarkFinishedAsync(Guid gameId, Guid playerId, DateTimeOffset finishedOnUtc, bool isWon)
+    {
+        var stats = await LoadOrNewAsync(gameId);
+        if (stats.FinishedOnUtc.HasValue)
+            return;
+
+        stats.PlayerId = playerId;
+        stats.FinishedOnUtc = finishedOnUtc;
+        stats.IsWon = isWon;
+        await SaveAsync(stats);
+    }
+
     Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId) => Task.FromResult<GameSession?>(null);
     Task<GameSession> ClaimCanonicalSessionAsync(GameSession proposedSession) => Task.FromResult(proposedSession);
 
     Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId);
-
-    Task<GameSession?> GetPlayerCompletedDailyGameAsync(Guid playerId, int dailyNumber);
 
     Task<GlobalStatsView> GetGlobalStatsAsync();
 

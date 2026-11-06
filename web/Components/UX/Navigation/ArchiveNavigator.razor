@@ -1,7 +1,7 @@
 @implements IDisposable
 @using MudBlazor
 @inject NavigationManager NavigationManager
-@inject QSMPDLE.Web.Services.IArchiveStatusService StatusService
+@inject QSMPDLE.Web.Features.Archive.Services.IArchiveStatusService StatusService
 @inject QSMPDLE.Web.Features.Communication.GameEvents.IGameEventBus EventBus
 
 <div class="archive-navigator">
@@ -71,7 +71,7 @@
     }
 
     // In-memory cache: archiveDay (1-based) -> DayStatus
-    private readonly Dictionary<int, QSMPDLE.Web.Services.DayStatus> _dayStatuses = new();
+    private readonly Dictionary<int, QSMPDLE.Web.Features.Archive.Models.DayStatus> _dayStatuses = new();
 
     // Keep track of which months (year*100 + month) we've loaded to avoid duplicate network calls
     private readonly HashSet<int> _loadedMonthKeys = new();
@@ -136,7 +136,7 @@
             });
         });
 
-        var selected = SelectedDate ?? DateTime.Now;
+        var selected = SelectedDate ?? DateTime.UtcNow;
         _loadOnFirstRender = DateOnly.FromDateTime(selected);
 
         return Task.CompletedTask;
@@ -221,13 +221,13 @@
         {
             switch (status)
             {
-                case QSMPDLE.Web.Services.DayStatus.Won:
+                case QSMPDLE.Web.Features.Archive.Models.DayStatus.Won:
                     return "archive-won";
-                case QSMPDLE.Web.Services.DayStatus.Lost:
+                case QSMPDLE.Web.Features.Archive.Models.DayStatus.Lost:
                     return "archive-lost";
-                case QSMPDLE.Web.Services.DayStatus.InProgress:
+                case QSMPDLE.Web.Features.Archive.Models.DayStatus.InProgress:
                     return "archive-inprogress";
-                case QSMPDLE.Web.Services.DayStatus.NotStarted:
+                case QSMPDLE.Web.Features.Archive.Models.DayStatus.NotStarted:
                 default:
                     return "archive-notstarted";
             }

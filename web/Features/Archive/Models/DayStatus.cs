@@ -1,4 +1,4 @@
-namespace QSMPDLE.Web.Services
+namespace QSMPDLE.Web.Features.Archive.Models
 {
     // Represents player's status for a given archive day
     public enum DayStatus
