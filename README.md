@@ -37,6 +37,10 @@ A daily character guessing game based on QSMP2.
 - [x] Offline Progress Persistence
 - [x] Personal Stats Page
 
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for the release history.
+
 ## Privacy
 
 QSMPDLE does not require accounts or collect personal information such as names, emails, passwords, or payment details.
