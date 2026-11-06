@@ -65,7 +65,7 @@
                         <td class="small-cell">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                                 <MudAvatar Square="true" Size="Size.Large">
-                                    <MudImage Src="/graphics/mini-heads/FitMC.webp" />
+                                    <MudImage Src="/graphics/mini-heads/FitMC.webp" Alt="" />
                                 </MudAvatar>
                                 <span>FitMC</span>
                             </MudStack>
@@ -111,7 +111,7 @@
                 <div class="guess-card-header">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
                         <MudAvatar Square="true" Size="Size.Large">
-                            <MudImage Src="/graphics/mini-heads/FitMC.webp" />
+                            <MudImage Src="/graphics/mini-heads/FitMC.webp" Alt="" />
                         </MudAvatar>
 
                         <span class="guess-name">FitMC</span>
@@ -150,12 +150,14 @@
             <p>
                 <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Green</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="guess-chip-icon" aria-hidden="true" />
                 </MudChip>
                 means an exact match.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Red</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" Class="guess-chip-icon" aria-hidden="true" />
                 </MudChip>
                 means the attribute does not match at all.
             </p>
@@ -163,11 +165,12 @@
                 <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Sky Blue</strong>
                 </MudChip>
-                with an arrow indicates a value that's higher, lower, later of earlier than provided.
+                with an arrow indicates a value that's higher, lower, later or earlier than provided.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small" Class="color">
                     <strong>Yellow</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Contrast" Size="Size.Small" Class="guess-chip-icon" aria-hidden="true" />
                 </MudChip>
                 means the attribute is partially correct (have at least one element of the answer).
             </p>

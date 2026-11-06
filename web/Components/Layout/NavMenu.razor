@@ -12,10 +12,11 @@
 
         <div class="mobile-menu">
             <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Size="Size.Large"
-                           OnClick="@ToggleMenu" aria-label="Toggle Menu" />
+                           OnClick="@ToggleMenu" aria-label="Toggle Menu"
+                           aria-expanded="@(isMenuOpen ? "true" : "false")" aria-controls="site-nav" />
         </div>
 
-        <nav class="links @MenuVisibilityClass">
+        <nav id="site-nav" class="links @MenuVisibilityClass" aria-label="Main">
             <NavLink href="/" Match="NavLinkMatch.All">
                 Daily
             </NavLink>
