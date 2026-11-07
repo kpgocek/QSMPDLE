@@ -1,17 +1,12 @@
 @font-face {
-    font-family: "Pixel";
-    src: url("fonts/04b_03__.ttf");
-}
-
-@font-face {
     font-family: "Bungee";
-    src: url("fonts/Bungee/Bungee-Regular.ttf") format("truetype");
+    src: url("fonts/Bungee/Bungee-Latin.woff2") format("woff2");
     font-display: swap;
 }
 
 @font-face {
     font-family: "Nunito Sans";
-    src: url("fonts/Nunito_Sans/NunitoSans-VariableFont_YTLC,opsz,wdth,wght.ttf") format("truetype");
+    src: url("fonts/Nunito_Sans/NunitoSans-Latin.woff2") format("woff2");
     font-weight: 200 1000;
     font-style: normal;
     font-display: swap;
@@ -19,7 +14,7 @@
 
 @font-face {
     font-family: "Nunito Sans";
-    src: url("fonts/Nunito_Sans/NunitoSans-Italic-VariableFont_YTLC,opsz,wdth,wght.ttf") format("truetype");
+    src: url("fonts/Nunito_Sans/NunitoSans-Italic-Latin.woff2") format("woff2");
     font-weight: 200 1000;
     font-style: italic;
     font-display: swap;
@@ -27,7 +22,7 @@
 
 @font-face {
     font-family: "Crafter";
-    src: url("fonts/minecrafter.reg.ttf");
+    src: url("fonts/minecrafter.woff2") format("woff2");
     font-display: swap;
 }
 
@@ -110,6 +105,11 @@ h4 {
     font-weight: 600;
 }
 
+/* Mud headings rendered as h4 for document outline keep their Typo look. */
+h4.mud-typography {
+    font-style: normal;
+}
+
 .text-accent {
     background: linear-gradient(to right, var(--correct) -10%, var(--primary) 65%);
     background-clip: text;
@@ -129,6 +129,14 @@ h4 {
 
 .mud-button-root:hover {
     filter: brightness(1.05);
+}
+
+.mud-alert-outlined-success {
+    color: var(--correct);
+}
+
+.mud-alert-outlined-info {
+    color: var(--primary);
 }
 
 .mud-popover {

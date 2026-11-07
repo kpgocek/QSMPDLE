@@ -15,6 +15,11 @@ public static class QsmpdleTheme
             Warning = "#FFA056",
             Error = "#CC284C",
 
+            // White on the bright fills is ~2–2.5:1; navy clears 7:1. Error stays white (5.3:1).
+            PrimaryContrastText = "#010a1e",
+            SuccessContrastText = "#010a1e",
+            WarningContrastText = "#010a1e",
+
             Background = "#010a1e",
             Surface = "#0A2C5E",
 

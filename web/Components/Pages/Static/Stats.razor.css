@@ -3,3 +3,54 @@
     font-style: normal;
     font-weight: 500;
 }
+
+.ranking {
+    height: 100%;
+    padding-top: .75rem;
+    border-top: .0625rem solid var(--line);
+}
+
+.ranking-note {
+    margin-bottom: .75rem;
+    color: var(--text-muted);
+    font-size: .875rem;
+}
+
+.retention-table {
+    width: 100%;
+    margin-bottom: .75rem;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.retention-table th,
+.retention-table td {
+    padding: .625rem .75rem;
+    border-bottom: .0625rem solid var(--line);
+    text-align: end;
+}
+
+.retention-table thead th {
+    color: var(--text-muted);
+    font-size: .8125rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.retention-table tbody th {
+    text-align: start;
+    font-weight: 600;
+}
+
+.retention-table td {
+    font-size: 1.375rem;
+}
+
+.retention-key {
+    color: var(--text);
+}
+
+.retention-legend {
+    font-size: .875rem;
+}

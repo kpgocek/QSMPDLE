@@ -97,5 +97,5 @@ main {
 
 .footer-copyright {
     font-size: .875rem;
-    color: var(--tint);
+    color: var(--text-muted);
 }

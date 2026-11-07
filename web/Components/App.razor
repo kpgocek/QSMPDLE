@@ -15,9 +15,13 @@
 
     <ResourcePreloader />
 
-    <link rel="stylesheet" href="@Assets["/vendors/Blazor.Bootstrap/blazor.bootstrap.css"]" />
-    <link rel="stylesheet" href="@Assets["/vendors/MudBlazor/MudBlazor.min.css"]" />
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="preload" href="fonts/minecrafter.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/Nunito_Sans/NunitoSans-Latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/Bungee/Bungee-Latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <link rel="stylesheet" href="@Assets["vendors/MudBlazor/MudBlazor.min.css"]" />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap-reboot.min.css"]" />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap-utilities.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["QSMPDLE.Web.styles.css"]" />
     <link rel="stylesheet" href="@Assets["css/colors.css"]" />
@@ -35,10 +39,9 @@
     <Routes />
     <ReconnectModal />
 
-    <script src="@Assets["/framework/blazor.web.js"]"></script>
+    <script src="@Assets["framework/blazor.web.js"]"></script>
 
-    <script src="@Assets["/vendors/Blazor.Bootstrap/blazor.bootstrap.js"]"></script>
-    <script src="@Assets["/vendors/MudBlazor/MudBlazor.min.js"]"></script>
+    <script src="@Assets["vendors/MudBlazor/MudBlazor.min.js"]"></script>
     <script src="@Assets["js/share.js"]"></script>
     <script src="@Assets["js/scroll.js"]"></script>
 </body>
