@@ -1,6 +1,6 @@
 ﻿@using MudBlazor
 
-<MudPaper Class="stats-card pa-2" Style="@($"animation-delay:{Delay}ms")" Elevation="2">
+<div class="stats-card" style="@($"animation-delay:{Delay}ms")">
 
     <MudText Typo="Typo.caption"
              Class="stats-title">
@@ -16,44 +16,42 @@
 
     <MudText Typo="Typo.caption" Align="Align.Center" Class="comment">@Comment</MudText>
 
-</MudPaper>
+</div>
 
 <style>
+    /* Flat on purpose: stat cards sit inside page cards and dialogs, so a rule replaces the box. */
     .stats-card {
-        min-height: 7.5rem;
-
         flex: 1;
 
         display: flex;
         flex-direction: column;
-        border-radius: 0;
-        border: .0625rem solid var(--line);
-        background: linear-gradient(180deg, var(--surface), var(--surface-muted));
-
         gap: .25rem;
+
+        padding-block: .75rem .5rem;
+        border-top: .0625rem solid var(--line);
+
+        font-variant-numeric: tabular-nums;
 
         opacity: 0;
         transform: translateY(.625rem);
 
         animation: reveal-card 420ms ease forwards;
-        transition:
-            border-color 160ms ease;
-    }
-
-    .stats-card:hover {
-        border-color: var(--line-strong);
     }
 
     .stats-title {
         display: flex;
         gap: .5rem;
         align-items: center;
+        justify-content: center;
+        text-align: center;
+        /* Two-line labels would otherwise push their value below the row's other values. */
+        min-height: 2lh;
         opacity: .75;
         user-select:none;
     }
 
     .comment {
-        color: var(--tint);
+        color: var(--text-muted);
         user-select: none;
     }
 </style>

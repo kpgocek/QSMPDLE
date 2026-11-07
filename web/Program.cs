@@ -29,7 +29,6 @@ builder.Services.AddMemoryCache();
 builder.Services.AddDiagnostics();
 
 builder.Services.AddMudServices();
-builder.Services.AddBlazorBootstrap();
 
 builder.Services.AddThemes();
 

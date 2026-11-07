@@ -21,6 +21,8 @@
 
     --background: var(--black);
     --text: var(--white);
+    /* Solid, not translucent: stays above 4.5:1 on every surface from --black to --primary-black. */
+    --text-muted: #94A9C2;
 
     --shadow: hsla(var(--black-hsl), 0.2);
     --ghost: hsla(var(--white-hsl), 0.3);

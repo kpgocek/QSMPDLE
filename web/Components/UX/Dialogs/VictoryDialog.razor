@@ -6,10 +6,11 @@
 @inject IShareService ShareService
 @inject IShareTextBuilder ShareTextBuilder
 
-<div class="victory-overlay">
-    <div class="victory-modal">
+<div class="victory-overlay" @onkeydown="CloseOnEscape">
+    <div class="victory-modal" role="dialog" aria-modal="true" aria-labelledby="victory-title"
+         tabindex="-1" @ref="modal">
 
-        <h2>Correct!</h2>
+        <h2 id="victory-title">Correct!</h2>
 
         @if (DayNumber is not null)
         {
@@ -86,7 +87,7 @@
         <div class="buttons">
             @if (GameState.SessionCategory == GameModeSessionCategory)
             {
-                <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary">
+                <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary" AriaLabel="Share result">
 
                     <MudMenuItem OnClick="Share">
                         <MudIcon Icon="@Icons.Material.Filled.Share" />
@@ -124,6 +125,10 @@
 </div>
 
 <style>
+    .victory-modal:focus {
+        outline: none;
+    }
+
     .victory-overlay {
         position: fixed;
         inset: 0;
@@ -250,6 +255,25 @@
             Guesses);
 
         await ShareService.ShareAsync(text);
+    }
+
+    private ElementReference modal;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // The guess input that had focus is disabled once the game ends, so keyboard users start here.
+        if (firstRender)
+        {
+            await modal.FocusAsync();
+        }
+    }
+
+    private async Task CloseOnEscape(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await Close();
+        }
     }
 
     private async Task Close()
