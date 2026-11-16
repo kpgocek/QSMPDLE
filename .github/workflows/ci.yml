@@ -28,5 +28,5 @@ jobs:
             - name: Test
               run: dotnet test QSMPDLE.sln --no-build --configuration Release
 
-            - name: Format
-              run: dotnet format QSMPDLE.sln --verify-no-changes --no-restore --exclude tools
+      - name: Format
+        run: dotnet format QSMPDLE.sln --verify-no-changes --no-restore
