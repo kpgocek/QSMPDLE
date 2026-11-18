@@ -55,9 +55,9 @@
                                 <h3>@(playerCharacterStats.MostGuessedCharacterName ?? "-")</h3>
                             </CardHeaderContent>
                             <CardHeaderAvatar>
-                                @if (playerCharacterStats.MostGuessedIconUrl is not null)
+                                @if (playerCharacterStats.MostGuessedPortraitFolder is not null)
                                 {
-                                    <MudImage Src="@($"/graphics/guessing/{playerCharacterStats.MostGuessedIconUrl}/Head.webp")"
+                                    <MudImage Src="@CharacterUrlHelper.GetPortraitSrc(playerCharacterStats.MostGuessedPortraitFolder)"
                                               Height="80" Alt="" />
                                 }
                             </CardHeaderAvatar>
@@ -83,10 +83,10 @@
                                 <h3>@(playerCharacterStats.MostCorrectlyGuessedCharacterName ?? "-")</h3>
                             </CardHeaderContent>
                             <CardHeaderAvatar>
-                                @if (playerCharacterStats.MostCorrectlyGuessedIconUrl is not null)
+                                @if (playerCharacterStats.MostCorrectlyGuessedPortraitFolder is not null)
                                 {
                                     <MudImage
-                                    Src="@($"/graphics/guessing/{playerCharacterStats.MostCorrectlyGuessedIconUrl}/Head.webp")"
+                                    Src="@CharacterUrlHelper.GetPortraitSrc(playerCharacterStats.MostCorrectlyGuessedPortraitFolder)"
                                     Height="80" Alt="" />
                                 }
                             </CardHeaderAvatar>

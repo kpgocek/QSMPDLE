@@ -46,7 +46,7 @@
                     <td class="medium-cell">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                             <MudAvatar Square="true" Size="Size.Large">
-                                <MudImage Src="@CharacterImageHelper.GetHeadSrc(character)" Alt="" />
+                                <MudImage Src="@CharacterUrlHelper.GetHeadSrc(character)" Alt="" />
                             </MudAvatar>
                             <span>@character.Name</span>
                         </MudStack>
@@ -67,7 +67,7 @@
 
                     <td class="small-cell">
                         <GuessChip Result="guess.Languages">
-                            @(character.Languages > 3 ? $"4+ ({character.Languages})" : character.Languages)
+                            @(character.LanguageCount > 3 ? $"4+ ({character.LanguageCount})" : character.LanguageCount)
                         </GuessChip>
                     </td>
 

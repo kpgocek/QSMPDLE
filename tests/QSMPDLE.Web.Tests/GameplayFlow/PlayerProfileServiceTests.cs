@@ -60,10 +60,10 @@ public sealed class PlayerProfileServiceTests
 
         characterStats.Should().NotBeNull();
         characterStats!.MostGuessedCharacterName.Should().Be("Alpha");
-        characterStats.MostGuessedIconUrl.Should().NotBeNull();
+        characterStats.MostGuessedPortraitFolder.Should().NotBeNull();
         characterStats.MostGuessedCount.Should().Be(4);
         characterStats.MostCorrectlyGuessedCharacterName.Should().Be("99");
-        characterStats.MostCorrectlyGuessedIconUrl.Should().BeNull();
+        characterStats.MostCorrectlyGuessedPortraitFolder.Should().BeNull();
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class PlayerProfileServiceTests
 
     private PlayerProfileService CreateService()
     {
-        var characters = new InMemoryCharacterStore([new Character { Id = 7, Name = "Alpha", IconUrl = "alpha.webp" }], 7);
+        var characters = new InMemoryCharacterStore([new Character { Id = 7, Name = "Alpha", PortraitId = Guid.NewGuid() }], 7);
 
         return new PlayerProfileService(playerStats, gameStats, new StubGlobalStatsService(), characters, new DayService());
     }

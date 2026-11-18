@@ -22,7 +22,7 @@
                         aria-selected="@(item.Index == ActiveSuggestionIndex ? "true" : "false")"
                         class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
                         @onclick="() => SelectAndGuess(item.Character)">
-                    <img src="@CharacterImageHelper.GetHeadSrc(item.Character)" alt="" loading="lazy" decoding="async" />
+                    <img src="@CharacterUrlHelper.GetHeadSrc(item.Character)" alt="" loading="lazy" decoding="async" />
                     <div class="names">
                         <span>@item.Character.Name</span>
                     </div>

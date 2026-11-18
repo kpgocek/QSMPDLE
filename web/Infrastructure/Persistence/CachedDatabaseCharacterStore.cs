@@ -1,6 +1,7 @@
-﻿using System.Collections.Frozen;
+using System.Collections.Frozen;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using QSMPDLE.Web.Features.Gameplay.Helpers;
 using QSMPDLE.Web.Features.Gameplay.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
@@ -118,7 +119,7 @@ public class CachedDatabaseCharacterStore(
         public static CharacterCatalog Create(List<Character> characters)
         {
             var lookups = characters
-                .Select(ch => new CharacterLookup(ch.Id, ch.Name, ch.MinecraftUsername, ch.Aliases, ch.IconUrl))
+                .Select(ch => new CharacterLookup(ch.Id, ch.Name, ch.MinecraftUsername, ch.Aliases, CharacterUrlHelper.GetPortraitFolder(ch.PortraitId)))
                 .OrderBy(l => l.Name)
                 .ToList();
 

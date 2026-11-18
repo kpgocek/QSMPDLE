@@ -25,7 +25,7 @@
     }
     else
     {
-        <CharacterPortrait IconUrl="@(GameStateManager.GameState?.Game.PortraitUrl ?? string.Empty)"
+        <CharacterPortrait PortraitFolder="@(GameStateManager.GameState?.Game.PortraitUrl ?? string.Empty)"
                            GuessesMade="@(GameStateManager.GameState?.GuessesMade.Count ?? 0)"
                            IsGuessed="@(GameStateManager.GameState?.IsWon ?? false)"
                            IsFailed="@(GameStateManager.GameState?.IsLost ?? false)" />

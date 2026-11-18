@@ -56,7 +56,7 @@
             <div class="guess-card-header">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
                     <MudAvatar Square="true" Size="Size.Large">
-                        <MudImage Src="@CharacterImageHelper.GetHeadSrc(character)" Alt="" />
+                        <MudImage Src="@CharacterUrlHelper.GetHeadSrc(character)" Alt="" />
                     </MudAvatar>
 
                     <span class="guess-name">@character.Name</span>
@@ -75,7 +75,7 @@
 
                 <GuessChip Result="guess.Languages">
                     <span class="chip-labels">Languages:</span>
-                    @(character.Languages > 3 ? "4+" : character.Languages)
+                    @(character.LanguageCount > 3 ? "4+" : character.LanguageCount)
                 </GuessChip>
 
                 @if (character.Affiliations.Count > 0)

@@ -1,3 +1,4 @@
+using QSMPDLE.Web.Features.Gameplay.Helpers;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Infrastructure.Persistence;
 
@@ -23,7 +24,7 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
         var game = new Game
         {
             TargetId = character.Id,
-            PortraitUrl = character.IconUrl
+            PortraitUrl = CharacterUrlHelper.GetPortraitFolder(character.PortraitId)
         };
 
         return new GameState
@@ -55,7 +56,7 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
         return new Game
         {
             TargetId = character.Id,
-            PortraitUrl = character.IconUrl,
+            PortraitUrl = CharacterUrlHelper.GetPortraitFolder(character.PortraitId),
             PuzzleId = dayNumber
         };
     }

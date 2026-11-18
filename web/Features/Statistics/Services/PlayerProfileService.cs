@@ -64,9 +64,9 @@ public sealed class PlayerProfileService(
         return stats with
         {
             MostGuessedCharacterName = mostGuessed?.Name ?? stats.MostGuessedCharacterId?.ToString(),
-            MostGuessedIconUrl = mostGuessed?.CharacterIconUrl,
+            MostGuessedPortraitFolder = mostGuessed?.PortraitFolder,
             MostCorrectlyGuessedCharacterName = mostCorrect?.Name ?? stats.MostCorrectlyGuessedCharacterId?.ToString(),
-            MostCorrectlyGuessedIconUrl = mostCorrect?.CharacterIconUrl,
+            MostCorrectlyGuessedPortraitFolder = mostCorrect?.PortraitFolder,
         };
     }
 }

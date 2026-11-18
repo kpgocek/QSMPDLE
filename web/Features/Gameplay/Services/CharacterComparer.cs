@@ -88,8 +88,8 @@ public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterCompa
 
     private static ComparisonResult CompareLanguages(Character target, Character guessed)
     {
-        var targetNumber = target.Languages;
-        var guessedNumber = guessed.Languages;
+        var targetNumber = target.LanguageCount;
+        var guessedNumber = guessed.LanguageCount;
 
         // LIMIT ON LANGUAGES -> 1, 2, 3, 4+
         var isTargetNumberOverThree = targetNumber > 3;

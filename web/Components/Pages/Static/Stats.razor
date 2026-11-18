@@ -303,7 +303,7 @@
                     <div class="d-flex align-center mb-2" style="gap:8px;">
                         <span style="font-size:1.2rem;">@rankBadge</span>
                         <MudAvatar Style="width:32px;height:32px;" Square="true">
-                            <MudImage Src="@($"/graphics/mini-heads/{entry.CharacterName}.webp")" Alt="" />
+                            <MudImage Src="@CharacterUrlHelper.GetHeadSrc(entry.CharacterName)" Alt="" />
                         </MudAvatar>
                         <div style="flex:1;">
                             <MudText Typo="Typo.body1">@entry.CharacterName</MudText>

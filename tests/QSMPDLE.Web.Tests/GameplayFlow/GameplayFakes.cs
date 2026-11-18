@@ -1,4 +1,5 @@
 using QSMPDLE.Web.Features.Communication.GameEvents;
+using QSMPDLE.Web.Features.Gameplay.Helpers;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Statistics.Models;
 using QSMPDLE.Web.Features.Statistics.Services;
@@ -249,7 +250,7 @@ internal sealed class InMemoryCharacterStore : ICharacterStore
         foreach (var character in characters)
         {
             _characters[character.Id] = character;
-            _lookups[character.Id] = new CharacterLookup(character.Id, character.Name, character.MinecraftUsername, character.Aliases, character.IconUrl);
+            _lookups[character.Id] = new CharacterLookup(character.Id, character.Name, character.MinecraftUsername, character.Aliases, CharacterUrlHelper.GetPortraitFolder(character.PortraitId));
         }
 
         _randomCharacterId = randomCharacterId;

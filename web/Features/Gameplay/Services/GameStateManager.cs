@@ -2,6 +2,7 @@ namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 using QSMPDLE.Web.Extensions;
 using QSMPDLE.Web.Features.Communication.GameEvents;
+using QSMPDLE.Web.Features.Gameplay.Helpers;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Statistics.Models;
 using QSMPDLE.Web.Features.Statistics.Services;
@@ -314,7 +315,7 @@ public sealed class GameStateManager(
             EntryPoint = entryPoint,
             FirstEntryPoint = session.FirstEntryPoint,
             GameMode = ToLegacyMode(entryPoint),
-            Game = new Game { PuzzleId = session.PuzzleId ?? session.DailyNumber, TargetId = session.TargetCharacterId, PortraitUrl = target?.IconUrl ?? string.Empty },
+            Game = new Game { PuzzleId = session.PuzzleId ?? session.DailyNumber, TargetId = session.TargetCharacterId, PortraitUrl = target is null ? string.Empty : CharacterUrlHelper.GetPortraitFolder(target.PortraitId) },
             IsWon = session.IsWon,
             IsLost = session.FinishedOnUtc.HasValue && !session.IsWon,
             SeenPopup = session.FinishedOnUtc.HasValue,

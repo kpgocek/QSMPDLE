@@ -43,29 +43,14 @@
 </style>
 
     @code {
-    [Parameter] public string IconUrl { get; set; } = string.Empty;
+    [Parameter] public string PortraitFolder { get; set; } = string.Empty;
 
     [Parameter] public int GuessesMade { get; set; }
 
     [Parameter] public bool IsGuessed { get; set; }
     [Parameter] public bool IsFailed { get; set; }
 
-    private string ImageUrl =>
-    $"/graphics/guessing/{IconUrl}/{GetImageName()}";
-
-    private string GetImageName()
-    {
-        var name = GuessesMade switch
-        {
-            0 => "Head-blur-200.webp",
-            1 => "Head-blur-120.webp",
-            2 => "Head-blur-75.webp",
-            3 => "Head-blur-50.webp",
-            4 => "Head-blur-30.webp",
-            5 => "Head-blur-15.webp",
-            _ => "Head-blur-200.webp"
-        };
-
-        return IsGuessed || IsFailed ? "Head.webp" : name;
-    }
+    private string ImageUrl => IsGuessed || IsFailed
+        ? CharacterUrlHelper.GetPortraitSrc(PortraitFolder)
+        : CharacterUrlHelper.GetBlurredPortraitSrc(PortraitFolder, GuessesMade);
 }
