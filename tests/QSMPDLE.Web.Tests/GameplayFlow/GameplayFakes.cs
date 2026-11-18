@@ -41,6 +41,19 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
         return Task.CompletedTask;
     }
 
+    public Guid? FirstGameId { get; set; }
+
+    public Task<Guid?> GetFirstGameIdAsync() => Task.FromResult(FirstGameId);
+
+    public Task SaveFirstGameIdAsync(Guid gameId)
+    {
+        FirstGameId = gameId;
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> HasGuessedInOtherGameAsync() =>
+        Task.FromResult(_statesByKey.Any(entry => entry.Key != Key && entry.Value.GuessesMade.Count > 0));
+
     public void SetStateForKey(string key, GameState state) => _statesByKey[key] = Clone(state);
     public bool HasStateForKey(string key) => _statesByKey.ContainsKey(key);
 

@@ -1,0 +1,20 @@
+.first-guess-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+
+    /* Flush with the table rows on desktop; inset to match the guess cards' padding below. */
+    padding: .5rem 0;
+
+    color: var(--text-muted);
+    font-size: .875rem;
+
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@media (max-width: 68rem) {
+    .first-guess-legend {
+        padding-inline: 1rem;
+    }
+}

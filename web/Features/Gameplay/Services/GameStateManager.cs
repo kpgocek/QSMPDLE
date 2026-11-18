@@ -25,7 +25,18 @@ public sealed class GameStateManager(
 
     public GameState GameState { get; private set; } = null!;
 
+    public bool IsFirstGame { get; private set; }
+
     public async Task<LoadGameResult> StartGameAsync(GameMode mode, int? puzzleId = null, CancellationToken cancellationToken = default)
+    {
+        var result = await LoadGameAsync(mode, puzzleId, cancellationToken);
+        if (result != LoadGameResult.Failed)
+            await ResolveFirstGameAsync();
+
+        return result;
+    }
+
+    private async Task<LoadGameResult> LoadGameAsync(GameMode mode, int? puzzleId, CancellationToken cancellationToken)
     {
         var entryPoint = ToEntryPoint(mode);
         var category = entryPoint == EntryPoint.Practice ? SessionCategory.Practice : SessionCategory.CanonicalPuzzle;
@@ -105,6 +116,27 @@ public sealed class GameStateManager(
         GameState.EntryPoint = EntryPoint.Practice;
         GameState.FirstEntryPoint = EntryPoint.Practice;
         await gameStateStore.SaveAsync(GameState);
+        await ResolveFirstGameAsync();
+    }
+
+    private async Task ResolveFirstGameAsync()
+    {
+        var firstGameId = await gameStateStore.GetFirstGameIdAsync();
+        if (firstGameId is not null)
+        {
+            IsFirstGame = firstGameId == GameState.GameId;
+            return;
+        }
+
+        // Browsers that played before the flag existed are recognised by their saved guesses, once.
+        if (GameState.GuessesMade.Count > 0 || await gameStateStore.HasGuessedInOtherGameAsync())
+        {
+            await gameStateStore.SaveFirstGameIdAsync(Guid.Empty);
+            IsFirstGame = false;
+            return;
+        }
+
+        IsFirstGame = true;
     }
 
     public Task StartNewArchivedGameAsync(int dayNumber, CancellationToken cancellationToken = default) =>
@@ -161,6 +193,13 @@ public sealed class GameStateManager(
             stage = "save-local";
             await gameStateStore.SaveAsync(GameState);
             localSaved = true;
+
+            // Recorded after reconciliation, so the id is the one later loads of this game will carry.
+            if (isFirstGuess && IsFirstGame)
+            {
+                stage = "save-first-game";
+                await gameStateStore.SaveFirstGameIdAsync(GameState.GameId);
+            }
 
             if (isFirstGuess)
             {

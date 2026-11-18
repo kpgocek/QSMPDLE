@@ -1,0 +1,17 @@
+.guess-hint {
+    /* Sits close under the search box it explains, inside the stack's larger gap. */
+    margin-top: -.75rem;
+    margin-bottom: 0;
+    max-width: min(26rem, calc(100vw - 2rem));
+
+    color: var(--text-muted);
+    font-size: .875rem;
+    text-align: center;
+    text-wrap: balance;
+}
+
+.guess-hint a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: .2em;
+}

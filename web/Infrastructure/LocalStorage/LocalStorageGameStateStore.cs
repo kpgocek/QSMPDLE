@@ -7,6 +7,10 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
 {
     private const string KeyPrefix = "qsmpdle-";
     private const int CurrentSchemaVersion = 3;
+    private const string FirstGameKey = KeyPrefix + "first-game";
+
+    private static readonly string[] GameKeyPrefixes =
+        [KeyPrefix + "canonical-", KeyPrefix + "practice-", KeyPrefix + "daily-", KeyPrefix + "archive-"];
 
     private string Key { get; set; } = string.Empty;
 
@@ -90,6 +94,42 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
         // Ensure stored state is marked with the current schema version so future loads
         // can detect compatibility.
         await SaveByKeyAsync(Key[KeyPrefix.Length..], state);
+    }
+
+    public async Task<Guid?> GetFirstGameIdAsync()
+    {
+        try
+        {
+            return await localStorage.GetItemAsync<Guid?>(FirstGameKey);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public Task SaveFirstGameIdAsync(Guid gameId) => localStorage.SetItemAsync(FirstGameKey, gameId).AsTask();
+
+    public async Task<bool> HasGuessedInOtherGameAsync()
+    {
+        foreach (var key in await GetKeysAsync())
+        {
+            if (key == Key || !GameKeyPrefixes.Any(prefix => key.StartsWith(prefix, StringComparison.Ordinal)))
+                continue;
+
+            try
+            {
+                var state = await localStorage.GetItemAsync<GameState>(key);
+                if (state?.GuessesMade.Count > 0)
+                    return true;
+            }
+            catch
+            {
+                // An unreadable entry says nothing about whether the player has played.
+            }
+        }
+
+        return false;
     }
 
     public async Task ClearAsync()

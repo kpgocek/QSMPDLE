@@ -12,4 +12,11 @@ public interface IGameStateStore
     Task RemoveByKeyAsync(string key) => Task.CompletedTask;
     Task SaveAsync(GameState state);
     Task ClearAsync();
+
+    /// <summary>The game this browser made its first-ever guess in; <see cref="Guid.Empty"/> marks a player who predates the flag.</summary>
+    Task<Guid?> GetFirstGameIdAsync() => Task.FromResult<Guid?>(null);
+    Task SaveFirstGameIdAsync(Guid gameId) => Task.CompletedTask;
+
+    /// <summary>True when a game other than the current one already holds a guess.</summary>
+    Task<bool> HasGuessedInOtherGameAsync() => Task.FromResult(false);
 }

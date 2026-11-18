@@ -40,6 +40,10 @@
         {
             <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess"
                                IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" IsBusy="@_isGuessing" />
+
+            <p class="guess-hint">
+                Guess any character; each clue shows how close you are · <a href="how-to-play">How to play</a>
+            </p>
         }
 
         @if (GameMode == GameMode.Practice)
@@ -53,8 +57,8 @@
     }
 
     <div class="guess-table-container">
-        <GuessTable Guesses="@(GameStateManager.GameState?.GuessesMade ?? [])" />
-        <GuessCards Guesses="@(GameStateManager.GameState?.GuessesMade ?? [])" />
+        <GuessTable Guesses="@(GameStateManager.GameState?.GuessesMade ?? [])" ShowLegend="@GameStateManager.IsFirstGame" />
+        <GuessCards Guesses="@(GameStateManager.GameState?.GuessesMade ?? [])" ShowLegend="@GameStateManager.IsFirstGame" />
     </div>
 
 </MudStack>

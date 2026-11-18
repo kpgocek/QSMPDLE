@@ -83,6 +83,15 @@
                         </GuessChip>
                     </td>
                 </tr>
+
+                if (ShowLegend && guess == Guesses[0])
+                {
+                    <tr>
+                        <td colspan="6">
+                            <FirstGuessLegend Guess="guess" />
+                        </td>
+                    </tr>
+                }
             }
 
             @for (int i = Guesses.Count; i < MaxGuesses; i++) // 1-2-3-4-5-6
@@ -233,6 +242,9 @@
 
     [Parameter]
     public int MaxGuesses { get; set; } = 6;
+
+    [Parameter]
+    public bool ShowLegend { get; set; }
 
     private IReadOnlyDictionary<int, Character> CharactersById { get; set; } = new Dictionary<int, Character>();
 

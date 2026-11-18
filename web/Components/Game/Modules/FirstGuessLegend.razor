@@ -1,0 +1,47 @@
+@using QSMPDLE.Web.Components.UX.StatDisplay
+@using QSMPDLE.Web.Features.Gameplay.Models
+
+<div class="first-guess-legend">
+    <span class="legend-intro">Your first clues:</span>
+    @foreach (var result in Results)
+    {
+        <GuessChip Result="result">@Describe(result)</GuessChip>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public GuessResult Guess { get; set; } = null!;
+
+    // Best to worst, so the legend reads as a scale rather than in column order.
+    private static readonly ComparisonResult[] Order =
+    [
+        ComparisonResult.Correct,
+        ComparisonResult.Partial,
+        ComparisonResult.Wrong,
+        ComparisonResult.Earlier,
+        ComparisonResult.Later,
+        ComparisonResult.More,
+        ComparisonResult.Less
+    ];
+
+    private IEnumerable<ComparisonResult> Results
+    {
+        get
+        {
+            ComparisonResult[] shown = [Guess.Pronouns, Guess.Species, Guess.Languages, Guess.Affiliation, Guess.Joined];
+            return Order.Where(shown.Contains);
+        }
+    }
+
+    private static string Describe(ComparisonResult result) => result switch
+    {
+        ComparisonResult.Correct => "Exact match",
+        ComparisonResult.Partial => "Partly matches",
+        ComparisonResult.Wrong => "No match",
+        ComparisonResult.Earlier => "Answer joined earlier",
+        ComparisonResult.Later => "Answer joined later",
+        ComparisonResult.More => "Answer speaks more languages",
+        ComparisonResult.Less => "Answer speaks fewer languages",
+        _ => string.Empty
+    };
+}

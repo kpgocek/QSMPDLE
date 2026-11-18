@@ -51,6 +51,12 @@
             continue;
         }
 
+        // The list renders column-reverse, so placing the legend first in the DOM shows it below the first card.
+        if (ShowLegend && guess == Guesses[0])
+        {
+            <FirstGuessLegend Guess="guess" />
+        }
+
         <div class="guess-card">
 
             <div class="guess-card-header">
@@ -206,6 +212,9 @@
 
     [Parameter]
     public int MaxGuesses { get; set; } = 6;
+
+    [Parameter]
+    public bool ShowLegend { get; set; }
 
     private IReadOnlyDictionary<int, Character> CharactersById { get; set; } = new Dictionary<int, Character>();
 

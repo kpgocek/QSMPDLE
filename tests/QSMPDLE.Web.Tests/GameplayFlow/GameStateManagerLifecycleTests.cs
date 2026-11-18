@@ -186,6 +186,51 @@ public sealed class GameStateManagerLifecycleTests
         setup.GameStateStore.HasStateForKey("canonical-7").Should().BeTrue();
     }
 
+    [Fact]
+    public async Task FirstGame_NewPlayer_IsFirstUntilTheNextGame()
+    {
+        var setup = CreateSetup();
+
+        await setup.Manager.StartGameAsync(GameMode.Practice);
+        setup.Manager.IsFirstGame.Should().BeTrue();
+
+        await setup.Manager.MakeGuessAsync(setup.Guess.Id);
+        setup.GameStateStore.FirstGameId.Should().Be(setup.Manager.GameState.GameId);
+
+        await setup.Manager.StartGameAsync(GameMode.Practice);
+        setup.Manager.IsFirstGame.Should().BeTrue("reloading the first game keeps its legend");
+
+        await setup.Manager.StartNewPracticeGameAsync();
+        setup.Manager.IsFirstGame.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task FirstGame_PlayerWithEarlierGuesses_IsNeverFirstAndIsRememberedAsVeteran()
+    {
+        var setup = CreateSetup(archiveDayNumber: 7);
+        var earlier = CreateState(Guid.NewGuid(), GameMode.Archive, setup.Target.Id, setup.PlayerId);
+        earlier.GuessesMade.Add(CreateGuess(setup.Guess.Id, setup.Guess.Name, false, false));
+        setup.GameStateStore.SetStateForKey("canonical-7", earlier);
+
+        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.MakeGuessAsync(setup.Guess.Id);
+
+        setup.Manager.IsFirstGame.Should().BeFalse();
+        setup.GameStateStore.FirstGameId.Should().Be(Guid.Empty);
+    }
+
+    [Fact]
+    public async Task FirstGame_UnguessedGameElsewhere_DoesNotCountAsPlayed()
+    {
+        var setup = CreateSetup();
+        setup.GameStateStore.SetStateForKey("canonical-7", CreateState(Guid.NewGuid(), GameMode.Archive, setup.Target.Id, setup.PlayerId));
+
+        await setup.Manager.StartGameAsync(GameMode.Practice);
+
+        setup.Manager.IsFirstGame.Should().BeTrue();
+        setup.GameStateStore.FirstGameId.Should().BeNull();
+    }
+
     private static Setup CreateSetup(int? archiveDayNumber = null)
     {
         var target = CreateCharacter(1, "Target", joinDay: 10, languages: 2, pronouns: ["Any"], affiliations: ["Guild"], species: ["Human"]);
