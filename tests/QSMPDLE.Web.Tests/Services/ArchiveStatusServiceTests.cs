@@ -32,6 +32,21 @@ public sealed class ArchiveStatusServiceTests
     }
 
     [Fact]
+    public async Task GetStatuses_KnownStoredDays_ReadsOnlyThoseDays()
+    {
+        var dayService = new DayService();
+        var start = dayService.GetFirstDay().AddDays(-14);
+        var end = dayService.GetFirstDay().AddDays(15);
+        var source = new TestArchiveGameStateSource { StoredDays = new HashSet<int> { 3 } };
+        var svc = new ArchiveStatusService(new TestStatsService(Guid.NewGuid()), new TestGameStatsStore(), dayService, source);
+
+        await svc.GetStatusesAsync(start, end);
+
+        Assert.All(source.LoadedDays, day => Assert.Equal(3, day));
+        Assert.NotEmpty(source.LoadedDays);
+    }
+
+    [Fact]
     public async Task InProgress_When_UnfinishedSession()
     {
         var playerId = Guid.NewGuid();
@@ -388,8 +403,17 @@ public sealed class ArchiveStatusServiceTests
         public GameState? DailyState { get; init; }
         public GameState? ArchiveState { get; init; }
 
+        public IReadOnlySet<int>? StoredDays { get; init; }
+        public List<int> LoadedDays { get; } = [];
+
         public Task<GameState?> LoadAsync(GameMode mode, int dayNumber, CancellationToken cancellationToken = default)
-            => Task.FromResult(mode == GameMode.Daily ? DailyState : ArchiveState);
+        {
+            LoadedDays.Add(dayNumber);
+            return Task.FromResult(mode == GameMode.Daily ? DailyState : ArchiveState);
+        }
+
+        public Task<IReadOnlySet<int>?> GetStoredDayNumbersAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(StoredDays);
     }
 
     private sealed class TestGameService : Features.Gameplay.Services.IGameService

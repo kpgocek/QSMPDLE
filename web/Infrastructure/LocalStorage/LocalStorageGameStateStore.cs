@@ -3,7 +3,7 @@ using QSMPDLE.Web.Features.Gameplay.Models;
 
 namespace QSMPDLE.Web.Infrastructure.LocalStorage;
 
-public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage) : IGameStateStore
+public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage, IJSRuntime js) : IGameStateStore
 {
     private const string KeyPrefix = "qsmpdle-";
     private const int CurrentSchemaVersion = 3;
@@ -58,14 +58,9 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
     public async Task<IReadOnlyList<int>> GetLegacyPuzzleIdsAsync()
     {
         var puzzleIds = new HashSet<int>();
-        var length = await localStorage.Length;
 
-        for (var index = 0; index < length; index++)
+        foreach (var key in await GetKeysAsync())
         {
-            var key = await localStorage.KeyAsync(index);
-            if (key is null)
-                continue;
-
             var suffix = key.StartsWith($"{KeyPrefix}daily-", StringComparison.Ordinal)
                 ? key[$"{KeyPrefix}daily-".Length..]
                 : key.StartsWith($"{KeyPrefix}archive-", StringComparison.Ordinal)
@@ -106,4 +101,6 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
     }
 
     public bool IsInitialized => !string.IsNullOrEmpty(Key);
+
+    private Task<string[]> GetKeysAsync() => js.InvokeAsync<string[]>("storageKeys").AsTask();
 }

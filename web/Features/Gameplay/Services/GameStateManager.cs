@@ -236,6 +236,10 @@ public sealed class GameStateManager(
 
     private async Task<LegacyGameState?> LoadLegacyStateAsync(int puzzleId)
     {
+        // One key listing is cheaper than reading both legacy keys, which almost never exist.
+        if (!(await gameStateStore.GetLegacyPuzzleIdsAsync()).Contains(puzzleId))
+            return null;
+
         var daily = await gameStateStore.GetByKeyAsync($"daily-{puzzleId}");
         var archive = await gameStateStore.GetByKeyAsync($"archive-{puzzleId}");
         var candidates = new[] { daily, archive }

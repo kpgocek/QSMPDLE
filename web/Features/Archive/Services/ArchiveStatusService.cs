@@ -78,6 +78,12 @@ namespace QSMPDLE.Web.Features.Archive.Services
 
             var map = new Dictionary<int, DayStatus>();
 
+            // Listing keys once replaces up to four storage reads per calendar day, most of them empty.
+            var storedDays = includeLocalStorageFallback
+                ? await _gameStateSource.GetStoredDayNumbersAsync(cancellationToken)
+                : null;
+            bool MayHaveLocalState(int archiveDay) => includeLocalStorageFallback && (storedDays?.Contains(archiveDay) ?? true);
+
             // Build index by archive day number -> sessions using PuzzleId directly.
             var firstDayNumber = _dayService.GetFirstDay().DayNumber;
             var byDay = sessions
@@ -91,7 +97,7 @@ namespace QSMPDLE.Web.Features.Archive.Services
                 var abs = d.DayNumber;
                 if (!byDay.TryGetValue(abs, out var group))
                 {
-                    map[abs] = includeLocalStorageFallback
+                    map[abs] = MayHaveLocalState(abs - firstDayNumber + 1)
                         ? await GetLocalStorageStatusAsync(abs - firstDayNumber + 1, cancellationToken)
                         : DayStatus.NotStarted;
                     continue;
@@ -114,7 +120,7 @@ namespace QSMPDLE.Web.Features.Archive.Services
                 // Otherwise at least one finished loss
                 map[abs] = DayStatus.Lost;
 
-                if (includeLocalStorageFallback)
+                if (MayHaveLocalState(abs - firstDayNumber + 1))
                 {
                     map[abs] = map[abs].MergeWith(await GetLocalStorageStatusAsync(abs - firstDayNumber + 1, cancellationToken));
                 }

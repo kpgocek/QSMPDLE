@@ -4,9 +4,12 @@ using QSMPDLE.Web.Infrastructure.LocalStorage;
 
 namespace QSMPDLE.Web.Features.Archive.Services;
 
-public sealed class ArchiveGameStateSource(ILocalStorageService localStorage) : IArchiveGameStateSource
+public sealed class ArchiveGameStateSource(ILocalStorageService localStorage, IJSRuntime js) : IArchiveGameStateSource
 {
     private const string KeyPrefix = "qsmpdle-";
+
+    private static readonly string[] DayKeyPrefixes =
+        [KeyPrefix + "canonical-", KeyPrefix + "daily-", KeyPrefix + "archive-"];
 
     public async Task<GameState?> LoadAsync(GameMode mode, int dayNumber, CancellationToken cancellationToken = default)
     {
@@ -27,6 +30,28 @@ public sealed class ArchiveGameStateSource(ILocalStorageService localStorage) : 
         }
         catch
         {
+            return null;
+        }
+    }
+
+    public async Task<IReadOnlySet<int>?> GetStoredDayNumbersAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var keys = await js.InvokeAsync<string[]>("storageKeys", cancellationToken);
+            var days = new HashSet<int>();
+            foreach (var key in keys)
+            {
+                var prefix = DayKeyPrefixes.FirstOrDefault(p => key.StartsWith(p, StringComparison.Ordinal));
+                if (prefix is not null && int.TryParse(key.AsSpan(prefix.Length), out var day))
+                    days.Add(day);
+            }
+
+            return days;
+        }
+        catch (JSException)
+        {
+            // Unknown, so the caller falls back to reading each day.
             return null;
         }
     }
