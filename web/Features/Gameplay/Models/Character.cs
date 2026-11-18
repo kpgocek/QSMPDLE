@@ -49,4 +49,19 @@ public sealed class Character
     [Column("minecraft_username")]
     [MaxLength(32)]
     public string? MinecraftUsername { get; init; }
+
+    [Column("phone_numbers")]
+    public List<int> PhoneNumbers { get; init; } = [];
+
+    [Column("youtube_subscribers")]
+    public int? YouTubeSubscribers { get; init; }
+
+    [Column("twitch_followers")]
+    public int? TwitchFollowers { get; init; }
+
+    [Column("kick_followers")]
+    public int? KickFollowers { get; init; }
+
+    [Column("won_award_2026")]
+    public bool WonAward2026 { get; init; }
 }

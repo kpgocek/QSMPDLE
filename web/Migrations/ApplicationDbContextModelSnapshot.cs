@@ -46,6 +46,10 @@ namespace QSMPDLE.Web.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("join_day_number");
 
+                    b.Property<int?>("KickFollowers")
+                        .HasColumnType("integer")
+                        .HasColumnName("kick_followers");
+
                     b.Property<int>("LanguageCount")
                         .HasColumnType("integer")
                         .HasColumnName("language_count");
@@ -61,6 +65,11 @@ namespace QSMPDLE.Web.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("name");
 
+                    b.PrimitiveCollection<List<int>>("PhoneNumbers")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("phone_numbers");
+
                     b.Property<Guid>("PortraitId")
                         .HasColumnType("uuid")
                         .HasColumnName("portrait_id");
@@ -75,11 +84,23 @@ namespace QSMPDLE.Web.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("species");
 
+                    b.Property<int?>("TwitchFollowers")
+                        .HasColumnType("integer")
+                        .HasColumnName("twitch_followers");
+
                     b.Property<string>("WikiSlug")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("wiki_slug");
+
+                    b.Property<bool>("WonAward2026")
+                        .HasColumnType("boolean")
+                        .HasColumnName("won_award_2026");
+
+                    b.Property<int?>("YouTubeSubscribers")
+                        .HasColumnType("integer")
+                        .HasColumnName("youtube_subscribers");
 
                     b.HasKey("Id");
 

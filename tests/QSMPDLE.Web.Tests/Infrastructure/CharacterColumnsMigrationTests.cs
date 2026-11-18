@@ -71,6 +71,15 @@ public sealed class CharacterColumnsMigrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Migrate_AddNewClues_DefaultsExistingRowsToNoPhoneNumbers()
+    {
+        await using var database = new ApplicationDbContext(options);
+        var characters = await database.Characters.AsNoTracking().ToListAsync();
+
+        characters.Should().OnlyContain(character => character.PhoneNumbers.Count == 0);
+    }
+
+    [Fact]
     public async Task RollbackIconGuid_RestoresDashlessFolderNameAndFullUrl()
     {
         await using var database = new ApplicationDbContext(options);
