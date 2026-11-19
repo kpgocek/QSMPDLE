@@ -57,7 +57,7 @@
             <FirstGuessLegend Guess="guess" />
         }
 
-        <div class="guess-card">
+        <div class="guess-card @(guess == Guesses[^1] ? "new-card" : "")">
 
             <div class="guess-card-header">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
@@ -158,7 +158,7 @@
     .placeholder-card {
         opacity: 0.5;
         background:
-            linear-gradient(to right, var(--surface), transparent 20%));
+            linear-gradient(to right, var(--surface), transparent 20%);
         border-color: var(--tint);
     }
 
@@ -190,6 +190,20 @@
     .placeholder-avatar {
         opacity: .4;
     }
+
+    /* The newest guess turns its clues over one at a time, matching the desktop table. */
+    .new-card {
+        animation: reveal-card 300ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .new-card .guess-card-grid > .mud-chip {
+        animation: reveal-chip 380ms cubic-bezier(.16, 1, .3, 1) 630ms backwards;
+    }
+
+    .new-card .guess-card-grid > .mud-chip:nth-child(1) { animation-delay: 150ms; }
+    .new-card .guess-card-grid > .mud-chip:nth-child(2) { animation-delay: 270ms; }
+    .new-card .guess-card-grid > .mud-chip:nth-child(3) { animation-delay: 390ms; }
+    .new-card .guess-card-grid > .mud-chip:nth-child(4) { animation-delay: 510ms; }
 
     .guess-name {
         font-size: 1.1rem;

@@ -234,6 +234,17 @@
     .new-row {
         animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
     }
+
+    /* The newest guess turns its clues over one at a time, left to right. */
+    .new-row .mud-chip {
+        animation: reveal-chip 380ms cubic-bezier(.16, 1, .3, 1) backwards;
+    }
+
+    .new-row td:nth-child(2) .mud-chip { animation-delay: 150ms; }
+    .new-row td:nth-child(3) .mud-chip { animation-delay: 270ms; }
+    .new-row td:nth-child(4) .mud-chip { animation-delay: 390ms; }
+    .new-row td:nth-child(5) .mud-chip { animation-delay: 510ms; }
+    .new-row td:nth-child(6) .mud-chip { animation-delay: 630ms; }
 </style>
 
 @code {

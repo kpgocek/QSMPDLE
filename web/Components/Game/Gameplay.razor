@@ -82,12 +82,13 @@
 
 
 
-@if (!(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsWon ?? false))
+@* Waits for the guess to finish so the victory dialog loads statistics that include this game. *@
+@if (!_isGuessing && !(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsWon ?? false))
 {
     <VictoryDialog GameState="@GameStateManager.GameState" GameMode="GameMode" OnClose="ClosePopups" />
 }
 
-@if (!(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsLost ?? false))
+@if (!_isGuessing && !(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsLost ?? false))
 {
     <FailureDialog GameState="@GameStateManager.GameState" GameMode="GameMode" OnClose="ClosePopups" />
 }
