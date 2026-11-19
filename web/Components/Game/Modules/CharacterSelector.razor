@@ -5,8 +5,10 @@
 
 <div class="selection-area">
     <div class="input-field">
+        @* readonly, not disabled, while a guess is in flight: disabling blurs the input and closes the phone keyboard. *@
         <input type="text" @bind="SearchText" @bind:event="oninput" @onkeydown="HandleKeyDown"
-               placeholder="Type in character's name" disabled="@IsDisabled"
+               placeholder="Type in character's name" disabled="@IsGuessed" readonly="@IsBusy"
+               aria-busy="@(IsBusy ? "true" : "false")"
                aria-label="Guess a character" autocomplete="off" spellcheck="false"
                role="combobox" aria-autocomplete="list" aria-controls="character-suggestions"
                aria-expanded="@(HasSuggestions ? "true" : "false")"
@@ -29,6 +31,12 @@
                 </button>
             }
         </div>
+    }
+    else if (ShowsEmptyState)
+    {
+        <p class="suggestions no-match" role="status">
+            @(HasGuessedEveryMatch ? "You've already guessed everyone matching that name" : "No character matches that name")
+        </p>
     }
 </div>
 
@@ -120,6 +128,13 @@
         font-weight: 700;
     }
 
+    .no-match {
+        margin: 0;
+        padding: .75rem;
+
+        color: var(--text-muted);
+    }
+
     .suggestion:hover,
     .suggestion.active {
         border-color: var(--tint);
@@ -142,13 +157,21 @@
 
     [Parameter] public bool IsBusy { get; set; }
 
+    [Parameter] public IReadOnlyCollection<int> GuessedIds { get; set; } = [];
+
     private string SearchText = "";
 
     private int ActiveSuggestionIndex = 0;
 
-    private bool IsDisabled => IsGuessed || IsBusy;
+    private bool IsDismissed;
 
-    private bool HasSuggestions => !IsDisabled && Suggestions.Any();
+    private bool IsListOpen => !IsGuessed && !IsBusy && !IsDismissed && !string.IsNullOrWhiteSpace(SearchText);
+
+    private bool HasSuggestions => IsListOpen && Suggestions.Any();
+
+    private bool ShowsEmptyState => IsListOpen && !Suggestions.Any();
+
+    private bool HasGuessedEveryMatch => Matches.Any();
 
     private IReadOnlyList<CharacterLookup> Characters = [];
 
@@ -159,7 +182,7 @@
 
     private async Task SelectAndGuess(CharacterLookup? character)
     {
-        if (character is null)
+        if (character is null || IsBusy)
             return;
 
         SearchText = "";
@@ -171,7 +194,18 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        var suggestions = Suggestions.ToList();
+        // First Escape closes the list and keeps the text; a second one clears it.
+        if (e.Key == "Escape")
+        {
+            if (IsListOpen)
+                IsDismissed = true;
+            else
+                SearchText = "";
+            return;
+        }
+
+        IsDismissed = false;
+        var suggestions = HasSuggestions ? Suggestions.ToList() : [];
 
         if (suggestions.Count == 0)
             return;
@@ -190,21 +224,19 @@
                 await SelectAndGuess(suggestions[ActiveSuggestionIndex]);
                 break;
 
-            case "Escape":
-                SearchText = "";
-                break;
-
             default:
                 ActiveSuggestionIndex = 0;
                 break;
         }
     }
 
-    private IEnumerable<CharacterLookup> Suggestions =>
+    private IEnumerable<CharacterLookup> Matches =>
     string.IsNullOrWhiteSpace(SearchText)
         ? []
         : Characters
             .Where(p =>
-                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
-    .Take(5);
+                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<CharacterLookup> Suggestions =>
+        Matches.Where(p => !GuessedIds.Contains(p.Id)).Take(5);
 }

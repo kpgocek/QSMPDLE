@@ -34,7 +34,9 @@
         _ => null
     };
 
-    private string Label => Result switch
+    private string Label => Describe(Result);
+
+    public static string Describe(ComparisonResult result) => result switch
     {
         ComparisonResult.Correct => "correct",
         ComparisonResult.Partial => "partial match",

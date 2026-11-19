@@ -7,6 +7,8 @@
 @inject IShareTextBuilder ShareTextBuilder
 
 <div class="failure-overlay" @onkeydown="CloseOnEscape">
+    @* Focus sentinels keep Tab inside the dialog, so Escape keeps reaching the overlay's handler. *@
+    <div tabindex="0" @onfocus="FocusModalAsync"></div>
     <div class="failure-modal" role="dialog" aria-modal="true" aria-labelledby="failure-title"
          tabindex="-1" @ref="modal">
 
@@ -63,6 +65,7 @@
         </div>
 
     </div>
+    <div tabindex="0" @onfocus="FocusModalAsync"></div>
 </div>
 
 <style>
@@ -132,6 +135,8 @@
             await modal.FocusAsync();
         }
     }
+
+    private async Task FocusModalAsync() => await modal.FocusAsync();
 
     private async Task CloseOnEscape(KeyboardEventArgs e)
     {
