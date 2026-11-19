@@ -23,8 +23,13 @@ public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterCompa
             Joined = CompareJoinDays(target, guessed),
             Affiliation = CompareAffiliations(target, guessed),
             Species = CompareSpecies(target, guessed),
+            QPhone = CompareFlag(target.HasQPhone, guessed.HasQPhone),
+            Award2026 = CompareFlag(target.WonAward2026, guessed.WonAward2026),
         };
     }
+
+    private static ComparisonResult CompareFlag(bool target, bool guessed) =>
+        target == guessed ? ComparisonResult.Correct : ComparisonResult.Wrong;
 
     private static ComparisonResult CompareSpecies(Character target, Character guessed)
     {

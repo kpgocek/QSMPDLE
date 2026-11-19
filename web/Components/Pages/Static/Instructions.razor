@@ -56,6 +56,20 @@
                         <th>Languages</th>
                         <th>Affiliations</th>
                         <th>Joined</th>
+                        <th>
+                            <MudTooltip Text="Has a QPhone">
+                                <span class="header-with-icon">QPhone
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                                </span>
+                            </MudTooltip>
+                        </th>
+                        <th>
+                            <MudTooltip Text="Won a QSMP Award in 2026">
+                                <span class="header-with-icon">Award '26
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                                </span>
+                            </MudTooltip>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,6 +114,18 @@
                                 Day 1
                             </GuessChip>
                         </td>
+
+                        <td class="small-cell">
+                            <GuessChip Result="ComparisonResult.Wrong">
+                                No
+                            </GuessChip>
+                        </td>
+
+                        <td class="small-cell">
+                            <GuessChip Result="ComparisonResult.Correct">
+                                No
+                            </GuessChip>
+                        </td>
                     </tr>
 
                 </tbody>
@@ -139,6 +165,14 @@
 
                     <GuessChip Result="ComparisonResult.Later">
                         Day 1
+                    </GuessChip>
+
+                    <GuessChip Result="ComparisonResult.Wrong">
+                        QPhone: No
+                    </GuessChip>
+
+                    <GuessChip Result="ComparisonResult.Correct">
+                        Award '26: No
                     </GuessChip>
 
                 </div>
@@ -224,7 +258,7 @@
     }
 
     .guess-table td {
-        min-width: 8rem;
+        min-width: 5.5rem;
     }
 
     .guess-table td,

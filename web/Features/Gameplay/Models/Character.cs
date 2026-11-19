@@ -64,4 +64,8 @@ public sealed class Character
 
     [Column("won_award_2026")]
     public bool WonAward2026 { get; init; }
+
+    [NotMapped]
+    [JsonIgnore]
+    public bool HasQPhone => PhoneNumbers.Count > 0;
 }

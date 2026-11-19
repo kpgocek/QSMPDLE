@@ -18,25 +18,12 @@
 
             <div class="placeholder-card-grid">
 
-                <MudChip T="string" Class="placeholder-chip">
-                    &nbsp;
-                </MudChip>
-
-                <MudChip T="string" Class="placeholder-chip">
-                    &nbsp;
-                </MudChip>
-
-                <MudChip T="string" Class="placeholder-chip">
-                    &nbsp;
-                </MudChip>
-
-                <MudChip T="string" Class="placeholder-chip">
-                    &nbsp;
-                </MudChip>
-
-                <MudChip T="string" Class="placeholder-chip">
-                    &nbsp;
-                </MudChip>
+                @for (var clue = 0; clue < ClueCount; clue++)
+                {
+                    <MudChip T="string" Class="placeholder-chip">
+                        &nbsp;
+                    </MudChip>
+                }
 
             </div>
         </div>
@@ -103,6 +90,14 @@
 
                 <GuessChip Result="guess.Joined">
                     <span class="chip-labels">Joined on</span> Day @character.JoinDayNumber
+                </GuessChip>
+
+                <GuessChip Result="guess.QPhone">
+                    <span class="chip-labels">QPhone:</span> @YesNo(character.HasQPhone)
+                </GuessChip>
+
+                <GuessChip Result="guess.Award2026">
+                    <span class="chip-labels">Award '26:</span> @YesNo(character.WonAward2026)
                 </GuessChip>
 
             </div>
@@ -197,13 +192,15 @@
     }
 
     .new-card .guess-card-grid > .mud-chip {
-        animation: reveal-chip 380ms cubic-bezier(.16, 1, .3, 1) 630ms backwards;
+        animation: reveal-chip 380ms cubic-bezier(.16, 1, .3, 1) 750ms backwards;
     }
 
     .new-card .guess-card-grid > .mud-chip:nth-child(1) { animation-delay: 150ms; }
-    .new-card .guess-card-grid > .mud-chip:nth-child(2) { animation-delay: 270ms; }
-    .new-card .guess-card-grid > .mud-chip:nth-child(3) { animation-delay: 390ms; }
-    .new-card .guess-card-grid > .mud-chip:nth-child(4) { animation-delay: 510ms; }
+    .new-card .guess-card-grid > .mud-chip:nth-child(2) { animation-delay: 250ms; }
+    .new-card .guess-card-grid > .mud-chip:nth-child(3) { animation-delay: 350ms; }
+    .new-card .guess-card-grid > .mud-chip:nth-child(4) { animation-delay: 450ms; }
+    .new-card .guess-card-grid > .mud-chip:nth-child(5) { animation-delay: 550ms; }
+    .new-card .guess-card-grid > .mud-chip:nth-child(6) { animation-delay: 650ms; }
 
     .guess-name {
         font-size: 1.1rem;
@@ -230,6 +227,8 @@
     [Parameter]
     public bool ShowLegend { get; set; }
 
+    private const int ClueCount = 7;
+
     private IReadOnlyDictionary<int, Character> CharactersById { get; set; } = new Dictionary<int, Character>();
 
     protected override async Task OnInitializedAsync()
@@ -243,6 +242,8 @@
             ? string.Join(", ", values)
             : "None";
     }
+
+    private static string YesNo(bool value) => value ? "Yes" : "No";
 
     private Character? GetCharacter(int id)
     {

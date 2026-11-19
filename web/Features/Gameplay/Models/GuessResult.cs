@@ -13,4 +13,6 @@ public sealed class GuessResult
     public ComparisonResult Joined { get; init; }
     public ComparisonResult Affiliation { get; init; }
     public ComparisonResult Species { get; init; }
+    public ComparisonResult QPhone { get; init; }
+    public ComparisonResult Award2026 { get; init; }
 }

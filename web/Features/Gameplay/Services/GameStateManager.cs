@@ -82,6 +82,15 @@ public sealed class GameStateManager(
         if (local is not null && IsCompatible(local, category, puzzleId))
         {
             GameState = NormalizeLocalState(local, playerId, entryPoint, category, puzzleId);
+            // Browser state can predate a clue, which would deserialize as Wrong, so results are recomputed from character data.
+            try
+            {
+                GameState.GuessesMade = await CompareGuessesAsync(GameState.Game.TargetId, GameState.GuessesMade.Select(guess => guess.Character.Id).ToList(), cancellationToken);
+            }
+            catch (ArgumentException)
+            {
+                // A character removed since the guess keeps its stored results rather than blocking the game from loading.
+            }
             await gameStateStore.SaveAsync(GameState);
             if (legacy is not null)
             {
@@ -183,6 +192,8 @@ public sealed class GameStateManager(
                 Joined = result.Joined,
                 Affiliation = result.Affiliation,
                 Species = result.Species,
+                QPhone = result.QPhone,
+                Award2026 = result.Award2026,
             });
 
             if (result.IsCorrect)
@@ -331,24 +342,8 @@ public sealed class GameStateManager(
     private async Task<GameState> CreateStateFromSessionAsync(GameSession session, EntryPoint entryPoint, CancellationToken cancellationToken)
     {
         var target = await characterStore.GetCharacterAsync(session.TargetCharacterId, cancellationToken);
-        var orderedGuesses = session.Guesses.OrderBy(guess => guess.GuessOrder).ToList();
-        var guesses = new List<GuessResult>();
-        for (var index = 0; index < orderedGuesses.Count; index++)
-        {
-            var comparison = await characterComparer.CompareAsync(session.TargetCharacterId, orderedGuesses[index].GuessedCharacterId, cancellationToken);
-            guesses.Add(new GuessResult
-            {
-                Character = comparison.Character,
-                IsCorrect = comparison.IsCorrect,
-                IsFirstGuess = index == 0,
-                IsLastAllowedGuess = !comparison.IsCorrect && index == MaxGuesses - 1,
-                Pronouns = comparison.Pronouns,
-                Languages = comparison.Languages,
-                Joined = comparison.Joined,
-                Affiliation = comparison.Affiliation,
-                Species = comparison.Species,
-            });
-        }
+        var guessedIds = session.Guesses.OrderBy(guess => guess.GuessOrder).Select(guess => guess.GuessedCharacterId).ToList();
+        var guesses = await CompareGuessesAsync(session.TargetCharacterId, guessedIds, cancellationToken);
 
         return new GameState
         {
@@ -365,6 +360,31 @@ public sealed class GameStateManager(
             StatsRecorded = session.FinishedOnUtc.HasValue,
             GuessesMade = guesses,
         };
+    }
+
+    private async Task<List<GuessResult>> CompareGuessesAsync(int targetId, IReadOnlyList<int> guessedIds, CancellationToken cancellationToken)
+    {
+        var guesses = new List<GuessResult>();
+        for (var index = 0; index < guessedIds.Count; index++)
+        {
+            var comparison = await characterComparer.CompareAsync(targetId, guessedIds[index], cancellationToken);
+            guesses.Add(new GuessResult
+            {
+                Character = comparison.Character,
+                IsCorrect = comparison.IsCorrect,
+                IsFirstGuess = index == 0,
+                IsLastAllowedGuess = !comparison.IsCorrect && index == MaxGuesses - 1,
+                Pronouns = comparison.Pronouns,
+                Languages = comparison.Languages,
+                Joined = comparison.Joined,
+                Affiliation = comparison.Affiliation,
+                Species = comparison.Species,
+                QPhone = comparison.QPhone,
+                Award2026 = comparison.Award2026,
+            });
+        }
+
+        return guesses;
     }
 
     private GameSession CreateSessionForStart() => new()

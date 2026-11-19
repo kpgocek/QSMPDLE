@@ -231,7 +231,8 @@ null)
 
         var clues = $"Pronouns {GuessChip.Describe(guess.Pronouns)}, languages {GuessChip.Describe(guess.Languages)}, " +
                     $"joined {GuessChip.Describe(guess.Joined)}, affiliation {GuessChip.Describe(guess.Affiliation)}, " +
-                    $"species {GuessChip.Describe(guess.Species)}.";
+                    $"species {GuessChip.Describe(guess.Species)}, QPhone {GuessChip.Describe(guess.QPhone)}, " +
+                    $"2026 award {GuessChip.Describe(guess.Award2026)}.";
 
         var left = MaxGuesses - (GameStateManager.GameState?.GuessesMade.Count ?? 0);
         var outcome = left > 0
