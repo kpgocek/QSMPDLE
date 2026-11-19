@@ -42,7 +42,7 @@ https://qsmpdle.com
 """;
     }
 
-    private string ToEmoji(GuessResult guess) => string.Concat(ToEmoji(guess.Pronouns), ToEmoji(guess.Species), ToEmoji(guess.Languages), ToEmoji(guess.Affiliation), ToEmoji(guess.Joined), ToEmoji(guess.QPhone), ToEmoji(guess.Award2026));
+    private string ToEmoji(GuessResult guess) => string.Concat(ToEmoji(guess.Pronouns), ToEmoji(guess.Species), ToEmoji(guess.Languages), ToEmoji(guess.Joined), ToEmoji(guess.QPhone), ToEmoji(guess.Award2026), ToEmoji(guess.Affiliation));
     private static string ToEmoji(ComparisonResult result)
     {
         return result switch

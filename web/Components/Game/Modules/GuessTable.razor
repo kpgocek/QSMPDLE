@@ -8,17 +8,6 @@
 @if (Guesses is not null)
 {
     <table class="guess-table mx-auto">
-        @* Widths sum to the 68rem breakpoint where the board switches to cards. *@
-        <colgroup>
-            <col style="width: 13rem" />
-            <col style="width: 8rem" />
-            <col style="width: 10rem" />
-            <col style="width: 6rem" />
-            <col style="width: 11rem" />
-            <col style="width: 7rem" />
-            <col style="width: 6rem" />
-            <col style="width: 7rem" />
-        </colgroup>
         <thead>
             <tr>
                 <th>Character</th>
@@ -38,7 +27,6 @@
                     </MudTooltip>
                 </th>
                 <th>Languages</th>
-                <th>Affiliations</th>
                 <th>Joined</th>
                 <th>
                     <MudTooltip Text="Has a QPhone">
@@ -54,6 +42,7 @@
                         </span>
                     </MudTooltip>
                 </th>
+                <th>Affiliations</th>
             </tr>
         </thead>
         <tbody>
@@ -96,7 +85,21 @@
                     </td>
 
                     <td>
-                        <div class="chip-stack">
+                        <GuessChip Result="guess.Joined">
+                            Day @character.JoinDayNumber
+                        </GuessChip>
+                    </td>
+
+                    <td>
+                        <GuessChip Result="guess.QPhone">@YesNo(character.HasQPhone)</GuessChip>
+                    </td>
+
+                    <td>
+                        <GuessChip Result="guess.Award2026">@YesNo(character.WonAward2026)</GuessChip>
+                    </td>
+
+                    <td>
+                        <div class="chip-flow">
                             @if (character.Affiliations.Count > 0)
                             {
                                 @foreach (var affiliation in character.Affiliations)
@@ -109,20 +112,6 @@
                                 <GuessChip Result="guess.Affiliation">None</GuessChip>
                             }
                         </div>
-                    </td>
-
-                    <td>
-                        <GuessChip Result="guess.Joined">
-                            Day @character.JoinDayNumber
-                        </GuessChip>
-                    </td>
-
-                    <td>
-                        <GuessChip Result="guess.QPhone">@YesNo(character.HasQPhone)</GuessChip>
-                    </td>
-
-                    <td>
-                        <GuessChip Result="guess.Award2026">@YesNo(character.WonAward2026)</GuessChip>
                     </td>
                 </tr>
 
@@ -164,8 +153,8 @@
 
 <style>
     .guess-table {
-        width: 68rem;
-        table-layout: fixed;
+        width: 100%;
+        min-width: 68rem;
         border-collapse: separate;
         border-spacing: 0 .5rem;
     }
@@ -194,6 +183,16 @@
         padding-block: .25rem;
     }
 
+    /* Affiliations, the only column without a width, takes most of the extra room because its content is open-ended;
+       Species grows a little with the board (about 11rem at the 68rem minimum) so two-word species fit on wider screens. */
+    .guess-table th:nth-child(1) { width: 13rem; }
+    .guess-table th:nth-child(2) { width: 8rem; }
+    .guess-table th:nth-child(3) { width: 16%; }
+    .guess-table th:nth-child(4) { width: 6rem; }
+    .guess-table th:nth-child(5) { width: 7rem; }
+    .guess-table th:nth-child(6) { width: 6rem; }
+    .guess-table th:nth-child(7) { width: 7rem; }
+
     /* Long values wrap inside their column instead of pushing the row wider. */
     .guess-table .mud-chip {
         height: auto;
@@ -207,9 +206,10 @@
         overflow-wrap: break-word;
     }
 
-    .chip-stack {
+    /* Affiliation chips sit side by side and wrap downward only when the column runs out of room. */
+    .chip-flow {
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
         align-items: flex-start;
     }
 
@@ -237,6 +237,16 @@
         transition:
             border-color 160ms ease,
             background-color 160ms ease;
+    }
+
+    /* Tall rows (several affiliations) read along their first line: every clue centres on the 56px portrait
+       and extra affiliation chips extend downward. */
+    .guess-table .answer-row td {
+        vertical-align: top;
+    }
+
+    .guess-table .answer-row td + td {
+        padding-top: .75rem;
     }
 
     .answer-row:hover {

@@ -71,6 +71,18 @@
                     @(character.LanguageCount > 3 ? "4+" : character.LanguageCount)
                 </GuessChip>
 
+                <GuessChip Result="guess.Joined">
+                    <span class="chip-labels">Joined on</span> Day @character.JoinDayNumber
+                </GuessChip>
+
+                <GuessChip Result="guess.QPhone">
+                    <span class="chip-labels">QPhone:</span> @YesNo(character.HasQPhone)
+                </GuessChip>
+
+                <GuessChip Result="guess.Award2026">
+                    <span class="chip-labels">Award '26:</span> @YesNo(character.WonAward2026)
+                </GuessChip>
+
                 @if (character.Affiliations.Count > 0)
                 {
                     @foreach (var affiliation in character.Affiliations)
@@ -87,18 +99,6 @@
                         Affiliations: None
                     </GuessChip>
                 }
-
-                <GuessChip Result="guess.Joined">
-                    <span class="chip-labels">Joined on</span> Day @character.JoinDayNumber
-                </GuessChip>
-
-                <GuessChip Result="guess.QPhone">
-                    <span class="chip-labels">QPhone:</span> @YesNo(character.HasQPhone)
-                </GuessChip>
-
-                <GuessChip Result="guess.Award2026">
-                    <span class="chip-labels">Award '26:</span> @YesNo(character.WonAward2026)
-                </GuessChip>
 
             </div>
         </div>

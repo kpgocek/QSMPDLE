@@ -6,7 +6,8 @@
         radial-gradient(circle at top center, var(--surface-strong), transparent 34rem),
         radial-gradient(circle at bottom left, var(--surface), transparent 28rem);
 
-    width: 100vw;
+    /* 100vw would include the scrollbar and push every page sideways by its width. */
+    width: 100%;
 }
 
 .content {
