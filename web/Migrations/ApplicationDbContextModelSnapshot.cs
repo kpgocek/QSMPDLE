@@ -42,6 +42,10 @@ namespace QSMPDLE.Web.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("aliases");
 
+                    b.Property<DateOnly?>("AvailableFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("available_from");
+
                     b.Property<int?>("JoinDayNumber")
                         .HasColumnType("integer")
                         .HasColumnName("join_day_number");
@@ -154,11 +158,22 @@ namespace QSMPDLE.Web.Migrations
                     b.Property<int>("GuessedCharacterId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTimeOffset?>("GuessedOnUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GameId");
 
                     b.HasIndex("GameSessionId");
+
+                    b.HasIndex("GameSessionId", "GuessOrder")
+                        .IsUnique()
+                        .HasFilter("\"GuessedOnUtc\" IS NOT NULL");
+
+                    b.HasIndex("GameSessionId", "GuessedCharacterId")
+                        .IsUnique()
+                        .HasFilter("\"GuessedOnUtc\" IS NOT NULL");
 
                     b.ToTable("GameGuess");
                 });
@@ -170,9 +185,6 @@ namespace QSMPDLE.Web.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("DailyNumber")
-                        .HasColumnType("integer");
 
                     b.Property<DateTimeOffset?>("FinishedOnUtc")
                         .HasColumnType("timestamp with time zone");
@@ -189,13 +201,13 @@ namespace QSMPDLE.Web.Migrations
                     b.Property<bool>("IsWon")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("Mode")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid");
 
                     b.Property<int?>("PuzzleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Ruleset")
                         .HasColumnType("integer");
 
                     b.Property<int>("SessionCategory")
