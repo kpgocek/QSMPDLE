@@ -1,3 +1,41 @@
+.hidden,
+::deep .hidden {
+    visibility: hidden;
+}
+
+.collapsed,
+::deep .collapsed {
+    visibility: collapse;
+}
+
+.archive-header,
+::deep .archive-header {
+    margin-top: 2.75rem;
+    height: 2.5em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-text,
+::deep .header-text {
+    height: 1em;
+    display: flex;
+    justify-content: center;
+    margin-inline: 1rem;
+}
+
+.separator,
+::deep .separator {
+    color: var(--tint);
+    margin-inline: .75rem;
+}
+
+.archive-completed-state,
+::deep .archive-completed-state {
+    margin-top: 2.75rem;
+}
+
 @media (max-width: 68rem) {
 
     .header-text {}

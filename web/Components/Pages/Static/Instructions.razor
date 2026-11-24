@@ -1,8 +1,13 @@
 @page "/how-to-play"
 @using MudBlazor
+@using QSMPDLE.Web.Components.Game.Modules
 @using QSMPDLE.Web.Components.UX
 @using QSMPDLE.Web.Components.UX.StatDisplay
 @using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Features.Gameplay.Services
+
+@inject IGameplayAvailabilityService Availability
+@inject QSMPDLE.Web.Infrastructure.Persistence.ICharacterStore CharacterStore
 
 <PageTitle>Instructions - QSMPDLE</PageTitle>
 
@@ -14,10 +19,9 @@
         Last updated: June 2026
     </p>
 
-    <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Class="mb-6">
+    <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mb-6">
         <strong>TL;DR:</strong> Guess today's QSMP2 character in 6 attempts.
     </MudAlert>
-
 
     <section class="mb-5">
         <h3>Make a Guess</h3>
@@ -33,150 +37,10 @@
 
     <section class="mb-5">
         <div class="example-wrapper">
-            <table class="guess-table mx-auto">
-                <thead>
-                    <tr>
-                        <th>Character</th>
-                        <th>
-                            <MudTooltip Text="Including 'Any'">
-                                <span class="header-with-icon">
-                                    Pronouns
-                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
-                                </span>
-                            </MudTooltip>
-                        </th>
-                         <th>
-                            <MudTooltip Text="'Human', 'Not Human' or 'Unknown'">
-                                <span class="header-with-icon">Species
-                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
-                                </span>
-
-                            </MudTooltip>
-                        </th>
-                        <th>Languages</th>
-                        <th>Joined</th>
-                        <th>
-                            <MudTooltip Text="Has a QPhone">
-                                <span class="header-with-icon">QPhone
-                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
-                                </span>
-                            </MudTooltip>
-                        </th>
-                        <th>
-                            <MudTooltip Text="Won a QSMP Award in 2026">
-                                <span class="header-with-icon">Award '26
-                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
-                                </span>
-                            </MudTooltip>
-                        </th>
-                        <th>Affiliations</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                    <tr class="answer-row">
-                        <td class="small-cell">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                <MudAvatar Square="true" Size="Size.Large">
-                                    <MudImage Src="@CharacterUrlHelper.GetHeadSrc("FitMC")" Alt="" />
-                                </MudAvatar>
-                                <span>FitMC</span>
-                            </MudStack>
-                        </td>
-
-                        <td class="small-cell">
-                            <GuessChip Result="ComparisonResult.Wrong">
-                                He/Him
-                            </GuessChip>
-                        </td>
-
-                        <td class="small-cell">
-                            <GuessChip Result="ComparisonResult.Correct">
-                                Human
-                            </GuessChip>
-
-                        </td>
-
-                        <td class="small-cell">
-                            <GuessChip Result="ComparisonResult.Less">
-                                4+ (5)
-                            </GuessChip>
-                        </td>
-
-                        <td class="small-cell">
-                            <GuessChip Result="ComparisonResult.Later">
-                                Day 1
-                            </GuessChip>
-                        </td>
-
-                        <td class="small-cell">
-                            <GuessChip Result="ComparisonResult.Wrong">
-                                No
-                            </GuessChip>
-                        </td>
-
-                        <td class="small-cell">
-                            <GuessChip Result="ComparisonResult.Correct">
-                                No
-                            </GuessChip>
-                        </td>
-
-                        <td class="small-cell">
-                            <GuessChip Result="ComparisonResult.Partial">
-                                The Regime
-                            </GuessChip>
-                        </td>
-                    </tr>
-
-                </tbody>
-            </table>
-
-            <div class="guess-card">
-
-                <div class="guess-card-header">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
-                        <MudAvatar Square="true" Size="Size.Large">
-                            <MudImage Src="@CharacterUrlHelper.GetHeadSrc("FitMC")" Alt="" />
-                        </MudAvatar>
-
-                        <span class="guess-name">FitMC</span>
-                    </MudStack>
-                </div>
-
-                <div class="guess-card-grid">
-
-                    <GuessChip Result="ComparisonResult.Wrong">
-                        He/Him
-                    </GuessChip>
-
-                    <GuessChip Result="ComparisonResult.Correct">
-                        Human
-                    </GuessChip>
-
-
-                    <GuessChip Result="ComparisonResult.Less">
-                        Languages: 3+ (5)
-                    </GuessChip>
-
-
-                    <GuessChip Result="ComparisonResult.Later">
-                        Day 1
-                    </GuessChip>
-
-                    <GuessChip Result="ComparisonResult.Wrong">
-                        QPhone: No
-                    </GuessChip>
-
-                    <GuessChip Result="ComparisonResult.Correct">
-                        Award '26: No
-                    </GuessChip>
-
-                    <GuessChip Result="ComparisonResult.Partial">
-                        The Regime
-                    </GuessChip>
-
-                </div>
-            </div>
+            @if (ExampleGuess is not null)
+            {
+                <GuessBoard Guesses="@([ExampleGuess])" ActiveClues="@ActiveClues" ShowPlaceholders="false" />
+            }
         </div>
 
         <div>
@@ -235,112 +99,31 @@
     </section>
 </WebPage>
 
-<style>
-    .example-wrapper {
-        margin-bottom: 5rem;
+@code {
+    private const string ExampleCharacter = "FitMC";
+
+    // The page explains today's board, so it only describes clues released by today.
+    private IReadOnlySet<ClueGroup> ActiveClues => Availability.GetActiveClues(Availability.GetEffectiveDate(null));
+
+    private GuessResult? ExampleGuess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // One colour of each kind; the values come from the real character, so the example cannot drift from the board.
+        var lookup = (await CharacterStore.GetLookupsAsync()).FirstOrDefault(character => character.Name == ExampleCharacter);
+        if (lookup is null)
+            return;
+
+        ExampleGuess = new GuessResult
+        {
+            Character = lookup,
+            Pronouns = ComparisonResult.Wrong,
+            Species = ComparisonResult.Correct,
+            Languages = ComparisonResult.Less,
+            Joined = ComparisonResult.Later,
+            Affiliation = ComparisonResult.Partial,
+            QPhone = ActiveClues.Contains(ClueGroup.QPhone) ? ComparisonResult.Wrong : null,
+            Award2026 = ActiveClues.Contains(ClueGroup.Award2026) ? ComparisonResult.Correct : null,
+        };
     }
-
-    .guess-table {
-        border-spacing: 0 .5rem;
-    }
-
-    .guess-table tr {
-        height: 3rem;
-    }
-
-    .guess-table th {
-        color: var(--white);
-        font-size: .8rem;
-        text-transform: uppercase;
-        letter-spacing: .05em;
-        font-weight: 600;
-        height: 2rem;
-    }
-
-    .guess-table td {
-        min-width: 5.5rem;
-    }
-
-    .guess-table td,
-    .guess-table th {
-        vertical-align: middle;
-    }
-
-    .header-with-icon {
-        display: inline-flex;
-        align-items: center;
-        gap: .25rem;
-    }
-
-    .header-with-icon .mud-icon-root {
-        position: relative;
-        top: -.0625rem;
-    }
-
-    .answer-row {
-        user-select: none;
-        border: 0.125rem solid var(--panel-edge);
-        background: linear-gradient(90deg, var(--panel-strong), var(--panel));
-        box-shadow: inset 0 0 0 .0625rem var(--black);
-    }
-
-    .small-cell {
-        vertical-align: middle;
-        width: 5rem;
-    }
-
-    @* CARD *@
-    .guess-card  {
-        width: 100vw;
-        padding: 1rem;
-        margin-inline-start: -.75rem;
-
-        background:
-            linear-gradient(160deg, var(--panel-strong), var(--panel));
-
-        backdrop-filter: blur(1rem);
-
-        border-inline: none;
-        border-block: .125rem solid var(--panel-edge);
-        box-shadow: inset 0 0 0 .0625rem var(--black);
-    }
-
-    .guess-card-grid  {
-        display: grid;
-
-        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-
-        gap: .5rem;
-
-        margin-top: 1rem;
-    }
-
-    .guess-card-grid .mud-chip,
-    .placeholder-card-grid .mud-chip {
-        width: 100%;
-    }
-
-    .guess-avatar,
-    .placeholder-avatar {
-        width: 5rem;
-        height: 5rem;
-
-        image-rendering: pixelated;
-        background: var(--surface-muted);
-        border: .0625rem solid var(--line);
-    }
-
-    .placeholder-avatar {
-        opacity: .4;
-    }
-
-    .guess-name {
-        font-size: 1.1rem;
-        font-weight: 500;
-        letter-spacing: .02em;
-    }
-
-    .color {
-        margin-inline-start: -.5em;
-    }
-</style>
+}

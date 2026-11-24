@@ -1,17 +1,15 @@
-.guess-card {
-    display: none;
+.example-wrapper,
+::deep .example-wrapper {
+    margin-bottom: 5rem;
+}
+
+.color,
+::deep .color {
+    margin-inline-start: -.5em;
 }
 
 @media (max-width: 68rem) {
     .example-wrapper {
         margin-bottom: 2rem;
-    }
-
-    .guess-card {
-        display: block;
-    }
-
-    .guess-table {
-        display: none;
     }
 }

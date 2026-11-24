@@ -34,10 +34,10 @@ main {
 }
 
 #blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
+    background: var(--primary-black);
+    color: var(--white);
+    border-top: .125rem solid var(--wrong);
     bottom: 0;
-    box-shadow: 0 -.0625rem .125rem rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
     display: none;
     left: 0;
@@ -79,15 +79,16 @@ main {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
+    justify-content: center;
 }
 
-.footer-links a {
+.footer-links ::deep a {
     color: var(--primary);
     text-decoration: none;
     transition: color 160ms ease;
 }
 
-.footer-links a:hover {
+.footer-links ::deep a:hover {
     color: var(--secondary);
     text-decoration: none;
 }
@@ -96,6 +97,7 @@ main {
     font-size: .75rem;
 }
 
+.footer-games,
 .footer-copyright {
     font-size: .875rem;
     color: var(--text-muted);

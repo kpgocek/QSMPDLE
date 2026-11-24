@@ -3,31 +3,10 @@
 
 @using QSMPDLE.Web.Components.Game
 @using QSMPDLE.Web.Features.Gameplay.Models
-@using QSMPDLE.Web.Features.Statistics.Models
-@using QSMPDLE.Web.Features.Statistics.Services
-
-@inject IStatisticsService StatisticsService
 
 <PageTitle>Practice Mode - QSMPDLE</PageTitle>
 
 <h2>Training Grounds</h2>
 
-<Gameplay GameMode="GameMode.Practice" GameStateChanged="OnGameStateChange" />
+<Gameplay EntryPoint="EntryPoint.Practice" />
 
-<style>
-    h2 {
-        margin-top: 2.75rem;
-    }
-</style>
-
-@code {
-    private List<GuessResult> Guesses = null!;
-    private GameSession Stats = null!;
-
-    private async Task OnGameStateChange(GameState gameState)
-    {
-        Guesses = gameState.GuessesMade;
-
-        Stats = await StatisticsService.GetGameStatsAsync(gameState.GameId);
-    }
-}

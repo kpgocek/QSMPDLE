@@ -1,6 +1,5 @@
 @page "/archive/day/{DayNumber:int}"
 @rendermode InteractiveServer
-@implements IDisposable
 
 @using MudBlazor
 @using QSMPDLE.Web.Components.Game
@@ -10,9 +9,7 @@
 @using QSMPDLE.Web.Features.Gameplay.Services
 
 @inject IDayService DayService
-@inject QSMPDLE.Web.Features.Communication.GameEvents.IGameEventBus EventBus
 @inject NavigationManager NavigationManager
-@inject QSMPDLE.Web.Infrastructure.LocalStorage.ILegacyGameStateMigrationService LegacyGameStateMigrationService
 
 <PageTitle>Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE</PageTitle>
 
@@ -70,57 +67,21 @@ else
 
         <div class="@(_showCalendar ? "" : "collapsed") mt-3">
             <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar"
-                              RefreshRequested="RefreshArchiveStateAsync" />
+                              @ref="_navigator" />
         </div>
     }
 
-    <Gameplay @key="DayNumber" GameMode="GameMode.Archive" ArchiveGameNumber="DayNumber"
+    <Gameplay @key="DayNumber" EntryPoint="EntryPoint.Archive" ArchiveGameNumber="DayNumber"
               GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
 }
-
-<style>
-    .hidden {
-        visibility: hidden;
-    }
-
-    .collapsed {
-        visibility: collapse;
-    }
-
-    .archive-header {
-        margin-top: 2.75rem;
-        height: 2.5em;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .header-text {
-        height: 1em;
-        display: flex;
-        justify-content: center;
-        margin-inline: 1rem;
-    }
-
-    .separator {
-        color: var(--tint);
-    }
-
-    .archive-date {
-        color: var(--text-muted);
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .archive-completed-state {
-        margin-top: 2.75rem;
-    }
-</style>
 
 @code {
     [Parameter]
     public int DayNumber { get; set; }
+
+    // Only while prerendering.
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
 
     private bool _isValidDay = true;
     private bool _isGameLoaded = false;
@@ -128,18 +89,14 @@ else
     private int _maxDay;
     private DateOnly _firstDay;
     private bool _isInitialized;
-    private bool _refreshPending;
-    private IDisposable? _finishedSubscription;
-    private bool _disposed;
-    public void Dispose()
-    {
-        _disposed = true;
-        _finishedSubscription?.Dispose();
-    }
+    private ArchiveNavigator? _navigator;
+
+    // Null until Gameplay reports its loaded state, so the load notification never triggers a status query.
+    private int? _lastGuessCount;
 
     private DateOnly ArchiveDate => DayService.GetArchiveDate(DayNumber);
 
-    private string CanonicalUrl => $"{NavigationManager.BaseUri.TrimEnd('/')}/archive/day/{DayNumber}";
+    private string CanonicalUrl => $"{Site.Url}/archive/day/{DayNumber}";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -148,10 +105,20 @@ else
 
         // Validate day number is within valid range.
         _isValidDay = DayNumber >= 1 && DayNumber <= _maxDay;
+        if (!_isValidDay && HttpContext is { Response.HasStarted: false } context)
+        {
+            // Set only as the response starts: an earlier 404 makes Blazor drop this page and its message.
+            context.Response.OnStarting(() =>
+            {
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                return Task.CompletedTask;
+            });
+        }
 
         _isGameLoaded = false;
         _showCalendar = false;
         _isInitialized = false;
+        _lastGuessCount = null;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -160,56 +127,26 @@ else
             return;
 
         _isInitialized = true;
-        await LegacyGameStateMigrationService.MigrateAsync();
-        SubscribeToGameEvents();
-        await LoadArchiveStateAsync();
+        _isGameLoaded = true;
+        StateHasChanged();
     }
 
-    private void SubscribeToGameEvents()
+    private async Task OnGameStateChange(GameState gameState)
     {
-        _finishedSubscription ??= EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(OnGameFinishedAsync);
-    }
+        var guessCount = gameState.GuessesMade.Count;
+        var isNewGuess = guessCount > _lastGuessCount;
+        _lastGuessCount = guessCount;
 
-    private async Task OnGameFinishedAsync(QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent eventData)
-    {
-        if (_disposed || eventData.PuzzleId != DayNumber)
-            return;
-
-        _refreshPending = true;
-        await LoadArchiveStateAsync();
-        await InvokeAsync(RefreshArchiveStateAsync);
-    }
-
-    private async Task RefreshArchiveStateAsync()
-    {
-        if (!_refreshPending)
-            return;
-
-        _refreshPending = false;
-        await LoadArchiveStateAsync();
-    }
-
-    private async Task LoadArchiveStateAsync()
-    {
-        try
+        if (isNewGuess && _navigator is not null)
         {
-            _isGameLoaded = true;
+            await _navigator.RefreshDayAsync(DayNumber);
         }
-        finally
-        {
-            if (!_disposed) await InvokeAsync(StateHasChanged);
-        }
-    }
-
-    private Task OnGameStateChange(GameState gameState)
-    {
-        return Task.CompletedTask;
     }
 
     private async Task OnGameLoaded()
     {
         _isGameLoaded = true;
-        if (!_disposed) await InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
 
     private void NavigateToPrevious()
