@@ -1,8 +1,7 @@
-@implements IDisposable
 @using MudBlazor
 @inject NavigationManager NavigationManager
 @inject QSMPDLE.Web.Features.Archive.Services.IArchiveStatusService StatusService
-@inject QSMPDLE.Web.Features.Communication.GameEvents.IGameEventBus EventBus
+@inject ILogger<ArchiveNavigator> Logger
 
 <div class="archive-navigator">
     <MudPaper Class="pa-1">
@@ -11,36 +10,13 @@
                        ShowToolbar="false" Date="@SelectedDate" DateChanged="OnDateSelected" MinDate="@MinDate" MaxDate="@MaxDate"
                        AutoClose="true" AdditionalDateClassesFunc="GetDateClasses" PickerOpened="OnPickerOpened" PickerMonthChanged="OnPickerMonthChanged" />
 
+        @if (_loadFailed)
+        {
+            <p class="mb-2 text-center" role="status">We couldn't load your results for this month.</p>
+        }
+
     </MudPaper>
 </div>
-
-<style>
-    .archive-current  {
-        border: 1px solid var(--tint);
-        color: white;
-        font-weight: bold;
-    }
-
-    .archive-notstarted  {
-        background: var(--shadow);
-    }
-
-    .archive-inprogress  {
-        color: var(--partial) !important;
-        background: var(--shadow);
-    }
-
-    .archive-won  {
-        border: 1px solid var(--correct);
-        background: var(--shadow);
-        color: var(--correct) !important;
-    }
-
-    .archive-lost  {
-        border: 1px solid var(--wrong);
-        color: var(--wrong) !important;
-    }
-</style>
 
 @code {
     [Parameter]
@@ -54,9 +30,6 @@
 
     [Parameter]
     public EventCallback DateSelected { get; set; }
-
-    [Parameter]
-    public EventCallback RefreshRequested { get; set; }
 
     private DateTime? SelectedDate => FirstDay.AddDays(CurrentDay - 1).ToDateTime(TimeOnly.MinValue);
 
@@ -81,6 +54,8 @@
 
     private readonly object _loadLock = new();
 
+    private bool _loadFailed;
+
     private void OnDateSelected(DateTime? date)
     {
         if (date is null)
@@ -98,44 +73,11 @@
     }
 
     private DateOnly? _loadOnFirstRender;
-    private IDisposable? _guessSubscription, _finishedSubscription;
-    private bool _disposed;
 
-    public void Dispose()
-    {
-        _disposed = true;
-        _guessSubscription?.Dispose();
-        _finishedSubscription?.Dispose();
-    }
+    public Task RefreshDayAsync(int dayNumber) => InvokeAsync(() => LoadStatusesForDayAsync(FirstDay.AddDays(dayNumber - 1)));
 
     protected override Task OnInitializedAsync()
     {
-        // Subscribe to internal game events so we can refresh month/day statuses when local game state changes.
-        _guessSubscription = EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GuessMadeEvent>(async ev =>
-        {
-            if (_disposed || !ev.DayNumber.HasValue)
-                return;
-
-            var date = FirstDay.AddDays(ev.DayNumber.Value - 1);
-            await InvokeAsync(async () =>
-            {
-                await LoadStatusesForDayAsync(date);
-            });
-        });
-
-        _finishedSubscription = EventBus.Subscribe<QSMPDLE.Web.Features.Communication.GameEvents.GameFinishedEvent>(async ev =>
-        {
-            if (_disposed || !ev.PuzzleId.HasValue)
-                return;
-
-            var date = FirstDay.AddDays(ev.PuzzleId.Value - 1);
-            await InvokeAsync(async () =>
-            {
-                await LoadStatusesForDayAsync(date);
-                await RefreshRequested.InvokeAsync();
-            });
-        });
-
         var selected = SelectedDate ?? DateTime.UtcNow;
         _loadOnFirstRender = DateOnly.FromDateTime(selected);
 
@@ -151,7 +93,7 @@
         {
             await LoadMonthForDateAsync(_loadOnFirstRender.Value);
             _loadOnFirstRender = null;
-            if (!_disposed) await InvokeAsync(StateHasChanged);
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -192,14 +134,18 @@
                 }
             }
         }
-        catch
+        catch (Exception exception) when (exception is JSDisconnectedException or OperationCanceledException)
         {
-            // ignore errors
+            // The player has left the page.
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Archive day status failed to load");
+            _loadFailed = true;
         }
 
-        if (!_disposed) await InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
-
 
     private string GetDateClasses(DateTime date)
     {
@@ -301,14 +247,22 @@
             {
                 _loadedMonthKeys.Add(monthKey);
             }
+
+            _loadFailed = false;
         }
-        catch
+        catch (Exception exception) when (exception is JSDisconnectedException or OperationCanceledException)
         {
-            // Swallow and allow retry later
+            // The player has left the page.
+        }
+        catch (Exception exception)
+        {
+            // The month is not marked as loaded, so opening it again retries.
+            Logger.LogWarning(exception, "Archive month statuses failed to load");
+            _loadFailed = true;
         }
         finally
         {
-            if (!_disposed) await InvokeAsync(StateHasChanged);
+            await InvokeAsync(StateHasChanged);
         }
     }
 }

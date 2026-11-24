@@ -1,0 +1,181 @@
+.result-modal:focus,
+::deep .result-modal:focus {
+    outline: none;
+}
+
+.result-overlay,
+::deep .result-overlay {
+    position: fixed;
+    inset: 0;
+
+    background: rgba(1, 10, 30, .78);
+    backdrop-filter: blur(.5rem);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    z-index: 10000;
+
+    /* Waits for the final guess's clues to finish turning over before covering the board. */
+    animation: overlay-enter 240ms ease-out 1150ms backwards;
+}
+
+.result-modal,
+::deep .result-modal {
+    background: linear-gradient(180deg, var(--surface-strong), var(--black));
+    padding: 2rem;
+    border: .0625rem solid var(--line-strong);
+    min-width: min(20rem, 100%);
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    box-shadow: var(--soft-shadow);
+    animation: modal-enter 240ms cubic-bezier(.16, 1, .3, 1) 1150ms backwards;
+}
+
+.result-modal h2,
+::deep .result-modal h2,
+.result-modal ::deep h2 {
+    margin-bottom: 1rem;
+
+    font-size: clamp(2.5rem, 11vw, 3.5rem);
+    line-height: 1;
+    text-align: center;
+
+    animation: result-stamp 420ms cubic-bezier(.16, 1, .3, 1) 1270ms backwards;
+}
+
+.result-modal h2.won,
+::deep .result-modal h2.won,
+.result-modal ::deep h2.won {
+    color: var(--correct);
+}
+
+.result-modal h2.lost,
+::deep .result-modal h2.lost,
+.result-modal ::deep h2.lost {
+    color: var(--wrong);
+}
+
+.result-modal p,
+::deep .result-modal p,
+.result-modal ::deep p {
+    text-align: center;
+}
+
+/* Body text is weight 300, so the browser's relative "bolder" barely differs. */
+.result-modal p strong,
+::deep .result-modal p strong,
+.result-modal ::deep p strong,
+.result-modal p ::deep strong {
+    font-weight: 800;
+}
+
+.buttons,
+::deep .buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: end;
+    margin-top: 1rem;
+}
+
+.stats-popup,
+::deep .stats-popup {
+    min-width: min(21.25rem, 100%);
+    max-width: 31.25rem;
+}
+
+.stats-popup h3,
+::deep .stats-popup h3,
+.stats-popup ::deep h3,
+.stats-popup h4,
+::deep .stats-popup h4,
+.stats-popup ::deep h4 {
+    font-style: normal;
+    text-align: center;
+}
+
+.stats-popup,
+::deep .stats-popup {
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-grid,
+::deep .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+
+    gap: 1rem;
+
+    margin: 1.5rem 0;
+}
+
+.stat,
+::deep .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat .value,
+::deep .stat .value,
+.stat ::deep .value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stat .label,
+::deep .stat .label,
+.stat ::deep .label {
+    color: var(--text-muted);
+    font-size: .75rem;
+    text-align: center;
+}
+
+.distribution,
+::deep .distribution {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.distribution-row,
+::deep .distribution-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.guess-number,
+::deep .guess-number {
+    width: 1rem;
+    text-align: center;
+    font-weight: 700;
+}
+
+.distribution-bar-container,
+::deep .distribution-bar-container {
+    flex: 1;
+}
+
+.distribution-bar,
+::deep .distribution-bar {
+    min-width: 2rem;
+
+    padding: .25rem .5rem;
+
+    background: var(--panel-strong);
+    color: var(--white);
+
+    font-weight: 700;
+    text-align: right;
+}
+
+/* Only this game's bar is lit, so the player finds their result in the distribution at a glance. */
+.distribution-bar.today,
+::deep .distribution-bar.today {
+    background: var(--primary);
+    color: var(--black);
+}
