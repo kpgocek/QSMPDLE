@@ -8,7 +8,4 @@ public interface IPlayerStatsStore
 
     /// <summary>Resolves only the anonymous identity, without deriving statistics from game history.</summary>
     async Task<Guid> GetPlayerIdAsync() => (await LoadAsync()).Id;
-
-    Task SaveAsync(PlayerStats stats);
-    Task ClearAsync();
 }

@@ -8,7 +8,23 @@ public sealed class LocalStoragePlayerStatsStore(ILocalStorageService localStora
 {
     private const string Key = "qsmpdle-player-stats";
 
+    // Components of one page ask at once; a new visitor's first call must store the identity before the next one reads it.
+    private readonly SemaphoreSlim _loadGate = new(1, 1);
+
     public async Task<PlayerStats> LoadAsync()
+    {
+        await _loadGate.WaitAsync();
+        try
+        {
+            return await LoadOrCreateAsync();
+        }
+        finally
+        {
+            _loadGate.Release();
+        }
+    }
+
+    private async Task<PlayerStats> LoadOrCreateAsync()
     {
         var identity = await localStorage.GetItemAsync<LocalPlayerIdentity>(Key);
         if (identity is null || identity.Id == Guid.Empty || identity.Version != PlayerStats.CurrentVersion)
@@ -26,20 +42,6 @@ public sealed class LocalStoragePlayerStatsStore(ILocalStorageService localStora
     }
 
     public async Task<Guid> GetPlayerIdAsync() => (await LoadAsync()).Id;
-
-    public async Task SaveAsync(PlayerStats stats)
-    {
-        if (stats.Id == Guid.Empty)
-            stats.Id = Guid.NewGuid();
-
-        await localStorage.SetItemAsync(Key, new LocalPlayerIdentity
-        {
-            Id = stats.Id,
-            Version = PlayerStats.CurrentVersion,
-        });
-    }
-
-    public Task ClearAsync() => localStorage.ClearAsync().AsTask();
 
     private sealed class LocalPlayerIdentity
     {

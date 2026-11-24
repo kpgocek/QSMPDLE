@@ -45,55 +45,14 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
         }
     }
 
-    public async Task<GameState?> GetByKeyAsync(string key)
-    {
-        try
-        {
-            // Legacy states use schema v2. Read them without invalidating so the
-            // state manager can move compatible progress to the canonical key.
-            return await localStorage.GetItemAsync<GameState>(string.Concat(KeyPrefix, key));
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task<IReadOnlyList<int>> GetLegacyPuzzleIdsAsync()
-    {
-        var puzzleIds = new HashSet<int>();
-
-        foreach (var key in await GetKeysAsync())
-        {
-            var suffix = key.StartsWith($"{KeyPrefix}daily-", StringComparison.Ordinal)
-                ? key[$"{KeyPrefix}daily-".Length..]
-                : key.StartsWith($"{KeyPrefix}archive-", StringComparison.Ordinal)
-                    ? key[$"{KeyPrefix}archive-".Length..]
-                    : null;
-
-            if (suffix is not null && int.TryParse(suffix, out var puzzleId) && puzzleId > 0)
-                puzzleIds.Add(puzzleId);
-        }
-
-        return puzzleIds.ToList();
-    }
-
-    public Task SaveByKeyAsync(string key, GameState state)
-    {
-        state.SchemaVersion = CurrentSchemaVersion;
-        return localStorage.SetItemAsync(string.Concat(KeyPrefix, key), state).AsTask();
-    }
-
-    public Task RemoveByKeyAsync(string key) => localStorage.RemoveItemAsync(string.Concat(KeyPrefix, key)).AsTask();
-
     public async Task SaveAsync(GameState state)
     {
         if (!IsInitialized)
             throw new NullReferenceException(nameof(Key));
 
-        // Ensure stored state is marked with the current schema version so future loads
-        // can detect compatibility.
-        await SaveByKeyAsync(Key[KeyPrefix.Length..], state);
+        // Marked with the current schema version so future loads can detect compatibility.
+        state.SchemaVersion = CurrentSchemaVersion;
+        await localStorage.SetItemAsync(Key, state);
     }
 
     public async Task<Guid?> GetFirstGameIdAsync()
@@ -112,35 +71,31 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
 
     public async Task<bool> HasGuessedInOtherGameAsync()
     {
-        foreach (var key in await GetKeysAsync())
+        foreach (var prefix in GameKeyPrefixes)
         {
-            if (key == Key || !GameKeyPrefixes.Any(prefix => key.StartsWith(prefix, StringComparison.Ordinal)))
-                continue;
+            foreach (var suffix in await GetKeySuffixesAsync(prefix))
+            {
+                var key = prefix + suffix;
+                if (key == Key)
+                    continue;
 
-            try
-            {
-                var state = await localStorage.GetItemAsync<GameState>(key);
-                if (state?.GuessesMade.Count > 0)
-                    return true;
-            }
-            catch
-            {
-                // An unreadable entry says nothing about whether the player has played.
+                try
+                {
+                    var state = await localStorage.GetItemAsync<GameState>(key);
+                    if (state?.GuessesMade.Count > 0)
+                        return true;
+                }
+                catch
+                {
+                    // An unreadable entry says nothing about whether the player has played.
+                }
             }
         }
 
         return false;
     }
 
-    public async Task ClearAsync()
-    {
-        if (!IsInitialized)
-            throw new NullReferenceException(nameof(Key));
-
-        await localStorage.RemoveItemAsync(Key);
-    }
-
     public bool IsInitialized => !string.IsNullOrEmpty(Key);
 
-    private Task<string[]> GetKeysAsync() => js.InvokeAsync<string[]>("storageKeys").AsTask();
+    private Task<string[]> GetKeySuffixesAsync(string prefix) => js.InvokeAsync<string[]>("storageKeys", prefix).AsTask();
 }
