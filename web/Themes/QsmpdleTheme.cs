@@ -4,6 +4,8 @@ namespace QSMPDLE.Web.Themes;
 
 public static class QsmpdleTheme
 {
+    private static readonly string[] BodyFont = ["Nunito Sans", "Helvetica", "Arial", "sans-serif"];
+
     public static readonly MudTheme Theme = new()
     {
         PaletteDark = new PaletteDark
@@ -33,6 +35,42 @@ public static class QsmpdleTheme
             ActionDisabled = "#666666",
 
             LinesDefault = "rgba(250,251,252,0.12)"
+        },
+
+        // Every MudBlazor variant defaults to Roboto on its own, so each one is pointed at the body face.
+        Typography =
+        {
+            Default = { FontFamily = BodyFont },
+            H1 = { FontFamily = BodyFont },
+            H2 = { FontFamily = BodyFont },
+            H3 = { FontFamily = BodyFont },
+            H4 = { FontFamily = BodyFont },
+            H5 = { FontFamily = BodyFont },
+            H6 = { FontFamily = BodyFont },
+            Subtitle1 = { FontFamily = BodyFont },
+            Subtitle2 = { FontFamily = BodyFont },
+            Body1 = { FontFamily = BodyFont },
+            Body2 = { FontFamily = BodyFont },
+            Button = { FontFamily = BodyFont },
+            Caption = { FontFamily = BodyFont },
+            Overline = { FontFamily = BodyFont }
         }
     };
+
+    // Declared after Theme: static fields initialize in textual order.
+    public static readonly string[] ChartPalette =
+    [
+        Theme.PaletteDark.Primary.ToString(),
+        Theme.PaletteDark.Secondary.ToString(),
+        Theme.PaletteDark.Success.ToString(),
+        Theme.PaletteDark.Warning.ToString(),
+        Theme.PaletteDark.PrimaryLighten,
+        Theme.PaletteDark.SuccessLighten,
+        Theme.PaletteDark.WarningLighten,
+        Theme.PaletteDark.SecondaryLighten,
+        Theme.PaletteDark.PrimaryDarken,
+        Theme.PaletteDark.SuccessDarken,
+        Theme.PaletteDark.WarningDarken,
+        Theme.PaletteDark.SecondaryDarken
+    ];
 }
