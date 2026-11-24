@@ -63,4 +63,29 @@ public sealed class DailySchedulePlannerTests
     {
         DailySchedulePlanner.Plan([], [], 10, seed: 1).Should().BeEmpty();
     }
+
+    [Theory]
+    [InlineData(0, 11)]
+    [InlineData(120, 42)]
+    [InlineData(400, 9)]
+    public void Plan_FutureCharactersAdded_DaysBeforeTheirReleaseAreUnchanged(int historyLength, int seed)
+    {
+        const int releaseOffset = 30;
+        var history = DailySchedulePlanner.Plan(Catalog, [], historyLength, seed: 1);
+        int[] withFuture = [.. Catalog, 60, 61, 62];
+
+        var without = DailySchedulePlanner.Plan(Catalog, history, releaseOffset, seed);
+        var with = DailySchedulePlanner.Plan(withFuture, history, releaseOffset + 20, seed, (id, day) => id < 60 || day >= releaseOffset);
+
+        with.Take(releaseOffset).Should().Equal(without);
+        with.Take(releaseOffset).Should().NotContain([60, 61, 62]);
+    }
+
+    [Fact]
+    public void Plan_ReleasedPoolInsideRepeatGap_RepeatsRatherThanFailing()
+    {
+        var picks = DailySchedulePlanner.Plan(Catalog, [1, 2], 3, seed: 1, (id, _) => id <= 2);
+
+        picks.Should().HaveCount(3).And.OnlyContain(id => id <= 2);
+    }
 }
