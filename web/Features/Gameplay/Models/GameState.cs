@@ -11,10 +11,6 @@ public sealed class GameState()
     public EntryPoint EntryPoint { get; set; } = EntryPoint.Daily;
     public EntryPoint FirstEntryPoint { get; set; } = EntryPoint.Daily;
 
-    // Kept only to deserialize browser states written by the previous release.
-    // New application code must use SessionCategory and EntryPoint.
-    public GameMode GameMode { get; set; }
-
     // SchemaVersion is used to detect older cached GameState objects stored in browser local storage.
     // If the persisted version doesn't match the current value the client will invalidate the cache
     // and reload fresh state from the server to avoid showing stale/broken UI.
@@ -29,6 +25,16 @@ public sealed class GameState()
     [JsonIgnore]
     public bool IsFinished => IsWon || IsLost;
 
+    [JsonIgnore]
+    public GameOutcome Outcome
+    {
+        get => IsWon ? GameOutcome.Won : IsLost ? GameOutcome.Lost : GameOutcome.InProgress;
+        set
+        {
+            IsWon = value == GameOutcome.Won;
+            IsLost = value == GameOutcome.Lost;
+        }
+    }
+
     public List<GuessResult> GuessesMade { get; set; } = [];
-    public bool StatsRecorded { get; set; }
 }

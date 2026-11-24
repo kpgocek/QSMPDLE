@@ -65,6 +65,13 @@ public sealed class Character
     [Column("won_award_2026")]
     public bool WonAward2026 { get; init; }
 
+    /// <summary>First UTC date the character can be guessed or picked; null means always.</summary>
+    [Column("available_from")]
+    [JsonIgnore]
+    public DateOnly? AvailableFrom { get; init; }
+
+    public bool IsAvailableOn(DateOnly date) => AvailableFrom is null || AvailableFrom <= date;
+
     [NotMapped]
     [JsonIgnore]
     public bool HasQPhone => PhoneNumbers.Count > 0;
