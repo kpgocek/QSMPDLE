@@ -121,6 +121,7 @@ Nothing was rewritten or deleted. Games from before this change have ruleset `un
 
   ```sql
   DELETE FROM "GameStats" WHERE "PlayerId" = '<player id>';
+  DELETE FROM "HiLoScores" WHERE "PlayerId" = '<player id>';
   ```
 
   Deleting also lets that browser play the puzzles again, and removes its games from the totals.
