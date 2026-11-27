@@ -10,7 +10,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICharacterStore, CachedDatabaseCharacterStore>();
         services.AddScoped<IGameStateStore, LocalStorageGameStateStore>();
         services.AddScoped<LocalStoragePlayerStatsStore>();
-        services.AddScoped<IPreferencesStore, LocalStoragePreferencesStore>();
         services.AddScoped<IGameStatsStore, DatabaseGameStatsStore>();
 
         return services;

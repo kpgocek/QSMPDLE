@@ -5,14 +5,13 @@ namespace QSMPDLE.Web.Features.Sharing;
 
 public static class ShareText
 {
-    // The player's name from Profile, when one is set, stands in for "I".
-    public static string BuildDailyChallenge(int dayNumber, string? name = null)
+    public static string BuildDailyChallenge(int dayNumber)
     {
         return
     $"""
 QSMPDLE #{dayNumber}
 
-{name ?? "I"} was unable to beat today's challenge.
+I was unable to beat today's challenge.
 Will you do better?
 
 😭
@@ -23,17 +22,14 @@ https://qsmpdle.com
 
     public static string BuildDailyResult(
         int dayNumber,
-        IReadOnlyList<GuessResult> guesses,
-        string? name = null)
+        IReadOnlyList<GuessResult> guesses)
     {
+
         var rows = guesses.Select(ToEmoji);
 
         var result = guesses[guesses.Count - 1].IsCorrect
                 ? $"{guesses.Count}/{GameRules.MaxGuesses}"
                 : $"X/{GameRules.MaxGuesses}";
-
-        if (name is not null)
-            result = $"{name}: {result}";
 
         return
     $"""
