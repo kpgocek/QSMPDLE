@@ -169,7 +169,6 @@
     {
         _playerName = await PreferencesService.GetDisplayNameAsync();
 
-
         // Only canonical wins show statistics; practice games don't count towards them.
         if (!IsWon || GameState.SessionCategory != GameModeSessionCategory)
             return;
