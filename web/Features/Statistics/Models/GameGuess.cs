@@ -9,4 +9,7 @@ public sealed class GameGuess
 
     public int GuessOrder { get; set; }
     public int GuessedCharacterId { get; set; }
+
+    /// <summary>Null for guesses recorded before times were, or later than they were made.</summary>
+    public DateTimeOffset? GuessedOnUtc { get; set; }
 }

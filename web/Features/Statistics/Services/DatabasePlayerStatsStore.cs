@@ -18,27 +18,21 @@ public sealed class DatabasePlayerStatsStore(
     public async Task<PlayerStats> LoadAsync()
     {
         var localIdentity = await localIdentityStore.LoadAsync();
-        var games = await gameStatsStore.GetPlayerGames(localIdentity.Id);
+        var games = await gameStatsStore.GetPlayerGames(localIdentity.Id, SessionCategory.CanonicalPuzzle);
         return PlayerStatsProjection.Create(localIdentity, games, dayService);
     }
 
     public Task<Guid> GetPlayerIdAsync() => localIdentityStore.GetPlayerIdAsync();
-
-    public Task SaveAsync(PlayerStats stats) => localIdentityStore.SaveAsync(stats);
-
-    public Task ClearAsync() => localIdentityStore.ClearAsync();
 }
 
 public static class PlayerStatsProjection
 {
-    private const int GuessDistributionSize = 6;
-
     public static PlayerStats Create(PlayerStats localIdentity, IEnumerable<GameSession> sessions, IDayService dayService)
     {
         var games = sessions.Where(game => !game.IsLegacyDuplicate).ToList();
         var canonicalGames = games.Where(game => game.SessionCategory == SessionCategory.CanonicalPuzzle).ToList();
-        var finishedCanonicalGames = canonicalGames.Where(game => game.FinishedOnUtc.HasValue).ToList();
-        var finishedArchiveGames = finishedCanonicalGames.Where(game => game.FirstEntryPoint == EntryPoint.Archive).ToList();
+        var finishedCanonicalGames = canonicalGames.Where(game => game.Outcome != GameOutcome.InProgress).ToList();
+        var wonGames = finishedCanonicalGames.Where(game => game.Outcome == GameOutcome.Won).ToList();
         var dailyGames = canonicalGames.Where(game => game.FirstEntryPoint == EntryPoint.Daily).ToList();
         var streak = CalculateStreak(dailyGames, dayService);
 
@@ -47,22 +41,18 @@ public static class PlayerStatsProjection
             Id = localIdentity.Id,
             Version = PlayerStats.CurrentVersion,
             GamesPlayed = finishedCanonicalGames.Count,
-            GamesWon = finishedCanonicalGames.Count(game => game.IsWon),
-            ArchiveGamesPlayed = finishedArchiveGames.Count,
-            ArchiveGamesWon = finishedArchiveGames.Count(game => game.IsWon),
-            ArchiveGamesLost = finishedArchiveGames.Count(game => !game.IsWon),
+            GamesWon = wonGames.Count,
             CurrentStreak = streak.Current,
             MaxStreak = streak.Max,
-            LastCompletedDayNumber = streak.LastCompletedPuzzleId,
-            LastPlayedDailyGameId = dailyGames.OrderByDescending(game => game.StartedOnUtc).Select(game => game.GameId).FirstOrDefault(),
-            GuessDistribution = Enumerable.Range(1, GuessDistributionSize)
-                .Select(guessCount => finishedCanonicalGames.Count(game => Math.Clamp(game.Guesses.Count, 1, GuessDistributionSize) == guessCount))
+            GuessDistribution = Enumerable.Range(1, GameRules.MaxGuesses)
+                .Select(guessCount => wonGames.Count(game => Math.Clamp(game.Guesses.Count, 1, GameRules.MaxGuesses) == guessCount))
                 .ToArray(),
         };
     }
 
     private static Streak CalculateStreak(IEnumerable<GameSession> dailyGames, IDayService dayService)
     {
+        // Needs a saved finish: without one, nothing proves the game was decided on its own day.
         var eligible = dailyGames
             .Where(game => game.FinishedOnUtc.HasValue
                            && game.PuzzleId.HasValue
@@ -74,11 +64,10 @@ public static class PlayerStatsProjection
         var current = 0;
         var max = 0;
         int? previousWinningPuzzle = null;
-        int? lastCompletedPuzzle = null;
 
         foreach (var game in eligible)
         {
-            if (!game.IsWon)
+            if (game.Outcome != GameOutcome.Won)
             {
                 current = 0;
                 previousWinningPuzzle = null;
@@ -89,12 +78,15 @@ public static class PlayerStatsProjection
                 ? current + 1
                 : 1;
             previousWinningPuzzle = game.PuzzleId;
-            lastCompletedPuzzle = game.PuzzleId;
             max = Math.Max(max, current);
         }
 
-        return new Streak(current, max, lastCompletedPuzzle);
+        // A streak survives only while yesterday's daily was won; today's can still be played.
+        if (previousWinningPuzzle < dayService.GetTodayDayNumber() - 1)
+            current = 0;
+
+        return new Streak(current, max);
     }
 
-    private sealed record Streak(int Current, int Max, int? LastCompletedPuzzleId);
+    private sealed record Streak(int Current, int Max);
 }

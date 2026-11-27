@@ -1,94 +1,56 @@
 using QSMPDLE.Web.Features.Archive.Models;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
-using QSMPDLE.Web.Features.Statistics.Services;
+using QSMPDLE.Web.Infrastructure.LocalStorage;
 using QSMPDLE.Web.Infrastructure.Persistence;
 
 namespace QSMPDLE.Web.Features.Archive.Services
 {
     // Production implementation that queries the game stats store to determine per-day statuses for the current player.
     public sealed class ArchiveStatusService(
-        IStatisticsService statisticsService,
+        IPlayerStatsStore playerStatsStore,
         IGameStatsStore gameStatsStore,
         QSMPDLE.Web.Features.Gameplay.Services.IDayService dayService,
-        IArchiveGameStateSource gameStateSource,
-        IArchiveStatusCache? cache = null) : IArchiveStatusService
+        IArchiveGameStateSource gameStateSource) : IArchiveStatusService
     {
-        private readonly IArchiveStatusCache _cache = cache ?? new ArchiveStatusCache();
-        private readonly IStatisticsService _statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
+        private readonly IPlayerStatsStore _playerStatsStore = playerStatsStore ?? throw new ArgumentNullException(nameof(playerStatsStore));
         private readonly IGameStatsStore _gameStatsStore = gameStatsStore ?? throw new ArgumentNullException(nameof(gameStatsStore));
         private readonly QSMPDLE.Web.Features.Gameplay.Services.IDayService _dayService = dayService ?? throw new ArgumentNullException(nameof(dayService));
         private readonly IArchiveGameStateSource _gameStateSource = gameStateSource ?? throw new ArgumentNullException(nameof(gameStateSource));
 
         public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, CancellationToken cancellationToken = default)
         {
-            return await GetStatusesAsync(start, end, includeLocalStorageFallback: true, cancellationToken);
-        }
+            var playerId = await _playerStatsStore.GetPlayerIdAsync();
 
-        public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken = default)
-        {
-            // Local Storage belongs to this browser/circuit, not to the singleton
-            // server cache. Caching it by month would show another browser's stale
-            // state (or a pre-migration NotStarted value), so read it live.
-            if (includeLocalStorageFallback)
-            {
-                return await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken);
-            }
-
-            return await _cache.GetStatusesAsync(start, end, async () => await GetStatusesCoreAsync(start, end, includeLocalStorageFallback, cancellationToken), cancellationToken);
-        }
-
-        private async Task<Dictionary<int, DayStatus>> GetStatusesCoreAsync(DateOnly start, DateOnly end, bool includeLocalStorageFallback, CancellationToken cancellationToken)
-        {
-            // Get current player id from statistics service (which uses the same player store as GameStateManager)
-            var playerId = await _statisticsService.GetPlayerIdAsync();
-
-            if (playerId == Guid.Empty)
-            {
-                // No known player id -> all NotStarted
-                return Enumerable.Range(0, (end.DayNumber - start.DayNumber) + 1)
-                    .Select((_, i) => start.AddDays(i))
-                    .ToDictionary(d => d.DayNumber, _ => DayStatus.NotStarted);
-            }
-
-            // Convert the date range into DailyNumber range using GameService first-day semantics.
+            // Convert the date range into puzzle numbers using DayService's first-day semantics.
             var startNumber = _dayService.GetArchiveDayNumber(start);
             var endNumber = _dayService.GetArchiveDayNumber(end);
 
-            if (endNumber < 1 || startNumber > int.MaxValue) // quick bounds check
+            // No known player id, or no archive days in range -> all NotStarted
+            if (playerId == Guid.Empty || endNumber < 1)
             {
-                // No relevant days in the archive -> all NotStarted
                 return Enumerable.Range(0, (end.DayNumber - start.DayNumber) + 1)
                     .Select((_, i) => start.AddDays(i))
                     .ToDictionary(d => d.DayNumber, _ => DayStatus.NotStarted);
             }
 
             startNumber = Math.Max(1, startNumber);
-            endNumber = Math.Max(0, endNumber);
 
             // One canonical session represents the puzzle regardless of whether it was opened
             // through Daily or Archive.
             var sessions = await _gameStatsStore.GetPlayerCanonicalGamesByPuzzleRangeAsync(playerId, startNumber, endNumber);
-            // Compatibility for the release in which the data migration has not
-            // yet run (and for old Local Storage/test stores).
-            if (sessions.Count == 0)
-            {
-                sessions = await _gameStatsStore.GetPlayerDailyGamesByNumberRangeAsync(playerId, startNumber, endNumber);
-            }
 
             var map = new Dictionary<int, DayStatus>();
 
             // Listing keys once replaces up to four storage reads per calendar day, most of them empty.
-            var storedDays = includeLocalStorageFallback
-                ? await _gameStateSource.GetStoredDayNumbersAsync(cancellationToken)
-                : null;
-            bool MayHaveLocalState(int archiveDay) => includeLocalStorageFallback && (storedDays?.Contains(archiveDay) ?? true);
+            var storedDays = await _gameStateSource.GetStoredDayNumbersAsync(cancellationToken);
+            bool MayHaveLocalState(int archiveDay) => storedDays?.Contains(archiveDay) ?? true;
 
             // Build index by archive day number -> sessions using PuzzleId directly.
             var firstDayNumber = _dayService.GetFirstDay().DayNumber;
             var byDay = sessions
-                .Where(s => (s.PuzzleId ?? s.DailyNumber).HasValue)
-                .GroupBy(s => firstDayNumber + (s.PuzzleId ?? s.DailyNumber)!.Value - 1)
+                .Where(s => s.PuzzleId.HasValue)
+                .GroupBy(s => firstDayNumber + s.PuzzleId!.Value - 1)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // For each calendar day in range, decide status
@@ -104,14 +66,14 @@ namespace QSMPDLE.Web.Features.Archive.Services
                 }
 
                 // If any session for the day is unfinished -> InProgress
-                if (group.Any(s => !s.FinishedOnUtc.HasValue))
+                if (group.Any(s => s.Outcome == GameOutcome.InProgress))
                 {
                     map[abs] = DayStatus.InProgress;
                     continue;
                 }
 
                 // Among finished sessions, prefer a win if any
-                if (group.Any(s => s.FinishedOnUtc.HasValue && s.IsWon))
+                if (group.Any(s => s.Outcome == GameOutcome.Won))
                 {
                     map[abs] = DayStatus.Won;
                     continue;
@@ -129,20 +91,9 @@ namespace QSMPDLE.Web.Features.Archive.Services
             return map;
         }
 
-        public Task InvalidateAsync(DateOnly start, DateOnly end, CancellationToken cancellationToken = default)
-        {
-            return _cache.InvalidateAsync(start, end, cancellationToken);
-        }
-
         private async Task<DayStatus> GetLocalStorageStatusAsync(int archiveDayNumber, CancellationToken cancellationToken)
         {
-            var dailyState = await _gameStateSource.LoadAsync(GameMode.Daily, archiveDayNumber, cancellationToken);
-            var archiveState = await _gameStateSource.LoadAsync(GameMode.Archive, archiveDayNumber, cancellationToken);
-
-            var dailyGameStatus = GetStatusFromState(dailyState);
-            var archiveGameStatus = GetStatusFromState(archiveState);
-
-            return dailyGameStatus.MergeWith(archiveGameStatus);
+            return GetStatusFromState(await _gameStateSource.LoadAsync(archiveDayNumber, cancellationToken));
         }
 
         private static DayStatus GetStatusFromState(GameState? state)

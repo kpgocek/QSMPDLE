@@ -1,0 +1,29 @@
+.archive-current,
+::deep .archive-current {
+    border: 1px solid var(--tint);
+    font-weight: bold;
+}
+
+.archive-notstarted,
+::deep .archive-notstarted {
+    background: var(--shadow);
+}
+
+.archive-inprogress,
+::deep .archive-inprogress {
+    color: var(--partial) !important;
+    background: var(--shadow);
+}
+
+.archive-won,
+::deep .archive-won {
+    border: 1px solid var(--correct);
+    background: var(--shadow);
+    color: var(--correct) !important;
+}
+
+.archive-lost,
+::deep .archive-lost {
+    border: 1px solid var(--wrong);
+    color: var(--wrong) !important;
+}

@@ -2,9 +2,9 @@ name: CI
 
 on:
     push:
-        branches: [main, demo]
+        branches: [main, beta]
     pull_request:
-        branches: [main, demo]
+        branches: [main, beta]
 
 permissions:
     contents: read
@@ -28,5 +28,5 @@ jobs:
             - name: Test
               run: dotnet test QSMPDLE.sln --no-build --configuration Release
 
-      - name: Format
-        run: dotnet format QSMPDLE.sln --verify-no-changes --no-restore
+            - name: Format
+              run: dotnet format QSMPDLE.sln --verify-no-changes --no-restore

@@ -1,0 +1,17 @@
+/* Already inside the page card, so these group with hairlines instead of a nested panel. */
+.quote-box,
+.story-box {
+    padding: 1.5rem 0;
+    border-top: .0625rem solid var(--line);
+    border-bottom: .0625rem solid var(--line);
+}
+
+.quote-box {
+    margin: 1rem auto 0;
+    max-width: 75%;
+    text-align: center;
+}
+
+.story-box p:last-child {
+    margin-bottom: 0;
+}

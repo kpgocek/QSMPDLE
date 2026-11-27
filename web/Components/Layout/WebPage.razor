@@ -8,34 +8,6 @@
 
 </MudContainer>
 
-<style>
-    /* Layout this class used to get from Bootstrap's .card component. */
-    .card {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-        word-wrap: break-word;
-
-        max-width: 53.125rem;
-        margin: 0 auto;
-        background: linear-gradient(180deg, var(--panel), hsla(var(--primary-hsl), 0.09));
-        backdrop-filter: blur(1rem);
-        color: var(--white);
-        border: .125rem solid var(--panel-edge);
-        box-shadow: inset 0 0 0 .0625rem var(--black);
-    }
-
-    .info {
-        color: var(--primary);
-    }
-
-    .section-title {
-        margin-bottom: 1rem;
-        font-weight: 700;
-    }
-</style>
-
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

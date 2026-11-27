@@ -7,6 +7,5 @@ public interface IDayService
     int GetMaxArchiveDay();
     int GetArchiveDayNumber(DateOnly date);
     DateOnly GetArchiveDate(int dayNumber);
-    int GetYesterdayArchiveDayNumber();
     string GetYesterdayArchiveLink();
 }

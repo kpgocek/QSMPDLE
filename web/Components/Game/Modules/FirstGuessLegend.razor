@@ -28,8 +28,8 @@
     {
         get
         {
-            ComparisonResult[] shown = [Guess.Pronouns, Guess.Species, Guess.Languages, Guess.Affiliation, Guess.Joined, Guess.QPhone, Guess.Award2026];
-            return Order.Where(shown.Contains);
+            ComparisonResult?[] shown = [Guess.Pronouns, Guess.Species, Guess.Languages, Guess.Affiliation, Guess.Joined, Guess.QPhone, Guess.Award2026];
+            return Order.Where(result => shown.Contains(result));
         }
     }
 

@@ -2,7 +2,6 @@ using FluentAssertions;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Models;
-using QSMPDLE.Web.Features.Statistics.Services;
 
 namespace QSMPDLE.Web.Tests.GameplayFlow;
 
@@ -19,27 +18,25 @@ public sealed class GameStateManagerArchiveReplayTests
     public async Task ArchiveReplay_UsesCharacterComparerResults()
     {
         // Arrange - create store/service/fakes like existing tests
-        var target = CreateCharacter(1, "Target", joinDay: 10, languages: 2, pronouns: AnyPronouns, affiliations: GuildAffiliations, species: HumanSpecies);
-        var guessOne = CreateCharacter(2, "GuessOne", joinDay: 20, languages: 4, pronouns: HeHimPronouns, affiliations: OtherAffiliations, species: UnknownSpecies);
+        var target = TestCharacters.Create(1, "Target", joinDay: 10, languages: 2, pronouns: AnyPronouns, affiliations: GuildAffiliations, species: HumanSpecies);
+        var guessOne = TestCharacters.Create(2, "GuessOne", joinDay: 20, languages: 4, pronouns: HeHimPronouns, affiliations: OtherAffiliations, species: UnknownSpecies);
         var characters = new[] { target, guessOne };
         var characterStore = new InMemoryCharacterStore(characters, target.Id);
 
         var playerStatsStore = new InMemoryPlayerStatsStore { Stats = new PlayerStats { Id = Guid.NewGuid() } };
         var gameStateStore = new InMemoryGameStateStore();
         var gameStatsStore = new InMemoryGameStatsStore();
-        var statisticsService = new StatisticsService(playerStatsStore, gameStatsStore);
         var dayService = new DayService();
         var comparer = new CharacterComparer(characterStore);
 
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, playerStatsStore, characterStore, comparer, statisticsService);
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, playerStatsStore, characterStore, comparer, gameStatsStore);
 
         // Create a completed daily session in the stats store
         var completed = new GameSession
         {
             GameId = Guid.NewGuid(),
             PlayerId = playerStatsStore.Stats.Id,
-            Mode = GameMode.Daily,
-            DailyNumber = 5,
+            PuzzleId = 5,
             TargetCharacterId = target.Id,
             StartedOnUtc = DateTimeOffset.UtcNow.AddMinutes(-15),
             FinishedOnUtc = DateTimeOffset.UtcNow,
@@ -53,7 +50,7 @@ public sealed class GameStateManagerArchiveReplayTests
         gameStatsStore.Sessions[completed.GameId] = completed;
 
         // Act - start archive which should replay the completed session
-        var result = await manager.StartGameAsync(GameMode.Archive, 5);
+        var result = await manager.StartGameAsync(EntryPoint.Archive, 5);
 
         // Assert
         result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
@@ -62,7 +59,7 @@ public sealed class GameStateManagerArchiveReplayTests
 
         var replayed = manager.GameState.GuessesMade[0];
 
-        var expected = await comparer.CompareAsync(target.Id, guessOne.Id);
+        var expected = await comparer.CompareAsync(target.Id, guessOne.Id, manager.ActiveClues);
 
         // Compare fields produced by comparer
         replayed.Character.Id.Should().Be(expected.Character.Id);
@@ -73,18 +70,4 @@ public sealed class GameStateManagerArchiveReplayTests
         replayed.Affiliation.Should().Be(expected.Affiliation);
         replayed.Species.Should().Be(expected.Species);
     }
-
-    private static Character CreateCharacter(int id, string name, int joinDay, int languages, string[] pronouns, string[] affiliations, string[] species) => new()
-    {
-        Id = id,
-        Name = name,
-        MinecraftUsername = name.ToLowerInvariant(),
-        Aliases = new List<string>(),
-        PortraitId = Guid.NewGuid(),
-        Pronouns = pronouns.ToList(),
-        LanguageCount = languages,
-        Affiliations = affiliations.ToList(),
-        Species = species.ToList(),
-        JoinDayNumber = joinDay,
-    };
 }

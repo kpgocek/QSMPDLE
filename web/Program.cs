@@ -6,14 +6,11 @@ using Npgsql;
 using QSMPDLE.Web.Components;
 using QSMPDLE.Web.Diagnostics;
 using QSMPDLE.Web.Features.Archive;
-using QSMPDLE.Web.Features.Communication;
 using QSMPDLE.Web.Features.Gameplay;
-using QSMPDLE.Web.Features.Sharing;
 using QSMPDLE.Web.Features.Sitemap;
 using QSMPDLE.Web.Features.Statistics;
 using QSMPDLE.Web.Infrastructure;
 using QSMPDLE.Web.Infrastructure.Persistence;
-using QSMPDLE.Web.Themes;
 
 // Prevent Npgsql from probing for GSSAPI (Kerberos) native libraries on
 // managed hosts where libgssapi_krb5.so.2 may be missing. This must run
@@ -30,8 +27,6 @@ builder.Services.AddDiagnostics();
 
 builder.Services.AddMudServices();
 
-builder.Services.AddThemes();
-
 var connectionString = ResolveConnectionString(builder.Configuration);
 
 // Pooled contexts avoid re-creating DbContext internals on every short-lived operation during traffic spikes.
@@ -39,11 +34,8 @@ builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options => opti
 
 builder.Services.AddInfrastructure();
 
-builder.Services.AddInternalCommunication();
-
 builder.Services.AddGameplay();
 
-builder.Services.AddSharingFeature();
 builder.Services.AddStatistics();
 builder.Services.AddArchive();
 builder.Services.AddSitemap();

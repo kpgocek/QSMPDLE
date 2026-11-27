@@ -10,19 +10,15 @@
     <span class="visually-hidden">(@Label)</span>
 </MudChip>
 
-<style>
-    .guess-chip-icon {
-        margin-inline-start: .35em;
-    }
-</style>
-
 @code {
     [Parameter] public ComparisonResult Result { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
+    private string? Icon => IconFor(Result);
+
     // Every result gets a shape, not just a colour, so red/green colour-blind players can read the board.
-    private string? Icon => Result switch
+    public static string? IconFor(ComparisonResult result) => result switch
     {
         ComparisonResult.Correct => Icons.Material.Filled.Check,
         ComparisonResult.Partial => Icons.Material.Filled.Contrast,

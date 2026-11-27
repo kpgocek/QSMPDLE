@@ -1,0 +1,260 @@
+@using MudBlazor
+@using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Features.Sharing
+@using QSMPDLE.Web.Features.Statistics.Models
+@using QSMPDLE.Web.Infrastructure.LocalStorage
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject IPlayerStatsStore PlayerStatsStore
+@inject ILogger<GameResultDialog> Logger
+
+<div class="result-overlay" @onkeydown="CloseOnEscape">
+    @* Focus sentinels keep Tab inside the dialog, so Escape keeps reaching the overlay's handler. *@
+    <div tabindex="0" @onfocus="FocusModalAsync"></div>
+    <div class="result-modal" role="dialog" aria-modal="true" aria-labelledby="result-title"
+         tabindex="-1" @ref="modal">
+
+        <h2 id="result-title" class="@(IsWon ? "won" : "lost")">@(IsWon ? "Correct!" : "Unlucky!")</h2>
+
+        @if (IsWon)
+        {
+            @if (DayNumber is not null)
+            {
+                <p>
+                    You guessed character #@DayNumber in <strong>@Guesses.Count</strong> @(Guesses.Count == 1 ? "guess" : "guesses").
+                </p>
+            }
+            else
+            {
+                <p>
+                    It took you
+                    @if (@Guesses.Count > 1)
+                    {
+                        <span><strong>@Guesses.Count</strong> guesses</span>
+                    }
+                    else
+                    {
+                        <span><strong>@Guesses.Count</strong> guess</span>
+                    }
+                    to find the right answer.
+                </p>
+            }
+        }
+        else if (DayNumber is not null)
+        {
+            <p>
+                You've reached the limit trying to guess character #@DayNumber.
+            </p>
+        }
+        else
+        {
+            <p>
+                You've reached the maximum number of guesses. Try again?
+            </p>
+        }
+
+        @if (Stats is not null)
+        {
+            <div class="stats-popup">
+
+                <h3>Statistics</h3>
+
+                <div class="stats-grid">
+
+                    <div class="stat">
+                        <span class="value">@Stats.GamesPlayed</span>
+                        <span class="label">Played</span>
+                    </div>
+
+                    <div class="stat">
+                        <span class="value">@Math.Round(Stats.WinRate)</span>
+                        <span class="label">Win %</span>
+                    </div>
+
+                    <div class="stat">
+                        <span class="value">@Stats.CurrentStreak</span>
+                        <span class="label">Current Streak</span>
+                    </div>
+
+                    <div class="stat">
+                        <span class="value">@Stats.MaxStreak</span>
+                        <span class="label">Max Streak</span>
+                    </div>
+
+                </div>
+
+                <h4>Guess Distribution</h4>
+
+                <div class="distribution">
+
+                    @for (var i = 0; i < GameRules.MaxGuesses; i++)
+                    {
+                        <div class="distribution-row">
+                            <span class="guess-number">@(i + 1)</span>
+
+                            <div class="distribution-bar-container">
+                                <div class="distribution-bar @(i == TodayBarIndex ? "today" : "")" style="width:@GetBarWidth(i)%">
+                                    @Stats.GuessDistribution[i]
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        }
+        <div class="buttons">
+            @if (GameState.SessionCategory == GameModeSessionCategory)
+            {
+                <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary" AriaLabel="Share result">
+
+                    <MudMenuItem OnClick="Share">
+                        <MudIcon Icon="@Icons.Material.Filled.Share" />
+                        @(IsWon ? "Share Results" : "Challenge Others")
+                    </MudMenuItem>
+
+                    <MudMenuItem OnClick="Copy">
+                        <MudIcon Icon="@Icons.Material.Filled.ContentCopy" />
+                        Copy
+                    </MudMenuItem>
+
+                    <MudMenuItem Href="@BuildXLink()" Target="_blank">
+                        <MudIcon Icon="@Icons.Custom.Brands.Twitter" />
+                        X
+                    </MudMenuItem>
+
+                    <MudMenuItem Href="@BuildTelegramLink()" Target="_blank">
+                        <MudIcon Icon="@Icons.Custom.Brands.Telegram" />
+                        Telegram
+                    </MudMenuItem>
+
+                    <MudMenuItem Href="@BuildRedditLink()" Target="_blank">
+                        <MudIcon Icon="@Icons.Custom.Brands.Reddit" />
+                        Reddit
+                    </MudMenuItem>
+
+                </MudMenu>
+            }
+            <MudButton OnClick="Close">
+                Close
+            </MudButton>
+        </div>
+
+    </div>
+    <div tabindex="0" @onfocus="FocusModalAsync"></div>
+</div>
+
+@code {
+    [Parameter] public GameState GameState { get; set; } = null!;
+
+    [Parameter] public EventCallback OnClose { get; set; }
+    private PlayerStats? Stats;
+
+    private bool IsWon => GameState.IsWon;
+    private int? DayNumber => GameState.Game.PuzzleId;
+    private const SessionCategory GameModeSessionCategory = SessionCategory.CanonicalPuzzle;
+    private IReadOnlyList<GuessResult> Guesses => GameState.GuessesMade;
+
+    // Mirrors PlayerStatsProjection, which clamps guess counts into the six distribution buckets.
+    private int TodayBarIndex => Math.Clamp(Guesses.Count, 1, GameRules.MaxGuesses) - 1;
+
+    private ElementReference modal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Only canonical wins show statistics; practice games don't count towards them.
+        if (!IsWon || GameState.SessionCategory != GameModeSessionCategory)
+            return;
+
+        try
+        {
+            Stats = await PlayerStatsStore.LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            // The win still deserves its dialog when statistics can't be loaded.
+            Logger.LogError(exception, "Player statistics failed to load for the result dialog");
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // The guess input that had focus is disabled once the game ends, so keyboard users start here.
+        if (firstRender)
+        {
+            await modal.FocusAsync();
+        }
+    }
+
+    private async Task FocusModalAsync() => await modal.FocusAsync();
+
+    private async Task CloseOnEscape(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await Close();
+        }
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private double GetBarWidth(int index)
+    {
+        ArgumentNullException.ThrowIfNull(Stats);
+
+        var max = Stats.GuessDistribution.Max();
+
+        if (max == 0)
+            return 8;
+
+        return Math.Max(
+            8,
+            Stats.GuessDistribution[index] * 100.0 / max);
+    }
+
+    private string BuildShareText()
+    {
+        ArgumentNullException.ThrowIfNull(DayNumber);
+
+        return IsWon
+            ? ShareText.BuildDailyResult(DayNumber.Value, Guesses)
+            : ShareText.BuildDailyChallenge(DayNumber.Value);
+    }
+
+    private async Task Share()
+    {
+        var text = BuildShareText();
+
+        // Browsers without a native share sheet get the text on the clipboard instead.
+        if (!await ShareText.ShareAsync(JS, text))
+            await CopyWithFeedbackAsync(text);
+    }
+
+    private async Task Copy() => await CopyWithFeedbackAsync(BuildShareText());
+
+    private async Task CopyWithFeedbackAsync(string text)
+    {
+        if (await ShareText.CopyAsync(JS, text))
+            Snackbar.Add("Copied to clipboard", Severity.Success);
+        else
+            Snackbar.Add("Couldn't copy — try again", Severity.Error);
+    }
+
+    private string BuildXLink()
+    {
+        return $"https://twitter.com/intent/tweet?text={Uri.EscapeDataString(BuildShareText())}";
+    }
+
+    private string BuildTelegramLink()
+    {
+        return $"https://t.me/share/url?text={Uri.EscapeDataString(BuildShareText())}";
+    }
+
+    private string BuildRedditLink()
+    {
+        return $"https://reddit.com/submit?title={Uri.EscapeDataString(BuildShareText())}";
+    }
+}

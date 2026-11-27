@@ -4,38 +4,23 @@
 @using MudBlazor
 @using QSMPDLE.Web.Components.Game
 @using QSMPDLE.Web.Features.Gameplay.Models
-@using QSMPDLE.Web.Features.Statistics.Services
-@using QSMPDLE.Web.Features.Communication.GameEvents
-
-@inject IStatisticsService StatisticsService
 
 <PageTitle>Daily Game - QSMPDLE</PageTitle>
 
 @if (!IsGameLoaded)
 {
-    <h2><MudSkeleton SkeletonType="SkeletonType.Text" Width="25rem" Height="2.375rem" /></h2>
+    <h2><MudSkeleton SkeletonType="SkeletonType.Text" Width="min(25rem, calc(100vw - 2rem))" Height="2.375rem" /></h2>
 }
 else 
 {
     <h2>DAILY CHARACTER<span class="separator">|</span>#@DailyNumber.ToString("00")</h2>
 }
 
-<Gameplay GameMode="GameMode.Daily" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" GameFinished="OnGameFinished" />
-
-<style>
-    h2 {
-        margin-top: 2.75rem;
-    }
-
-    .separator {
-        color: var(--tint);
-    }
-</style>
+<Gameplay EntryPoint="EntryPoint.Daily" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
 
 @code {
     private int DailyNumber = 0;
     private bool IsGameLoaded = false;
-    private bool _refreshPending;
 
     private async Task OnGameStateChange(GameState gameState)
     {
@@ -45,22 +30,6 @@ else
     private async Task OnGameLoaded()
     {
         IsGameLoaded = true;
-    }
-
-    private async Task OnGameFinished(GameFinishedEvent eventData)
-    {
-        _refreshPending = true;
-        DailyNumber = eventData.PuzzleId ?? DailyNumber;
-        await InvokeAsync(RefreshDailyStateAsync);
-    }
-
-    private async Task RefreshDailyStateAsync()
-    {
-        if (!_refreshPending)
-            return;
-
-        _refreshPending = false;
-        await InvokeAsync(StateHasChanged);
     }
 }
 

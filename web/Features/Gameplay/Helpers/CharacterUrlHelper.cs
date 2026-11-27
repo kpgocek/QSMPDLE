@@ -4,7 +4,7 @@ using QSMPDLE.Web.Features.Gameplay.Models;
 
 /// <summary>
 /// Owns every character URL rule: mini heads are found by name, portraits by the GUID folder that
-/// wwwroot/graphics/guessing/blur.ps1 fills, and wiki pages by slug.
+/// tools/portraits/blur.ps1 fills, and wiki pages by slug.
 /// </summary>
 public static class CharacterUrlHelper
 {

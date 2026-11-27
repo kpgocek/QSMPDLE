@@ -2,7 +2,6 @@
 
 @inject ICharacterStore CharacterStore
 
-
 <div class="selection-area">
     <div class="input-field">
         @* readonly, not disabled, while a guess is in flight: disabling blurs the input and closes the phone keyboard. *@
@@ -40,109 +39,6 @@
     }
 </div>
 
-<style>
-    .selection-area {
-        position: relative;
-        width: min(26rem, calc(100vw - 2rem));
-    }
-
-    .input-field {
-        user-select: none;
-    }
-
-    .input-field input {
-        padding: .25rem .375rem;
-
-        width: 100%;
-
-
-        background: var(--black);
-
-        border: 0.125rem solid var(--primary-black);
-        box-shadow: var(--focus-ring);
-
-        color: var(--white);
-
-        font-size: 1.375rem;
-    }
-
-    .input-field input::placeholder {
-        color: var(--text-muted);
-    }
-
-    .input-field input:focus {
-        border: 0.125em solid var(--primary);
-        box-shadow: var(--focus-ring);
-        outline: none;
-    }
-
-    .suggestions {
-        width: 100%;
-        position: absolute;
-        top: calc(100%);
-
-        display: flex;
-        flex-direction: column;
-
-        z-index: 500;
-
-        background: var(--black);
-        border: .0625rem solid var(--line-strong);
-
-        box-shadow: var(--soft-shadow);
-    }
-
-    .suggestion {
-        background: var(--primary-black);
-
-        border: none;
-
-        transition:
-            background-color 160ms ease,
-            color 160ms ease,
-            transform 160ms ease;
-
-        padding: .5rem .75rem;
-
-        display: flex;
-        align-items: center;
-        gap: .75rem;
-
-        justify-content: start;
-
-        border: none;
-        cursor: pointer;
-
-    }
-
-    .suggestion img {
-        width: 2rem;
-        height: 2rem;
-
-        flex-shrink: 0;
-
-        image-rendering: pixelated;
-    }
-
-    .names span {
-        font-weight: 700;
-    }
-
-    .no-match {
-        margin: 0;
-        padding: .75rem;
-
-        color: var(--text-muted);
-    }
-
-    .suggestion:hover,
-    .suggestion.active {
-        border-color: var(--tint);
-        background-color: var(--surface);
-        transform: translateX(.125rem);
-    }
-</style>
-
 @code {
     [Parameter]
     public CharacterLookup? Value { get; set; }
@@ -158,6 +54,14 @@
     [Parameter] public bool IsBusy { get; set; }
 
     [Parameter] public IReadOnlyCollection<int> GuessedIds { get; set; } = [];
+
+    /// <summary>The game's date; only characters released by then are offered.</summary>
+    [Parameter, EditorRequired] public DateOnly AvailableOn { get; set; }
+
+    /// <summary>Always offered: a release date moved past a played day must not make that day unwinnable.</summary>
+    [Parameter, EditorRequired] public int AnswerId { get; set; }
+
+    private (DateOnly, int)? _loadedFor;
 
     private string SearchText = "";
 
@@ -175,9 +79,16 @@
 
     private IReadOnlyList<CharacterLookup> Characters = [];
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        Characters = await CharacterStore.GetLookupsAsync();
+        // A circuit can outlive midnight or switch games, so the list follows the game's date.
+        if (_loadedFor == (AvailableOn, AnswerId))
+            return;
+
+        _loadedFor = (AvailableOn, AnswerId);
+        Characters = await CharacterStore.GetLookupsAvailableOnAsync(AvailableOn);
+        if (Characters.All(character => character.Id != AnswerId) && await CharacterStore.GetLookupAsync(AnswerId) is { } answer)
+            Characters = [.. Characters, answer];
     }
 
     private async Task SelectAndGuess(CharacterLookup? character)

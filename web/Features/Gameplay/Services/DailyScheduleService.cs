@@ -37,16 +37,17 @@ public sealed class DailyScheduleService(
         if (firstDay > horizon)
             return 0;
 
-        var characterIds = await database.Characters
+        var availableFrom = await database.Characters
             .AsNoTracking()
-            .Select(character => character.Id)
-            .ToListAsync(cancellationToken);
+            .Select(character => new { character.Id, character.AvailableFrom })
+            .ToDictionaryAsync(character => character.Id, character => character.AvailableFrom, cancellationToken);
 
         var picks = DailySchedulePlanner.Plan(
-            characterIds,
+            availableFrom.Keys,
             history.ConvertAll(game => game.CharacterId),
             horizon - firstDay + 1,
-            seed: firstDay);
+            seed: firstDay,
+            (id, offset) => availableFrom[id] is not { } from || from <= dayService.GetArchiveDate(firstDay + offset));
 
         database.DailyGames.AddRange(picks.Select((characterId, offset) => new DailyGame
         {

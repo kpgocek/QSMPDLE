@@ -19,11 +19,11 @@ public sealed class MemoryDiagnosticsWorker(ILogger<MemoryDiagnosticsWorker> log
                 if (logger.IsEnabled(LogLevel.Information))
                 {
                     var gc = GC.GetGCMemoryInfo();
-                    logger.LogInformation("Memory sample PID={ProcessId} StartedUtc={StartedUtc} UptimeSeconds={UptimeSeconds} WorkingSetBytes={WorkingSetBytes} PrivateBytes={PrivateBytes} ManagedBytes={ManagedBytes} TotalAllocatedBytes={TotalAllocatedBytes} LastGcHeapBytes={LastGcHeapBytes} LastGcFragmentedBytes={LastGcFragmentedBytes} Gen0={Gen0} Gen1={Gen1} Gen2={Gen2} OpenCircuits={OpenCircuits} ConnectedCircuits={ConnectedCircuits} DisconnectedCircuits={DisconnectedCircuits} Subscriptions={Subscriptions} ArchiveCacheEntries={ArchiveCacheEntries} SharedCacheEntries={SharedCacheEntries}",
+                    logger.LogInformation("Memory sample PID={ProcessId} StartedUtc={StartedUtc} UptimeSeconds={UptimeSeconds} WorkingSetBytes={WorkingSetBytes} PrivateBytes={PrivateBytes} ManagedBytes={ManagedBytes} TotalAllocatedBytes={TotalAllocatedBytes} LastGcHeapBytes={LastGcHeapBytes} LastGcFragmentedBytes={LastGcFragmentedBytes} Gen0={Gen0} Gen1={Gen1} Gen2={Gen2} OpenCircuits={OpenCircuits} ConnectedCircuits={ConnectedCircuits} DisconnectedCircuits={DisconnectedCircuits} SharedCacheEntries={SharedCacheEntries}",
                         process.Id, started, (DateTime.UtcNow - started).TotalSeconds,
                         process.WorkingSet64, process.PrivateMemorySize64, GC.GetTotalMemory(false), GC.GetTotalAllocatedBytes(),
                         gc.HeapSizeBytes, gc.FragmentedBytes, GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2),
-                        counters.Open, counters.Connected, counters.Disconnected, counters.Subscriptions, counters.ArchiveEntries,
+                        counters.Open, counters.Connected, counters.Disconnected,
                         (cache as MemoryCache)?.Count);
                 }
             } while (await timer.WaitForNextTickAsync(stoppingToken));

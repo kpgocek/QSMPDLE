@@ -8,25 +8,14 @@ public sealed class ArchiveGameStateSource(ILocalStorageService localStorage, IJ
 {
     private const string KeyPrefix = "qsmpdle-";
 
-    private static readonly string[] DayKeyPrefixes =
-        [KeyPrefix + "canonical-", KeyPrefix + "daily-", KeyPrefix + "archive-"];
+    private const string DayKeyPrefix = KeyPrefix + "canonical-";
 
-    public async Task<GameState?> LoadAsync(GameMode mode, int dayNumber, CancellationToken cancellationToken = default)
+    public async Task<GameState?> LoadAsync(int dayNumber, CancellationToken cancellationToken = default)
     {
-        var legacyKey = mode switch
-        {
-            GameMode.Daily => $"{KeyPrefix}daily-{dayNumber}",
-            GameMode.Archive => $"{KeyPrefix}archive-{dayNumber}",
-            _ => throw new ArgumentOutOfRangeException(nameof(mode))
-        };
-
         try
         {
-            // Canonical progress is shared by Daily and Archive. Fall back to
-            // the legacy per-mode key for a browser that has not been opened
-            // since the storage migration.
-            var canonical = await localStorage.GetItemAsync<GameState>($"{KeyPrefix}canonical-{dayNumber}");
-            return canonical ?? await localStorage.GetItemAsync<GameState>(legacyKey);
+            // Canonical progress is shared by Daily and Archive.
+            return await localStorage.GetItemAsync<GameState>($"{DayKeyPrefix}{dayNumber}");
         }
         catch
         {
@@ -38,12 +27,11 @@ public sealed class ArchiveGameStateSource(ILocalStorageService localStorage, IJ
     {
         try
         {
-            var keys = await js.InvokeAsync<string[]>("storageKeys", cancellationToken);
+            var keys = await js.InvokeAsync<string[]>("storageKeys", cancellationToken, DayKeyPrefix);
             var days = new HashSet<int>();
             foreach (var key in keys)
             {
-                var prefix = DayKeyPrefixes.FirstOrDefault(p => key.StartsWith(p, StringComparison.Ordinal));
-                if (prefix is not null && int.TryParse(key.AsSpan(prefix.Length), out var day))
+                if (int.TryParse(key, out var day))
                     days.Add(day);
             }
 

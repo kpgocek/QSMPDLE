@@ -2,6 +2,6 @@
 
 public interface ISitemapService
 {
-    Task<string> GenerateAsync(HttpContext httpContext, CancellationToken cancellationToken = default);
+    Task<string> GenerateAsync(CancellationToken cancellationToken = default);
 }
 

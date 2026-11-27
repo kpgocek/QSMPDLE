@@ -28,8 +28,21 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
                 "\"PlayerId\" <> '00000000-0000-0000-0000-000000000000'::uuid"));
         });
 
-        modelBuilder.Entity<GameGuess>()
-            .HasIndex(x => x.GameId).IsUnique(false);
+        modelBuilder.Entity<GameGuess>(entity =>
+        {
+            entity.HasIndex(x => x.GameId).IsUnique(false);
+
+            // Explicit because EF takes the filtered indexes below for a replacement, which they are not for older rows.
+            entity.HasIndex("GameSessionId");
+
+            // Only guesses recorded with a time: older rows may hold duplicates that must not fail the migration.
+            entity.HasIndex("GameSessionId", nameof(Features.Statistics.Models.GameGuess.GuessOrder))
+                .HasFilter("\"GuessedOnUtc\" IS NOT NULL")
+                .IsUnique();
+            entity.HasIndex("GameSessionId", nameof(Features.Statistics.Models.GameGuess.GuessedCharacterId))
+                .HasFilter("\"GuessedOnUtc\" IS NOT NULL")
+                .IsUnique();
+        });
 
         modelBuilder.Entity<DailyGame>()
             .HasIndex(x => x.Date)

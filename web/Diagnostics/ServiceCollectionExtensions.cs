@@ -7,6 +7,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddDiagnostics(this IServiceCollection services)
     {
+        services.AddSingleton<RuntimeCounters>();
         services.AddHostedService<MemoryDiagnosticsWorker>();
         services.AddScoped<CircuitHandler, CountingCircuitHandler>();
 

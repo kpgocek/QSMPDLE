@@ -1,3 +1,75 @@
+.guess-board-container,
+::deep .guess-board-container {
+    width: 100%;
+    max-width: 96rem;
+}
+
+/* The answer is the game's biggest result, so it takes the board's tile form at full scale,
+   sized to the portrait it names. */
+.answer-reveal,
+::deep .answer-reveal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .625rem;
+
+    width: min(20rem, 82vw);
+    min-height: 4rem;
+    margin-top: -.5rem;
+    padding: .75rem 1.25rem;
+    border-radius: .75rem;
+
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.answer-reveal h3,
+::deep .answer-reveal h3,
+.answer-reveal ::deep h3 {
+    margin: 0;
+    min-width: 0;
+
+    color: inherit;
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -.01em;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+}
+
+.answer-reveal ::deep .answer-icon {
+    flex: none;
+    font-size: 1.75rem;
+}
+
+.game-error,
+::deep .game-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+}
+
+.guess-error,
+::deep .guess-error {
+    margin: 0;
+    color: var(--white);
+    text-align: center;
+}
+
+.success,
+::deep .success {
+    background: var(--correct);
+    color: var(--black);
+}
+
+.failure,
+::deep .failure {
+    background: var(--wrong);
+    color: var(--white);
+}
+
 .guess-hint {
     /* Sits close under the search box it explains, inside the stack's larger gap. */
     margin-top: -.75rem;

@@ -9,6 +9,7 @@
     </MudText>
 
     <MudText Typo="Typo.h3"
+             HtmlTag="p"
              Align="Align.Center"
              Class="mt-1">
         @Value
@@ -17,44 +18,6 @@
     <MudText Typo="Typo.caption" Align="Align.Center" Class="comment">@Comment</MudText>
 
 </div>
-
-<style>
-    /* Flat on purpose: stat cards sit inside page cards and dialogs, so a rule replaces the box. */
-    .stats-card {
-        flex: 1;
-
-        display: flex;
-        flex-direction: column;
-        gap: .25rem;
-
-        padding-block: .75rem .5rem;
-        border-top: .0625rem solid var(--line);
-
-        font-variant-numeric: tabular-nums;
-
-        opacity: 0;
-        transform: translateY(.625rem);
-
-        animation: reveal-card 420ms ease forwards;
-    }
-
-    .stats-title {
-        display: flex;
-        gap: .5rem;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        /* Two-line labels would otherwise push their value below the row's other values. */
-        min-height: 2lh;
-        opacity: .75;
-        user-select:none;
-    }
-
-    .comment {
-        color: var(--text-muted);
-        user-select: none;
-    }
-</style>
 
 @code {
     [Parameter] public string Title { get; set; } = "";

@@ -9,7 +9,6 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<ICharacterStore, CachedDatabaseCharacterStore>();
         services.AddScoped<IGameStateStore, LocalStorageGameStateStore>();
-        services.AddScoped<ILegacyGameStateMigrationService, LegacyGameStateMigrationService>();
         services.AddScoped<LocalStoragePlayerStatsStore>();
         services.AddScoped<IGameStatsStore, DatabaseGameStatsStore>();
 

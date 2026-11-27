@@ -1,0 +1,268 @@
+@using MudBlazor
+@using QSMPDLE.Web.Components.UX
+@using QSMPDLE.Web.Components.UX.StatDisplay
+@using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Infrastructure.Persistence
+
+@inject ICharacterStore CharacterStore
+
+@if (Guesses is not null)
+{
+    <div class="board" role="table" aria-label="Your guesses" style="--fixed-clues: @(Clues.Count - 1)">
+
+        <div class="board-head" role="row">
+            <span class="head-cell head-character" role="columnheader">Character</span>
+            @foreach (var clue in Clues)
+            {
+                <span class="head-cell @(clue.Label.Length > 10 ? "head-long" : "")" role="columnheader">
+                    @if (clue.Help is null)
+                    {
+                        @HeaderLabel(clue)
+                    }
+                    else
+                    {
+                        <MudTooltip Text="@clue.Help">
+                            <button type="button" class="header-help">
+                                @HeaderLabel(clue)
+                                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="header-help-icon" aria-hidden="true" />
+                                <span class="visually-hidden">(@clue.Help)</span>
+                            </button>
+                        </MudTooltip>
+                    }
+                </span>
+            }
+        </div>
+
+        @for (var index = 0; index < Guesses.Count; index++)
+        {
+            var guess = Guesses[index];
+            var character = GetCharacter(guess.Character.Id);
+
+            if (character is null)
+            {
+                continue;
+            }
+
+            var isOpen = _openIndex == index;
+            var rowIndex = index;
+
+            <div class="guess-row @(isOpen ? "open" : "") @(index == Guesses.Count - 1 ? "new-row" : "")" role="row">
+                <div class="character" role="rowheader">
+                    <button type="button" class="character-toggle" aria-expanded="@(isOpen ? "true" : "false")"
+                            aria-controls="guess-detail-@index"
+                            @onclick="() => Toggle(rowIndex)" @onkeydown="e => CloseOnEscape(e, rowIndex)">
+                        <img class="head" src="@CharacterUrlHelper.GetHeadSrc(character)" alt="" />
+                        <span class="guess-name">@character.Name</span>
+                        <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Size="Size.Small" Class="toggle-icon" aria-hidden="true" />
+                        <span class="visually-hidden">clue details</span>
+                    </button>
+                </div>
+
+                @for (var position = 0; position < Clues.Count; position++)
+                {
+                    var clue = Clues[position];
+                    var result = clue.Result(guess);
+
+                    <div class="tile @TileClass(result) @(clue.IsList ? "tile-list" : "")" role="cell" style="--i: @position">
+                        <div class="tile-face" aria-hidden="true">
+                            <span class="value-full">@clue.Full(character)</span>
+                            <span class="value-short">@clue.Short(character)</span>
+                            @if (result is { } shown && GuessChip.IconFor(shown) is { } icon)
+                            {
+                                <MudIcon Icon="@icon" Size="Size.Small" Class="tile-icon" />
+                            }
+                        </div>
+                        <span class="visually-hidden">@clue.Full(character) (@(result is { } r ? GuessChip.Describe(r) : "not released"))</span>
+                    </div>
+                }
+            </div>
+
+            @if (isOpen)
+            {
+                <div class="detail" role="row" id="guess-detail-@index">
+                    <dl class="facts" role="cell" aria-colspan="@(Clues.Count + 1)">
+                        @foreach (var clue in Clues)
+                        {
+                            var result = clue.Result(guess);
+
+                            <div class="fact @TileClass(result)">
+                                <dt>@clue.Label</dt>
+                                <dd>
+                                    @if (result is { } shown && GuessChip.IconFor(shown) is { } icon)
+                                    {
+                                        <MudIcon Icon="@icon" Size="Size.Small" Class="fact-icon" aria-hidden="true" />
+                                    }
+                                    <span>
+                                        @clue.Full(character)
+                                        <span class="fact-result">@(result is { } r ? GuessChip.Describe(r) : "not released")</span>
+                                    </span>
+                                </dd>
+                            </div>
+                        }
+                    </dl>
+                </div>
+            }
+
+            @if (ShowLegend && index == 0)
+            {
+                <div class="legend-row" role="row">
+                    <div role="cell" aria-colspan="@(Clues.Count + 1)">
+                        <FirstGuessLegend Guess="guess" />
+                    </div>
+                </div>
+            }
+        }
+
+        @for (int i = Guesses.Count; ShowPlaceholders && i < GameRules.MaxGuesses; i++)
+        {
+            <div aria-hidden="true" class="empty-row fade-@(i - Guesses.Count + 1)">
+                <div class="character">
+                    <span class="head placeholder-head"></span>
+                    <span class="placeholder-name"></span>
+                </div>
+                @foreach (var _ in Clues)
+                {
+                    <div class="tile"><div class="tile-face placeholder-face"></div></div>
+                }
+            </div>
+        }
+
+    </div>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<GuessResult> Guesses { get; set; } = null!;
+
+    [Parameter]
+    public bool ShowLegend { get; set; }
+
+    [Parameter]
+    public bool ShowPlaceholders { get; set; } = true;
+
+    /// <summary>The clues released by the game's date; the others get no column or placeholder tile.</summary>
+    [Parameter]
+    public IReadOnlySet<ClueGroup> ActiveClues { get; set; } = new HashSet<ClueGroup>();
+
+    private int? _openIndex;
+
+    /// <summary>
+    /// One place for every clue's wording: <c>Full</c> fills wide tiles and the detail strip,
+    /// <c>Short</c> fills narrow tiles. A list clue shows every value, never clamped.
+    /// </summary>
+    private sealed record Clue(
+        string Label,
+        string ShortLabel,
+        string? Help,
+        ClueGroup? Group,
+        Func<GuessResult, ComparisonResult?> Result,
+        Func<Character, string> Full,
+        Func<Character, string> Short,
+        bool IsList = false);
+
+    // Affiliations stay last: the grid gives the final column extra width for its open-ended list.
+    private static readonly Clue[] AllClues =
+    [
+        new("Pronouns", "Pron.", "Including 'Any'", null, guess => guess.Pronouns,
+            character => ListOrNone(character.Pronouns), ShortPronouns),
+        new("Species", "Spec.", "'Human', 'Not Human' or 'Unknown'", null, guess => guess.Species,
+            FormatSpecies, ShortSpecies),
+        new("Languages", "Lang.", null, null, guess => guess.Languages,
+            character => character.LanguageCount > 3 ? $"4+ ({character.LanguageCount})" : $"{character.LanguageCount}",
+            character => character.LanguageCount > 3 ? "4+" : $"{character.LanguageCount}"),
+        new("Joined", "Joined", null, null, guess => guess.Joined,
+            character => $"Day {character.JoinDayNumber}", character => $"{character.JoinDayNumber}"),
+        new("QPhone", "Phone", "Has a QPhone", ClueGroup.QPhone, guess => guess.QPhone,
+            character => YesNo(character.HasQPhone), character => YesNo(character.HasQPhone)),
+        new("Award '26", "Award", "Won a QSMP Award in 2026", ClueGroup.Award2026, guess => guess.Award2026,
+            character => YesNo(character.WonAward2026), character => YesNo(character.WonAward2026)),
+        new("Affiliations", "Affil.", null, null, guess => guess.Affiliation,
+            character => ListOrNone(character.Affiliations), ShortAffiliations, IsList: true),
+    ];
+
+    private IReadOnlyList<Clue> Clues { get; set; } = [];
+
+    private IReadOnlyDictionary<int, Character> CharactersById { get; set; } = new Dictionary<int, Character>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        CharactersById = await CharacterStore.GetCharacterMapAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Clues = [.. AllClues.Where(clue => clue.Group is not { } group || ActiveClues.Contains(group))];
+    }
+
+    private Character? GetCharacter(int id)
+    {
+        return CharactersById.GetValueOrDefault(id);
+    }
+
+    private void Toggle(int index) => _openIndex = _openIndex == index ? null : index;
+
+    private void CloseOnEscape(KeyboardEventArgs e, int index)
+    {
+        if (e.Key == "Escape" && _openIndex == index)
+        {
+            _openIndex = null;
+        }
+    }
+
+    private static RenderFragment HeaderLabel(Clue clue) =>
+        @<text><span class="label-full">@clue.Label</span><span class="label-short" aria-hidden="true">@clue.ShortLabel</span></text>;
+
+    private static string TileClass(ComparisonResult? result) => result switch
+    {
+        ComparisonResult.Correct => "result-correct",
+        ComparisonResult.Partial => "result-partial",
+        ComparisonResult.Wrong => "result-wrong",
+        null => "result-none",
+        _ => "result-direction"
+    };
+
+    private static string YesNo(bool value) => value ? "Yes" : "No";
+
+    private static string ListOrNone(IReadOnlyList<string> values) => values.Count > 0 ? string.Join(", ", values) : "None";
+
+    // Names too long for a phone tile even without their "The".
+    private static readonly Dictionary<string, string> ShortAffiliationNames = new()
+    {
+        ["Dutch Faction"] = "Dutch",
+        ["Polish Hussars"] = "Hussars",
+        ["Schlatt & Co."] = "Schlatt",
+        ["Schlatt & Co"] = "Schlatt",
+    };
+
+    // One per line, so every affiliation stays visible on the narrowest tile.
+    private static string ShortAffiliations(Character character) =>
+        character.Affiliations.Count > 0
+            ? string.Join("\n", character.Affiliations.Select(name =>
+                ShortAffiliationNames.GetValueOrDefault(name, name.StartsWith("The ", StringComparison.Ordinal) ? name[4..] : name)))
+            : "None";
+
+    private static string FormatSpecies(Character character) =>
+        character.Species.Contains("Human") || character.Species.Contains("Unknown")
+            ? ListOrNone(character.Species)
+            : $"Not Human ({ListOrNone(character.Species)})";
+
+    // Narrow tiles show the category the clue compares, not the specific species.
+    private static string ShortSpecies(Character character) =>
+        character.Species.Contains("Human") ? "Human"
+        : character.Species.Contains("Unknown") ? "?"
+        : "Not Human";
+
+    // Only subject/object pairs shorten; a mixed set such as "He/They" names two pronouns and stays whole.
+    private static readonly Dictionary<string, string> ShortPronounSets = new()
+    {
+        ["He/Him"] = "He",
+        ["She/Her"] = "She",
+        ["They/Them"] = "They",
+    };
+
+    // Every pronoun set: "He/Him, She/Her" becomes "He/She", and "He/They" stays "He/They".
+    private static string ShortPronouns(Character character) =>
+        character.Pronouns.Count > 0
+            ? string.Join("/", character.Pronouns.Select(pronoun => ShortPronounSets.GetValueOrDefault(pronoun, pronoun)))
+            : "None";
+}

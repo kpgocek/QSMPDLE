@@ -1,11 +1,7 @@
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
-using QSMPDLE.Web.Diagnostics;
-using QSMPDLE.Web.Features.Communication.GameEvents;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Models;
-using QSMPDLE.Web.Features.Statistics.Services;
 
 namespace QSMPDLE.Web.Tests.GameplayFlow;
 
@@ -15,7 +11,7 @@ public sealed class GameStateManagerGuessTests
     public async Task ValidGuessIsAccepted()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
         var result = await setup.Manager.MakeGuessAsync(setup.GuessOne.Id);
 
@@ -28,7 +24,7 @@ public sealed class GameStateManagerGuessTests
     public async Task DuplicateGuessIsRejected()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
         await setup.Manager.MakeGuessAsync(setup.GuessOne.Id);
 
         var result = await setup.Manager.MakeGuessAsync(setup.GuessOne.Id);
@@ -41,7 +37,7 @@ public sealed class GameStateManagerGuessTests
     public async Task GuessAfterGameCompletionIsRejected()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
         await setup.Manager.MakeGuessAsync(setup.CorrectGuess.Id);
 
         var result = await setup.Manager.MakeGuessAsync(setup.GuessOne.Id);
@@ -54,7 +50,7 @@ public sealed class GameStateManagerGuessTests
     public async Task IncorrectGuessUpdatesGameStateCorrectly()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
         var result = await setup.Manager.MakeGuessAsync(setup.GuessOne.Id);
 
@@ -70,7 +66,7 @@ public sealed class GameStateManagerGuessTests
     public async Task CorrectGuessWinsGame()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
         await setup.Manager.MakeGuessAsync(setup.CorrectGuess.Id);
 
@@ -83,7 +79,7 @@ public sealed class GameStateManagerGuessTests
     public async Task FinalIncorrectGuessLosesGame()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
         foreach (var guess in setup.LosingGuesses)
         {
@@ -99,7 +95,7 @@ public sealed class GameStateManagerGuessTests
     public async Task ComparisonResultsAreCorrect()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
         var result = await setup.Manager.MakeGuessAsync(setup.ScenarioGuess.Id);
 
@@ -116,7 +112,7 @@ public sealed class GameStateManagerGuessTests
     public async Task AcceptedGuessesArePersisted()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
         await setup.Manager.MakeGuessAsync(setup.GuessOne.Id);
 
@@ -127,7 +123,7 @@ public sealed class GameStateManagerGuessTests
     public async Task GuessCountAndOrderArePreserved()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Practice);
+        await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
         await setup.Manager.MakeGuessAsync(setup.GuessOne.Id);
         await setup.Manager.MakeGuessAsync(setup.GuessTwo.Id);
@@ -137,27 +133,10 @@ public sealed class GameStateManagerGuessTests
     }
 
     [Fact]
-    public async Task ThrowingUiSubscribersCannotInterruptPersistedWinningGuess()
-    {
-        using var bus = new GameEventBus(NullLogger<GameEventBus>.Instance, new RuntimeCounters());
-        bus.Subscribe<GuessMadeEvent>(_ => throw new InvalidOperationException("Disposed UI"));
-        bus.Subscribe<GameFinishedEvent>(_ => throw new InvalidOperationException("Disposed UI"));
-        var setup = CreateSetup(bus);
-        await setup.Manager.StartGameAsync(GameMode.Practice);
-        var result = await setup.Manager.MakeGuessAsync(setup.CorrectGuess.Id);
-        Assert.NotNull(result);
-        var saved = setup.GameStatsStore.Sessions[setup.Manager.GameState.GameId];
-        Assert.Single(saved.Guesses);
-        Assert.True(saved.IsWon);
-        Assert.NotNull(saved.FinishedOnUtc);
-        Assert.True(setup.GameStateStore.State!.StatsRecorded);
-    }
-
-    [Fact]
     public async Task CompetingCanonicalSessionReplacesStateWithoutAddingGuess()
     {
         var setup = CreateSetup();
-        await setup.Manager.StartGameAsync(GameMode.Daily);
+        await setup.Manager.StartGameAsync(EntryPoint.Daily);
         var state = setup.Manager.GameState;
         var existing = new GameSession
         {
@@ -177,41 +156,26 @@ public sealed class GameStateManagerGuessTests
         Assert.Single(setup.GameStateStore.State!.GuessesMade);
     }
 
-    private static Setup CreateSetup(IGameEventBus? eventBus = null)
+    private static Setup CreateSetup()
     {
-        var target = CreateCharacter(1, "Target", joinDay: 10, languages: 2, pronouns: ["Any"], affiliations: ["Guild"], species: ["Human"]);
-        var guessOne = CreateCharacter(2, "GuessOne", joinDay: 20, languages: 4, pronouns: ["He/Him"], affiliations: ["Other"], species: ["Unknown"]);
-        var guessTwo = CreateCharacter(3, "GuessTwo", joinDay: 30, languages: 3, pronouns: ["She/Her"], affiliations: ["Third"], species: ["Non-Human"]);
-        var guessThree = CreateCharacter(4, "GuessThree", joinDay: 40, languages: 1, pronouns: ["They/Them"], affiliations: ["Fourth"], species: ["Human"]);
-        var guessFour = CreateCharacter(5, "GuessFour", joinDay: 50, languages: 2, pronouns: ["Any"], affiliations: ["Fifth"], species: ["Human"]);
-        var guessFive = CreateCharacter(6, "GuessFive", joinDay: 60, languages: 3, pronouns: ["He/Him"], affiliations: ["Sixth"], species: ["Human"]);
-        var guessSix = CreateCharacter(7, "GuessSix", joinDay: 70, languages: 4, pronouns: ["She/Her"], affiliations: ["Seventh"], species: ["Human"]);
-        var scenarioGuess = CreateCharacter(8, "ScenarioGuess", joinDay: 20, languages: 4, pronouns: ["He/Him"], affiliations: ["Guild"], species: ["Unknown"]);
+        var target = TestCharacters.Create(1, "Target", joinDay: 10, languages: 2, pronouns: ["Any"], affiliations: ["Guild"], species: ["Human"]);
+        var guessOne = TestCharacters.Create(2, "GuessOne", joinDay: 20, languages: 4, pronouns: ["He/Him"], affiliations: ["Other"], species: ["Unknown"]);
+        var guessTwo = TestCharacters.Create(3, "GuessTwo", joinDay: 30, languages: 3, pronouns: ["She/Her"], affiliations: ["Third"], species: ["Non-Human"]);
+        var guessThree = TestCharacters.Create(4, "GuessThree", joinDay: 40, languages: 1, pronouns: ["They/Them"], affiliations: ["Fourth"], species: ["Human"]);
+        var guessFour = TestCharacters.Create(5, "GuessFour", joinDay: 50, languages: 2, pronouns: ["Any"], affiliations: ["Fifth"], species: ["Human"]);
+        var guessFive = TestCharacters.Create(6, "GuessFive", joinDay: 60, languages: 3, pronouns: ["He/Him"], affiliations: ["Sixth"], species: ["Human"]);
+        var guessSix = TestCharacters.Create(7, "GuessSix", joinDay: 70, languages: 4, pronouns: ["She/Her"], affiliations: ["Seventh"], species: ["Human"]);
+        var scenarioGuess = TestCharacters.Create(8, "ScenarioGuess", joinDay: 20, languages: 4, pronouns: ["He/Him"], affiliations: ["Guild"], species: ["Unknown"]);
         var characters = new[] { target, guessOne, guessTwo, guessThree, guessFour, guessFive, guessSix, scenarioGuess };
         var characterStore = new InMemoryCharacterStore(characters, target.Id);
         var playerStatsStore = new InMemoryPlayerStatsStore { Stats = new PlayerStats { Id = Guid.Parse("11111111-1111-1111-1111-111111111111") } };
         var gameStateStore = new InMemoryGameStateStore();
         var gameStatsStore = new InMemoryGameStatsStore();
-        var statisticsService = new StatisticsService(playerStatsStore, gameStatsStore);
         var dayService = new DayService();
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), statisticsService, eventBus);
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), gameStatsStore);
 
         return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, target, guessOne, guessTwo, guessThree, guessFour, guessFive, guessSix, scenarioGuess, [guessOne.Id, guessTwo.Id, guessThree.Id]);
     }
-
-    private static Character CreateCharacter(int id, string name, int joinDay, int languages, string[] pronouns, string[] affiliations, string[] species) => new()
-    {
-        Id = id,
-        Name = name,
-        MinecraftUsername = name.ToLowerInvariant(),
-        Aliases = [],
-        PortraitId = Guid.NewGuid(),
-        Pronouns = pronouns.ToList(),
-        LanguageCount = languages,
-        Affiliations = affiliations.ToList(),
-        Species = species.ToList(),
-        JoinDayNumber = joinDay,
-    };
 
     private sealed record Setup(
         GameStateManager Manager,

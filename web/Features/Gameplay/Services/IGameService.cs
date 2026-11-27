@@ -7,9 +7,4 @@ public interface IGameService
     Task<GameState> StartDailyAsync(CancellationToken cancellationToken = default);
     Task<GameState> StartPracticeAsync(CancellationToken cancellationToken = default);
     Task<GameState> StartArchivalAsync(int dayNumber, CancellationToken cancellationToken = default);
-
-    // ENDPOINTS
-    Task<int> GetTodayDayNumberAsync(CancellationToken cancellationToken);
-    Task<int> GetMaxArchiveDayAsync(CancellationToken cancellationToken);
-    DateOnly GetFirstDay();
 }
