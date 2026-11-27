@@ -2,6 +2,31 @@
 ::deep .selection-area {
     position: relative;
     width: min(26rem, calc(100vw - 2rem));
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
+}
+
+/* Lights up and pops as the game loads, so the eye lands where to type. A ring
+   rather than a fill, which would hide the placeholder. */
+.input-field input {
+    animation: selector-highlight 700ms ease-out, selector-pop 300ms cubic-bezier(.16, 1, .3, 1);
+}
+
+@keyframes selector-highlight {
+    0%, 30% {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 .125rem var(--primary);
+    }
+}
+
+@keyframes selector-pop {
+    from {
+        transform: scale(.97);
+    }
+}
+
+/* Reduced motion drops the pop but keeps the ring, which moves nothing. */
+:root[data-motion="reduced"] .input-field input {
+    animation: selector-highlight 700ms ease-out !important;
 }
 
 .input-field,
@@ -17,12 +42,12 @@
     width: 100%;
 
 
-    background: var(--black);
+    background: var(--background);
 
-    border: 0.125rem solid var(--primary-black);
+    border: 0.125rem solid var(--raised);
     box-shadow: var(--focus-ring);
 
-    color: var(--white);
+    color: var(--text);
 
     font-size: 1.375rem;
 }
@@ -52,7 +77,7 @@
 
     z-index: 500;
 
-    background: var(--black);
+    background: var(--background);
     border: .0625rem solid var(--line-strong);
 
     box-shadow: var(--soft-shadow);
@@ -60,7 +85,7 @@
 
 .suggestion,
 ::deep .suggestion {
-    background: var(--primary-black);
+    background: var(--raised);
 
     border: none;
 

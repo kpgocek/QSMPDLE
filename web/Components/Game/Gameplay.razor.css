@@ -54,20 +54,20 @@
 .guess-error,
 ::deep .guess-error {
     margin: 0;
-    color: var(--white);
+    color: var(--text);
     text-align: center;
 }
 
 .success,
 ::deep .success {
     background: var(--correct);
-    color: var(--black);
+    color: var(--on-accent);
 }
 
 .failure,
 ::deep .failure {
     background: var(--wrong);
-    color: var(--white);
+    color: var(--on-wrong);
 }
 
 .guess-hint {
@@ -80,6 +80,7 @@
     font-size: .875rem;
     text-align: center;
     text-wrap: balance;
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .guess-hint a {
