@@ -1,32 +1,194 @@
+.topbar,
+::deep .topbar {
+    display: block;
+    padding-top: 2rem;
+}
+
+.topbar-container,
+::deep .topbar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo,
+::deep .logo {
+    font-size: 5rem;
+    line-height: 1em;
+    color: var(--text);
+}
+
+.logo::before,
+::deep .logo::before,
+.logo::after,
+::deep .logo::after {
+    content: 'III';
+    overflow: hidden;
+    user-select: none;
+}
+
+.logo::before,
+::deep .logo::before {
+    background: linear-gradient(to right, transparent 20%, var(--ghost) 225%);
+    background-clip: text;
+    color: transparent;
+}
+
+.logo::after,
+::deep .logo::after {
+    background: linear-gradient(to left, transparent 20%, var(--tint) 225%);
+    background-clip: text;
+    color: transparent;
+}
+
+.links,
+::deep .links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.links-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* The section's own links sit in a contained bar, so they read as a level below the top menu. */
+.links-section {
+    font-size: .875em;
+    gap: .25rem;
+    padding: .25rem;
+    border: .0625rem solid var(--line-strong);
+    border-radius: .5rem;
+    background: var(--surface);
+}
+
+.links-section .separator {
+    display: none;
+}
+
+.links a,
+::deep .links a,
+.links ::deep a {
+    color: var(--text-muted);
+
+    display: flex;
+    align-items: center;
+    gap: .25em;
+
+    padding: .125rem .4rem;
+    border-radius: .25rem;
+    transition:
+        color 160ms ease,
+        background-color 160ms ease;
+}
+
+.links a:hover,
+::deep .links a:hover,
+.links ::deep a:hover,
+.links a.active,
+::deep .links a.active,
+.links ::deep a.active {
+    color: var(--text);
+    background-color: var(--surface);
+}
+
+.links-section a,
+.links-section ::deep a {
+    padding: .25rem .75rem;
+}
+
+.links-section a:not(.active):hover,
+.links-section ::deep a:not(.active):hover,
+.links-section .nav-profile-btn:hover {
+    background-color: var(--panel);
+}
+
+.links-section a.active,
+.links-section ::deep a.active {
+    color: var(--black);
+    background-color: var(--primary);
+}
+
+.show,
+::deep .show,
+.hide,
+::deep .hide {
+    display: flex;
+}
+
+.separator,
+::deep .separator {
+    color: var(--ghost);
+    margin-inline: 0.75rem;
+}
+
+.nav-profile-btn,
+::deep .nav-profile-btn {
+    background: none;
+    border: none;
+    font: inherit;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    cursor: pointer;
+    color: var(--text-muted);
+
+    display: flex;
+    align-items: center;
+    gap: .25em;
+
+    padding: .125rem .4rem;
+    border-radius: .25rem;
+    transition:
+        color 160ms ease,
+        background-color 160ms ease;
+}
+
+.nav-profile-btn:hover,
+::deep .nav-profile-btn:hover {
+    color: var(--text);
+    background-color: var(--surface);
+}
+
+.mobile-menu {
+    display: none;
+}
+
+@media (max-width: 68rem) {
+
+    .logo {
+        font-size: clamp(3rem, 12vw, 6rem);
+    }
+
+    .links {
+        width: 100%;
+        font-size: clamp(1.5rem, 6.4vw, 5rem);
+    }
+
+    .links-row {
+        width: 100%;
+        flex-direction: column;
+    }
+
     .mobile-menu {
+        display: block;
+    }
+
+    .show {
+        display: flex;
+    }
+
+    .hide {
         display: none;
     }
 
-    @media (max-width: 68rem) {
-
-        .logo {
-            font-size: clamp(3rem, 12vw, 6rem);
-        }
-
-        .links {
-            width: 100%;
-            flex-direction: column;
-            font-size: clamp(1.5rem, 6.4vw, 5rem);
-        }
-
-        .mobile-menu {
-            display: block;
-        }
-
-        .show {
-            display: flex;
-        }
-
-        .hide {
-            display: none;
-        }
-
-        .separator {
-            display: none;
-        }
+    .separator {
+        display: none;
     }
+}

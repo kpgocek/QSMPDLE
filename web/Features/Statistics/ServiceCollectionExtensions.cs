@@ -8,7 +8,6 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddStatistics(this IServiceCollection services)
     {
-        services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<IPlayerStatsStore, DatabasePlayerStatsStore>();
         services.AddScoped<IPlayerProfileService, PlayerProfileService>();
 

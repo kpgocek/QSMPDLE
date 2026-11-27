@@ -1,0 +1,432 @@
+/* One grid at every size: each clue keeps its column on every row, so a clue reads straight down the board. */
+.board {
+    container: board / inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+
+    width: 100%;
+    max-width: 64rem;
+    margin-inline: auto;
+}
+
+/* Affiliations, the open-ended list, always sits last and gets a wider column. */
+.board-head,
+.guess-row,
+.empty-row {
+    display: grid;
+    grid-template-columns: 12rem repeat(var(--fixed-clues), minmax(0, 1fr)) minmax(0, 1.5fr);
+    align-items: stretch;
+    gap: .375rem;
+    padding: .375rem;
+}
+
+/* Tiles stretch so a row's tiles share the tallest one's height; labels and names stay centred. */
+.board-head {
+    align-items: end;
+    padding-block: 0;
+}
+
+.head-cell {
+    container-type: inline-size;
+    display: flex;
+    min-width: 0;
+
+    color: var(--white);
+    font-size: .8rem;
+    font-weight: 400;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Clue labels line up with the result icons that lead each tile below them. */
+.head-cell > span,
+.head-cell ::deep .mud-tooltip-root {
+    margin-inline-start: .5rem;
+}
+
+.label-short {
+    display: none;
+    font-size: .6875rem;
+    letter-spacing: 0;
+}
+
+/* The cell is its own container, so these rules can only reach its children. */
+@container (max-width: 6.5rem) {
+    .head-cell ::deep .header-help-icon {
+        display: none;
+    }
+}
+
+/* The longest label needs its short form while the column is still fairly wide. */
+@container (max-width: 7.25rem) {
+    .head-long .label-full {
+        display: none;
+    }
+
+    .head-long .label-short {
+        display: inline;
+    }
+}
+
+@container (max-width: 5.25rem) {
+    .label-full {
+        display: none;
+    }
+
+    .label-short {
+        display: inline;
+    }
+
+    /* Narrow tiles centre their value, so their label centres too. */
+    .head-cell > span,
+    .head-cell ::deep .mud-tooltip-root {
+        margin-inline: auto;
+    }
+}
+
+.header-help {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+
+    padding: 0;
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: help;
+}
+
+.guess-row {
+    position: relative;
+
+    border: .125rem solid var(--panel-edge);
+    background: linear-gradient(90deg, var(--panel-strong), var(--panel));
+    box-shadow: inset 0 0 0 .0625rem var(--black);
+    user-select: none;
+    transition: border-color 160ms ease;
+}
+
+.guess-row:hover {
+    border-color: var(--line-strong);
+}
+
+/* The toggle's own outline would only ring the name; the whole row is the target, so the row shows focus. */
+.guess-row:has(.character-toggle:focus-visible) {
+    outline: .125rem solid var(--primary);
+    outline-offset: .125rem;
+}
+
+.character {
+    display: flex;
+    align-self: center;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+}
+
+.character-toggle {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+
+    padding: 0;
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.character-toggle:focus-visible {
+    outline: none;
+}
+
+/* Stretches the one real button over the whole row, so a tap anywhere opens the details. */
+.character-toggle::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+.head {
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    image-rendering: pixelated;
+}
+
+.guess-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+::deep .toggle-icon {
+    flex: none;
+    color: var(--text-muted);
+    transition: transform 160ms ease;
+}
+
+.open ::deep .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.tile {
+    container-type: inline-size;
+    display: grid;
+    /* Lets the face shrink with its column instead of holding out at its content's width. */
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+}
+
+/* Rounded against the square chrome: results are the game's tokens. The result icon
+   leads each tile from the left edge, like a chip's type icon, and the value follows it. */
+.tile-face {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .375rem;
+
+    min-height: 2.75rem;
+    padding: .25rem .625rem .25rem .5rem;
+    border-radius: .75rem;
+
+    color: var(--black);
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 1.2;
+    text-align: start;
+}
+
+.result-correct .tile-face { background: var(--correct); }
+.result-partial .tile-face { background: var(--partial); }
+.result-direction .tile-face { background: var(--primary); }
+
+.result-wrong .tile-face {
+    background: var(--wrong);
+    color: var(--white);
+}
+
+.value-full {
+    display: -webkit-box;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: break-word;
+}
+
+.value-short {
+    display: none;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+    /* List clues put one value per line. */
+    white-space: pre-line;
+}
+
+/* A list clue shows every value: the tile grows taller rather than hiding any. */
+.tile-list .value-full,
+.tile-list .value-short {
+    -webkit-line-clamp: none;
+}
+
+/* Full names stack too deep in a mid-width tile, so a list switches to its short names early. */
+@container (max-width: 9rem) {
+    .tile-list .value-full {
+        display: none;
+    }
+
+    .tile-list .value-short {
+        display: -webkit-box;
+        font-size: .6875rem;
+    }
+}
+
+/* The markup keeps the value first for reading order; the icon only moves visually. */
+::deep .tile-icon {
+    order: -1;
+    flex: none;
+    font-size: 1.125rem;
+}
+
+/* Mid-width tiles tighten around the icon so two-word values like "Not Human (AI)" keep two lines. */
+@container (max-width: 7rem) {
+    .tile-face {
+        gap: .25rem;
+        padding-inline: .375rem .5rem;
+        font-size: .8125rem;
+    }
+
+    ::deep .tile-icon {
+        font-size: 1rem;
+    }
+}
+
+/* Narrow tiles have no room beside the value, so the icon becomes a badge in the top-left corner
+   and the value falls back to its short form. */
+@container (max-width: 5.5rem) {
+    .tile-face {
+        position: relative;
+        justify-content: center;
+        padding: .875rem .125rem .25rem;
+        font-size: .6875rem;
+        text-align: center;
+    }
+
+    ::deep .tile-icon {
+        position: absolute;
+        top: .1875rem;
+        left: .25rem;
+        font-size: .75rem;
+    }
+
+    .value-full {
+        display: none;
+    }
+
+    .value-short {
+        display: -webkit-box;
+    }
+}
+
+.detail {
+    margin-top: -.5rem;
+    padding: .75rem;
+
+    border: .125rem solid var(--panel-edge);
+    border-top: 0;
+    background: var(--surface);
+    animation: reveal-row 200ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: .75rem 1rem;
+    margin: 0;
+}
+
+.fact dt {
+    color: var(--text-muted);
+    font-size: .75rem;
+    font-weight: 400;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.fact dd {
+    display: flex;
+    align-items: flex-start;
+    gap: .375rem;
+    margin: 0;
+    font-weight: 400;
+}
+
+.fact-result {
+    display: block;
+    color: var(--text-muted);
+    font-size: .8125rem;
+    font-weight: 300;
+}
+
+::deep .fact-icon {
+    flex: none;
+    margin-top: .0625rem;
+}
+
+.result-correct ::deep .fact-icon { color: var(--correct); }
+.result-partial ::deep .fact-icon { color: var(--partial); }
+.result-wrong ::deep .fact-icon { color: var(--wrong); }
+.result-direction ::deep .fact-icon { color: var(--primary); }
+
+.empty-row {
+    border: .125rem solid var(--line);
+    background: var(--surface);
+    user-select: none;
+}
+
+.placeholder-head {
+    background: var(--surface-muted);
+    border: .0625rem solid var(--line);
+}
+
+.placeholder-name {
+    width: 6rem;
+    height: 1rem;
+    background: var(--surface-muted);
+}
+
+.placeholder-face {
+    background: var(--surface-muted);
+    border: .0625rem solid var(--line);
+}
+
+.fade-1 { opacity: 1; }
+.fade-2 { opacity: .8; }
+.fade-3 { opacity: .6; }
+.fade-4 { opacity: .4; }
+.fade-5 { opacity: .2; }
+.fade-6 { opacity: .1; }
+
+/* The newest guess turns its clues over one at a time, left to right. */
+.new-row {
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.new-row .tile-face {
+    animation: reveal-chip 380ms cubic-bezier(.16, 1, .3, 1) backwards;
+    animation-delay: calc(var(--i) * 100ms + 150ms);
+}
+
+/* Phones: the name becomes a caption line over the tiles, so every tile gets the full width. */
+@container board (max-width: 40rem) {
+    .board-head,
+    .guess-row,
+    .empty-row {
+        grid-template-columns: repeat(var(--fixed-clues), minmax(0, 1fr)) minmax(0, 1.5fr);
+    }
+
+    .character {
+        grid-column: 1 / -1;
+    }
+
+    .head {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .guess-name {
+        font-size: .95rem;
+    }
+
+    .head-character {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    .empty-row .character {
+        display: none;
+    }
+
+    .guess-row,
+    .empty-row,
+    .detail {
+        border-inline: 0;
+    }
+}

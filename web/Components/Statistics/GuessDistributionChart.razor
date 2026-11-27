@@ -2,10 +2,8 @@
 @using MudBlazor.Charts
 @using QSMPDLE.Web.Themes
 
-@inject ThemeService Themes;
-
-<MudPaper Class="pa-4 mb-4" Elevation="2">
-    <MudText Typo="Typo.h6" Class="mb-4 d-flex align-center">
+<div class="mb-4">
+    <MudText Typo="Typo.h6" HtmlTag="h4" Class="mb-4 d-flex align-center">
         <MudIcon Icon="@Icons.Material.Filled.BarChart" Class="mr-1" />@Title
     </MudText>
 
@@ -19,7 +17,7 @@
                   Width="100%" Height="300px" @bind-SelectedIndex="@Index" MatchBoundsToSize="true">
         </MudChart>
     }
-</MudPaper>
+</div>
 
 @code {
 
@@ -32,7 +30,7 @@
     private int Index = -1;
     private BarChartOptions Options = new BarChartOptions();
 
-    private string[] GuessLabels = ["1", "2", "3", "4", "5", "6"];
+    private string[] GuessLabels = [.. Enumerable.Range(1, GameRules.MaxGuesses).Select(count => count.ToString())];
 
     private List<ChartSeries<double>> Series = [];
 
@@ -42,21 +40,6 @@
 
         Series = [new ChartSeries<double> { Name = "Wins", Data = Distribution }];
 
-        var palette = Themes.CurrentTheme.PaletteDark;
-
-        Options.ChartPalette = [
-            palette.Primary.ToString(),
-            palette.Secondary.ToString(),
-            palette.Success.ToString(),
-            palette.Warning.ToString(),
-            palette.PrimaryLighten,
-            palette.SuccessLighten,
-            palette.WarningLighten,
-            palette.SecondaryLighten,
-            palette.PrimaryDarken,
-            palette.SuccessDarken,
-            palette.WarningDarken,
-            palette.SecondaryDarken
-        ];
+        Options.ChartPalette = QsmpdleTheme.ChartPalette;
     }
 }

@@ -13,12 +13,9 @@ namespace QSMPDLE.Web.Features.Statistics.Services;
 public sealed class PlayerProfileService(
     IPlayerStatsStore playerStatsStore,
     IGameStatsStore gameStatsStore,
-    IGlobalStatsService globalStatsService,
     ICharacterStore characterStore,
     IDayService dayService) : IPlayerProfileService
 {
-    private const int GuessDistributionSize = 6;
-
     public async Task<PlayerProfile> GetProfileAsync()
     {
         var playerId = await playerStatsStore.GetPlayerIdAsync();
@@ -28,45 +25,63 @@ public sealed class PlayerProfileService(
 
         var canonicalGames = games.Where(game => game.SessionCategory == SessionCategory.CanonicalPuzzle).ToList();
         var practiceGames = games.Where(game => game.SessionCategory == SessionCategory.Practice).ToList();
-        var finishedPracticeGames = practiceGames.Where(game => game.FinishedOnUtc is not null).ToList();
-        var dailyGamesWon = canonicalGames.Count(game => game.IsWon);
-
-        var memberSince = await gameStatsStore.GetPlayerFirstGameDateAsync(playerId);
-        var globalStats = await globalStatsService.GetGlobalStatsAsync();
-        var characterStats = playerId == Guid.Empty ? null : await GetCharacterStatsAsync(playerId);
+        var finishedPracticeGames = practiceGames.Where(game => game.Outcome != GameOutcome.InProgress).ToList();
+        var characterStats = playerId == Guid.Empty ? null : await GetCharacterStatsAsync(canonicalGames);
 
         return new PlayerProfile
         {
             Stats = PlayerStatsProjection.Create(new PlayerStats { Id = playerId }, games, dayService),
-            DailyGamesPlayed = canonicalGames.Count,
-            DailyGamesWon = dailyGamesWon,
-            DailyWinRate = canonicalGames.Count == 0 ? 0 : dailyGamesWon * 100d / canonicalGames.Count,
-            GuessDistribution = Enumerable.Range(1, GuessDistributionSize)
-                .Select(count => canonicalGames.Count(game => game.IsWon && game.Guesses.Count == count))
-                .ToArray(),
             PracticeGamesStarted = practiceGames.Count,
             PracticeGamesFinished = finishedPracticeGames.Count,
-            PracticeGamesWon = finishedPracticeGames.Count(game => game.IsWon),
-            MemberSince = memberSince,
-            GlobalStats = globalStats,
+            PracticeGamesWon = finishedPracticeGames.Count(game => game.Outcome == GameOutcome.Won),
             CharacterStats = characterStats,
         };
     }
 
-    private async Task<PlayerCharacterStats> GetCharacterStatsAsync(Guid playerId)
+    private async Task<PlayerCharacterStats> GetCharacterStatsAsync(List<GameSession> canonicalGames)
     {
-        var stats = await gameStatsStore.GetPlayerCharacterStatsAsync(playerId);
+        var todayPuzzleId = dayService.GetTodayDayNumber();
+
+        // SQL "PuzzleId <> today" is NULL for a missing PuzzleId, so those sessions never counted either.
+        var settledGames = canonicalGames.Where(game => game.PuzzleId is { } puzzleId && puzzleId != todayPuzzleId).ToList();
+
+        // Wrong guesses only (guess != target), grouped by guessed character.
+        var mostGuessed = MostFrequent(settledGames.SelectMany(game => game.Guesses
+            .Where(guess => guess.GuessedCharacterId != game.TargetCharacterId)
+            .Select(guess => guess.GuessedCharacterId)));
+
+        // Won sessions only, grouped by target character.
+        var mostCorrect = MostFrequent(settledGames.Where(game => game.Outcome == GameOutcome.Won).Select(game => game.TargetCharacterId));
+
+        var stats = new PlayerCharacterStats
+        {
+            MostGuessedCharacterId = mostGuessed?.CharacterId,
+            MostGuessedCount = mostGuessed?.Count ?? 0,
+            MostCorrectlyGuessedCharacterId = mostCorrect?.CharacterId,
+            MostCorrectlyGuessedCount = mostCorrect?.Count ?? 0,
+        };
+
         var lookups = await characterStore.GetLookupsAsync();
 
-        var mostGuessed = lookups.FirstOrDefault(lookup => lookup.Id == stats.MostGuessedCharacterId);
-        var mostCorrect = lookups.FirstOrDefault(lookup => lookup.Id == stats.MostCorrectlyGuessedCharacterId);
+        var mostGuessedLookup = lookups.FirstOrDefault(lookup => lookup.Id == stats.MostGuessedCharacterId);
+        var mostCorrectLookup = lookups.FirstOrDefault(lookup => lookup.Id == stats.MostCorrectlyGuessedCharacterId);
 
         return stats with
         {
-            MostGuessedCharacterName = mostGuessed?.Name ?? stats.MostGuessedCharacterId?.ToString(),
-            MostGuessedIconUrl = mostGuessed?.CharacterIconUrl,
-            MostCorrectlyGuessedCharacterName = mostCorrect?.Name ?? stats.MostCorrectlyGuessedCharacterId?.ToString(),
-            MostCorrectlyGuessedIconUrl = mostCorrect?.CharacterIconUrl,
+            MostGuessedCharacterName = mostGuessedLookup?.Name ?? stats.MostGuessedCharacterId?.ToString(),
+            MostGuessedPortraitFolder = mostGuessedLookup?.PortraitFolder,
+            MostCorrectlyGuessedCharacterName = mostCorrectLookup?.Name ?? stats.MostCorrectlyGuessedCharacterId?.ToString(),
+            MostCorrectlyGuessedPortraitFolder = mostCorrectLookup?.PortraitFolder,
         };
     }
+
+    // ORDER BY "Count" DESC LIMIT 1; the SQL left ties unordered, so the lowest id wins to stay deterministic.
+    private static (int CharacterId, long Count)? MostFrequent(IEnumerable<int> characterIds) =>
+        characterIds
+            .GroupBy(id => id)
+            .Select(group => (CharacterId: group.Key, Count: group.LongCount()))
+            .OrderByDescending(entry => entry.Count)
+            .ThenBy(entry => entry.CharacterId)
+            .Select(entry => ((int CharacterId, long Count)?)entry)
+            .FirstOrDefault();
 }

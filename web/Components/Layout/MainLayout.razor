@@ -1,12 +1,15 @@
+@using System.Globalization
 @using MudBlazor
-@using BlazorBootstrap
+@using QSMPDLE.Web.Features.Statistics.Models
+@using QSMPDLE.Web.Features.Statistics.Services
 @using QSMPDLE.Web.Themes
-
-@inject ThemeService Themes
 
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="@Themes.CurrentTheme" IsDarkMode="@Themes.IsDarkMode" />
+@inject IGlobalStatsService GlobalStatsService
+@inject ILogger<MainLayout> Logger
+
+<MudThemeProvider Theme="@QsmpdleTheme.Theme" IsDarkMode="true" />
 <InteractiveProviders />
 
 <div class="page">
@@ -29,13 +32,21 @@
             </div>
 
             <div class="footer-links">
-                <a href="https://github.com/kpgocek/QSMPDLE">GitHub</a>
-                <a href="/changelog">Changelog</a>
-                <a href="/privacy">Privacy</a>
+                <NavLink href="/changelog">Changelog</NavLink>
+                <NavLink href="/privacy">Privacy</NavLink>
                 <a href="https://x.com/qsmpdle" target="_blank" rel="noopener noreferrer">X</a>
                 <a href="https://ko-fi.com/qsmpdle" target="_blank" rel="noopener noreferrer">Support me</a>
                 <a href="https://discord.gg/PnpeujMZg" target="_blank" rel="noopener noreferrer">Discord</a>
+                <a href="https://github.com/kpgocek/QSMPDLE">GitHub</a>
             </div>
+
+            @if (globalTotals is { FinishedGames: > 0 } totals)
+            {
+                <div class="footer-games">
+                    @totals.FinishedGames.ToString("N0", CultureInfo.InvariantCulture) games played by
+                    @totals.Players.ToString("N0", CultureInfo.InvariantCulture) @(totals.Players == 1 ? "player" : "players")
+                </div>
+            }
 
             <div class="footer-disclaimer">
                 Fan project. Not affiliated with QSMP or its creators.
@@ -55,4 +66,19 @@
     <span class="dismiss">🗙</span>
 </div>
 
-<Preload LoadingText="Loading..." />
+@code {
+    private GlobalTotals? globalTotals;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            globalTotals = await GlobalStatsService.GetTotalsAsync();
+        }
+        catch (Exception exception)
+        {
+            // The layout wraps every page; a database outage must not take the pages down with it.
+            Logger.LogWarning(exception, "Site totals failed to load");
+        }
+    }
+}

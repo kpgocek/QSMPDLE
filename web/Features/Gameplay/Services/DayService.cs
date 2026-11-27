@@ -1,14 +1,16 @@
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
-public sealed class DayService : IDayService
+public sealed class DayService(TimeProvider timeProvider) : IDayService
 {
     private static readonly DateOnly FirstDay = new(2026, 6, 15);
+
+    public DayService() : this(TimeProvider.System) { }
 
     public DateOnly GetFirstDay() => FirstDay;
 
     public int GetTodayDayNumber()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         return GetArchiveDayNumber(today);
     }
 
@@ -18,7 +20,5 @@ public sealed class DayService : IDayService
 
     public DateOnly GetArchiveDate(int dayNumber) => FirstDay.AddDays(dayNumber - 1);
 
-    public int GetYesterdayArchiveDayNumber() => Math.Max(1, GetTodayDayNumber() - 1);
-
-    public string GetYesterdayArchiveLink() => $"/archive/day/{GetYesterdayArchiveDayNumber()}";
+    public string GetYesterdayArchiveLink() => $"/archive/day/{GetMaxArchiveDay()}";
 }

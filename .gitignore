@@ -494,4 +494,7 @@ $RECYCLE.BIN/
 *.db-shm
 *.db-wal
 
+# Development folders
 out/
+tools/
+scripts/

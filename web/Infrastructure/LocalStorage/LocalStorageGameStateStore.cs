@@ -3,10 +3,14 @@ using QSMPDLE.Web.Features.Gameplay.Models;
 
 namespace QSMPDLE.Web.Infrastructure.LocalStorage;
 
-public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage) : IGameStateStore
+public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage, IJSRuntime js) : IGameStateStore
 {
     private const string KeyPrefix = "qsmpdle-";
     private const int CurrentSchemaVersion = 3;
+    private const string FirstGameKey = KeyPrefix + "first-game";
+
+    private static readonly string[] GameKeyPrefixes =
+        [KeyPrefix + "canonical-", KeyPrefix + "practice-", KeyPrefix + "daily-", KeyPrefix + "archive-"];
 
     private string Key { get; set; } = string.Empty;
 
@@ -41,13 +45,21 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
         }
     }
 
-    public async Task<GameState?> GetByKeyAsync(string key)
+    public async Task SaveAsync(GameState state)
+    {
+        if (!IsInitialized)
+            throw new NullReferenceException(nameof(Key));
+
+        // Marked with the current schema version so future loads can detect compatibility.
+        state.SchemaVersion = CurrentSchemaVersion;
+        await localStorage.SetItemAsync(Key, state);
+    }
+
+    public async Task<Guid?> GetFirstGameIdAsync()
     {
         try
         {
-            // Legacy states use schema v2. Read them without invalidating so the
-            // state manager can move compatible progress to the canonical key.
-            return await localStorage.GetItemAsync<GameState>(string.Concat(KeyPrefix, key));
+            return await localStorage.GetItemAsync<Guid?>(FirstGameKey);
         }
         catch
         {
@@ -55,55 +67,35 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
         }
     }
 
-    public async Task<IReadOnlyList<int>> GetLegacyPuzzleIdsAsync()
+    public Task SaveFirstGameIdAsync(Guid gameId) => localStorage.SetItemAsync(FirstGameKey, gameId).AsTask();
+
+    public async Task<bool> HasGuessedInOtherGameAsync()
     {
-        var puzzleIds = new HashSet<int>();
-        var length = await localStorage.Length;
-
-        for (var index = 0; index < length; index++)
+        foreach (var prefix in GameKeyPrefixes)
         {
-            var key = await localStorage.KeyAsync(index);
-            if (key is null)
-                continue;
+            foreach (var suffix in await GetKeySuffixesAsync(prefix))
+            {
+                var key = prefix + suffix;
+                if (key == Key)
+                    continue;
 
-            var suffix = key.StartsWith($"{KeyPrefix}daily-", StringComparison.Ordinal)
-                ? key[$"{KeyPrefix}daily-".Length..]
-                : key.StartsWith($"{KeyPrefix}archive-", StringComparison.Ordinal)
-                    ? key[$"{KeyPrefix}archive-".Length..]
-                    : null;
-
-            if (suffix is not null && int.TryParse(suffix, out var puzzleId) && puzzleId > 0)
-                puzzleIds.Add(puzzleId);
+                try
+                {
+                    var state = await localStorage.GetItemAsync<GameState>(key);
+                    if (state?.GuessesMade.Count > 0)
+                        return true;
+                }
+                catch
+                {
+                    // An unreadable entry says nothing about whether the player has played.
+                }
+            }
         }
 
-        return puzzleIds.ToList();
-    }
-
-    public Task SaveByKeyAsync(string key, GameState state)
-    {
-        state.SchemaVersion = CurrentSchemaVersion;
-        return localStorage.SetItemAsync(string.Concat(KeyPrefix, key), state).AsTask();
-    }
-
-    public Task RemoveByKeyAsync(string key) => localStorage.RemoveItemAsync(string.Concat(KeyPrefix, key)).AsTask();
-
-    public async Task SaveAsync(GameState state)
-    {
-        if (!IsInitialized)
-            throw new NullReferenceException(nameof(Key));
-
-        // Ensure stored state is marked with the current schema version so future loads
-        // can detect compatibility.
-        await SaveByKeyAsync(Key[KeyPrefix.Length..], state);
-    }
-
-    public async Task ClearAsync()
-    {
-        if (!IsInitialized)
-            throw new NullReferenceException(nameof(Key));
-
-        await localStorage.RemoveItemAsync(Key);
+        return false;
     }
 
     public bool IsInitialized => !string.IsNullOrEmpty(Key);
+
+    private Task<string[]> GetKeySuffixesAsync(string prefix) => js.InvokeAsync<string[]>("storageKeys", prefix).AsTask();
 }

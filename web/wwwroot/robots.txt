@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.qsmpdle.com/sitemap.xml
+Sitemap: https://qsmpdle.com/sitemap.xml

@@ -1,3 +1,4 @@
+using QSMPDLE.Web.Features.Gameplay.Helpers;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Infrastructure.Persistence;
 
@@ -7,23 +8,20 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
 {
     public async Task<GameState> StartDailyAsync(CancellationToken cancellationToken = default)
     {
-        var dayNumber = await GetTodayDayNumberAsync(cancellationToken);
+        var game = await StartGameForDayAsync(DayService.GetTodayDayNumber(), cancellationToken);
 
-        var game = await StartGameForDayAsync(dayNumber, cancellationToken);
-
-        return game is null
-            ? throw new InvalidOperationException($"Cannot initialize Archival game for day #{dayNumber}.")
-            : CreateCanonicalState(game, EntryPoint.Daily);
+        return CreateCanonicalState(game, EntryPoint.Daily);
     }
 
     public async Task<GameState> StartPracticeAsync(CancellationToken cancellationToken = default)
     {
-        var character = await CharacterStore.GetRandomCharacterAsync(cancellationToken);
+        var today = DayService.GetArchiveDate(DayService.GetTodayDayNumber());
+        var character = await CharacterStore.GetRandomCharacterAsync(today, cancellationToken);
 
         var game = new Game
         {
             TargetId = character.Id,
-            PortraitUrl = character.IconUrl
+            PortraitUrl = CharacterUrlHelper.GetPortraitFolder(character.PortraitId)
         };
 
         return new GameState
@@ -33,7 +31,6 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
             SessionCategory = SessionCategory.Practice,
             EntryPoint = EntryPoint.Practice,
             FirstEntryPoint = EntryPoint.Practice,
-            GameMode = GameMode.Practice
         };
     }
 
@@ -41,9 +38,7 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
     {
         var game = await StartGameForDayAsync(dayNumber, cancellationToken);
 
-        return game is null
-            ? throw new InvalidOperationException($"Cannot initialize Archival game for day #{dayNumber}.")
-            : CreateCanonicalState(game, EntryPoint.Archive);
+        return CreateCanonicalState(game, EntryPoint.Archive);
     }
 
     private async Task<Game> StartGameForDayAsync(int dayNumber, CancellationToken cancellationToken = default)
@@ -55,7 +50,7 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
         return new Game
         {
             TargetId = character.Id,
-            PortraitUrl = character.IconUrl,
+            PortraitUrl = CharacterUrlHelper.GetPortraitFolder(character.PortraitId),
             PuzzleId = dayNumber
         };
     }
@@ -67,19 +62,5 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
         SessionCategory = SessionCategory.CanonicalPuzzle,
         EntryPoint = entryPoint,
         FirstEntryPoint = entryPoint,
-        GameMode = entryPoint == EntryPoint.Daily ? GameMode.Daily : GameMode.Archive
     };
-
-    public async Task<int> GetTodayDayNumberAsync(CancellationToken cancellationToken)
-    {
-        return DayService.GetTodayDayNumber();
-    }
-
-    public async Task<int> GetMaxArchiveDayAsync(CancellationToken cancellationToken)
-    {
-        return DayService.GetMaxArchiveDay();
-    }
-
-    public DateOnly GetFirstDay() => DayService.GetFirstDay();
-
 }

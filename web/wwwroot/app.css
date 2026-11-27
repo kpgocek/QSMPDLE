@@ -1,17 +1,12 @@
 @font-face {
-    font-family: "Pixel";
-    src: url("fonts/04b_03__.ttf");
-}
-
-@font-face {
     font-family: "Bungee";
-    src: url("fonts/Bungee/Bungee-Regular.ttf") format("truetype");
+    src: url("fonts/Bungee/Bungee-Latin.woff2") format("woff2");
     font-display: swap;
 }
 
 @font-face {
     font-family: "Nunito Sans";
-    src: url("fonts/Nunito_Sans/NunitoSans-VariableFont_YTLC,opsz,wdth,wght.ttf") format("truetype");
+    src: url("fonts/Nunito_Sans/NunitoSans-Latin.woff2") format("woff2");
     font-weight: 200 1000;
     font-style: normal;
     font-display: swap;
@@ -19,7 +14,7 @@
 
 @font-face {
     font-family: "Nunito Sans";
-    src: url("fonts/Nunito_Sans/NunitoSans-Italic-VariableFont_YTLC,opsz,wdth,wght.ttf") format("truetype");
+    src: url("fonts/Nunito_Sans/NunitoSans-Italic-Latin.woff2") format("woff2");
     font-weight: 200 1000;
     font-style: italic;
     font-display: swap;
@@ -27,7 +22,7 @@
 
 @font-face {
     font-family: "Crafter";
-    src: url("fonts/minecrafter.reg.ttf");
+    src: url("fonts/minecrafter.woff2") format("woff2");
     font-display: swap;
 }
 
@@ -75,12 +70,17 @@ a {
     color: var(--text);
 }
 
-a:focus,
 h1:focus,
 h2:focus,
 h3:focus,
 h4:focus {
     outline: none;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: .125rem solid var(--primary);
+    outline-offset: .125rem;
 }
 
 h1 {
@@ -105,6 +105,11 @@ h4 {
     font-weight: 600;
 }
 
+/* Mud headings rendered as h4 for document outline keep their Typo look. */
+h4.mud-typography {
+    font-style: normal;
+}
+
 .text-accent {
     background: linear-gradient(to right, var(--correct) -10%, var(--primary) 65%);
     background-clip: text;
@@ -126,6 +131,14 @@ h4 {
     filter: brightness(1.05);
 }
 
+.mud-alert-outlined-success {
+    color: var(--correct);
+}
+
+.mud-alert-outlined-info {
+    color: var(--primary);
+}
+
 .mud-popover {
     background: var(--background);
 }
@@ -142,4 +155,237 @@ h4 {
 .mud-picker-calendar {
     gap: 0.25em 0.125em !important;
     position: relative;
+}
+
+/* colors.css */
+:root {
+    --white: #FAFBFC;
+    --black: #010a1e;
+
+    --white-hsl: 210, 25%, 98%;
+    --black-hsl: 30, 9%, 4%;
+    --primary-hsl: 198, 100%, 54%;
+
+    --primary: #16BAFF;
+    --primary-dark: #094099;
+    --primary-black: #0A2C5E;
+
+    --secondary: #7cf1c4;
+
+    --correct: #2FBB36;
+    --partial: #FFA056;
+    --wrong: #CC284C;
+
+    --warning: #F72C25;
+    --alert: #F7B32B;
+
+    --background: var(--black);
+    --text: var(--white);
+    /* Solid, not translucent: stays above 4.5:1 on every surface from --black to --primary-black. */
+    --text-muted: #94A9C2;
+
+    --shadow: hsla(var(--black-hsl), 0.2);
+    --ghost: hsla(var(--white-hsl), 0.3);
+    --tint: hsla(var(--primary-hsl), 0.5);
+
+    --surface: hsla(var(--primary-hsl), 0.10);
+    --surface-strong: hsla(var(--primary-hsl), 0.12);
+    --surface-muted: hsla(var(--white-hsl), 0.06);
+    --panel: hsla(var(--primary-hsl), 0.18);
+    --panel-strong: hsla(var(--primary-hsl), 0.28);
+    --panel-edge: hsla(var(--primary-hsl), 0.62);
+    --line: hsla(var(--white-hsl), 0.16);
+    --line-strong: hsla(var(--primary-hsl), 0.42);
+    --soft-shadow: 0 0.75rem 2rem hsla(var(--black-hsl), 0.18);
+    --focus-ring: 0 0 0 0.2rem hsla(var(--primary-hsl), 0.28);
+}
+
+/* animations.css */
+@keyframes reveal-card {
+    from {
+        opacity: 0;
+        transform: translateY(.625rem) scale(.985);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes reveal-row {
+
+    from {
+        opacity: 0;
+        transform: translateY(.75rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes modal-enter {
+    from {
+        opacity: 0;
+        transform: translateY(.75rem) scale(.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes soft-pulse {
+    0%, 100% {
+        border-color: var(--line-strong);
+    }
+
+    50% {
+        border-color: var(--panel-edge);
+    }
+}
+
+@keyframes reveal-chip {
+    from {
+        opacity: 0;
+        transform: perspective(20rem) rotateX(-90deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: perspective(20rem) rotateX(0);
+    }
+}
+
+@keyframes overlay-enter {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes result-stamp {
+    from {
+        opacity: 0;
+        transform: scale(1.6);
+        filter: blur(.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+}
+
+/* Set by the script at the top of App.razor from the Motion setting, which can follow the system's
+   reduce-motion setting or override it. */
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+    animation-delay: 0ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+}
+
+/* WebPage */
+/* Layout this class used to get from Bootstrap's .card component. */
+.card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    word-wrap: break-word;
+
+    max-width: 53.125rem;
+    margin: 0 auto;
+    background: linear-gradient(180deg, var(--panel), hsla(var(--primary-hsl), 0.09));
+    backdrop-filter: blur(1rem);
+    color: var(--white);
+    border: .125rem solid var(--panel-edge);
+    box-shadow: inset 0 0 0 .0625rem var(--black);
+}
+
+.info {
+    color: var(--primary);
+}
+
+.section-title {
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+/* PlayerProfileDialog */
+.pop-up {
+    border-radius: 0;
+    background:
+        radial-gradient(circle at 50% 0, var(--surface-strong), transparent 64rem), var(--black);
+}
+
+/* GuessChip */
+.guess-chip-icon {
+    margin-inline-start: .35em;
+}
+
+/* CharacterPortrait: the frame is the MudPaper at the component root */
+.portrait-frame {
+    position: relative;
+    padding: .5rem;
+    width: min(20rem, 82vw);
+    aspect-ratio: 1;
+
+    border: 0.125rem solid var(--panel-edge);
+
+    box-shadow: inset 0 0 0 .0625rem var(--black), var(--soft-shadow);
+
+    border-radius: 0;
+    overflow: hidden;
+    animation: soft-pulse 4s ease-in-out infinite;
+}
+
+/* The mystery is over, so the frame stops breathing and holds its full edge. */
+.portrait-frame.solved {
+    animation: none;
+}
+.portrait-frame::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    backdrop-filter: brightness(1.125);
+    background: linear-gradient(to top right, transparent 45%, var(--tint) 120%);
+    opacity: 0.28;
+
+}
+
+/* Gameplay: the board is a MudStack at the component root */
+.gameplay {
+    position: relative;
+    margin-top: 1.25rem;
+}
+.gameplay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background: radial-gradient(ellipse at center, var(--surface), transparent 70%);
+
+    z-index: -1;
+}
+
+/* ArchiveDay: the date is a MudText inside a MudButton at the page root */
+.archive-date {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }

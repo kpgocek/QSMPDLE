@@ -1,71 +1,22 @@
 @using MudBlazor
 
-<MudPaper Class="portrait-frame" Elevation="0">
-    <img src="@ImageUrl" alt="Character" class="portrait-image" width="320" height="320" loading="eager" decoding="async" fetchpriority="high" />
+<MudPaper Class="@(IsGuessed || IsFailed ? "portrait-frame solved" : "portrait-frame")" Elevation="0">
+    <img src="@ImageUrl" alt="@AltText" class="portrait-image" width="320" height="320" loading="eager" decoding="async" fetchpriority="high" />
 </MudPaper>
 
-<style>
-    .portrait-frame {
-        position: relative;
-        padding: .5rem;
-        width: min(20rem, 82vw);
-        aspect-ratio: 1;
-
-        border: 0.125rem solid var(--line-strong);
-
-        box-shadow: var(--soft-shadow);
-
-        border-radius: 0;
-        overflow: hidden;
-        animation: soft-pulse 4s ease-in-out infinite;
-    }
-
-    .portrait-image {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        image-rendering: pixelated;
-        border-radius: 0;
-    }
-
-    .portrait-frame::after {
-        content: "";
-
-        position: absolute;
-        inset: 0;
-
-        backdrop-filter: brightness(1.125);
-        background: linear-gradient(to top right, transparent 45%, var(--tint) 120%);
-        opacity: 0.28;
-
-    }
-</style>
-
     @code {
-    [Parameter] public string IconUrl { get; set; } = string.Empty;
+    [Parameter] public string PortraitFolder { get; set; } = string.Empty;
 
     [Parameter] public int GuessesMade { get; set; }
 
     [Parameter] public bool IsGuessed { get; set; }
     [Parameter] public bool IsFailed { get; set; }
 
-    private string ImageUrl =>
-    $"/graphics/guessing/{IconUrl}/{GetImageName()}";
+    private string AltText => IsGuessed || IsFailed
+        ? "Portrait of today's character, revealed"
+        : "Blurred portrait of the mystery character. It sharpens with each guess";
 
-    private string GetImageName()
-    {
-        var name = GuessesMade switch
-        {
-            0 => "Head-blur-200.webp",
-            1 => "Head-blur-120.webp",
-            2 => "Head-blur-75.webp",
-            3 => "Head-blur-50.webp",
-            4 => "Head-blur-30.webp",
-            5 => "Head-blur-15.webp",
-            _ => "Head-blur-200.webp"
-        };
-
-        return IsGuessed || IsFailed ? "Head.webp" : name;
-    }
+    private string ImageUrl => IsGuessed || IsFailed
+        ? CharacterUrlHelper.GetPortraitSrc(PortraitFolder)
+        : CharacterUrlHelper.GetBlurredPortraitSrc(PortraitFolder, GuessesMade);
 }

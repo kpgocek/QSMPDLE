@@ -1,0 +1,10 @@
+h2,
+::deep h2 {
+    margin-top: 2.75rem;
+}
+
+.separator,
+::deep .separator {
+    color: var(--tint);
+    margin-inline: .75rem;
+}

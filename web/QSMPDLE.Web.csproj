@@ -4,6 +4,9 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
     <StaticWebAssetsEnabled>true</StaticWebAssetsEnabled>
+    <!-- Railpack restores with only this file present, so the SDK cannot see .razor files and would
+         skip the package that serves _framework/blazor.web.js; request it explicitly. -->
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
 	<TargetFramework>net10.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
@@ -14,15 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Tests\**" />
-    <Content Remove="Tests\**" />
-    <EmbeddedResource Remove="Tests\**" />
-    <None Remove="Tests\**" />
-  </ItemGroup>
-
-  <ItemGroup>
 	<!-- Blazor & UI-->
-	<PackageReference Include="Blazor.Bootstrap" Version="3.5.0" />
 	<PackageReference Include="Blazor.LocalStorage" Version="10.1.0" />
 
 	<!-- EF Core & PostgreSQL -->

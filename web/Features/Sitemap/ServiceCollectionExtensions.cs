@@ -15,13 +15,10 @@ public static class ServiceCollectionExtensions
     {
         endpoints.MapGet("/sitemap.xml",
             async (
-                HttpContext context,
                 ISitemapService sitemapService,
                 CancellationToken cancellationToken) =>
             {
-                var xml = await sitemapService.GenerateAsync(
-                    context,
-                    cancellationToken);
+                var xml = await sitemapService.GenerateAsync(cancellationToken);
 
                 return Results.Text(xml, "application/xml");
             });

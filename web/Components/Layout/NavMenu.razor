@@ -1,8 +1,9 @@
 @rendermode InteractiveServer
+@implements IDisposable
 @using MudBlazor
+@using Microsoft.AspNetCore.Components.Routing
 @using QSMPDLE.Web.Components.UX.Dialogs
 @inject NavigationManager Nav
-@inject IDialogService DialogService
 @inject QSMPDLE.Web.Features.Gameplay.Services.IDayService DayService
 
 <header class="topbar">
@@ -12,164 +13,93 @@
 
         <div class="mobile-menu">
             <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Size="Size.Large"
-                           OnClick="@ToggleMenu" aria-label="Toggle Menu" />
+                           OnClick="@ToggleMenu" aria-label="Toggle Menu"
+                           aria-expanded="@(isMenuOpen ? "true" : "false")" aria-controls="site-nav" />
         </div>
 
-        <nav class="links @MenuVisibilityClass">
-            <NavLink href="/" Match="NavLinkMatch.All">
-                Daily
-            </NavLink>
+        <nav id="site-nav" class="links @MenuVisibilityClass" aria-label="Main">
+            <div class="links-row">
+                <a href="/" class="@(IsClassic ? "active" : null)" aria-current="@(IsClassic ? "true" : null)">Classic</a>
 
-            <span class="separator">•</span>
+                <span class="separator">•</span>
 
-            <NavLink href="@ArchiveLink">
-                Archive
-            </NavLink>
+                <NavLink href="/profile">
+                    Profile
+                </NavLink>
+            </div>
 
-            <span class="separator">•</span>
+            @if (IsProfile)
+            {
+                <div class="links-row links-section">
+                    <NavLink href="/profile" Match="NavLinkMatch.All">
+                        Player
+                    </NavLink>
 
-            <NavLink href="/practice">
-                Practice
-            </NavLink>
+                    <span class="separator">•</span>
 
-            <span class="separator">•</span>
+                    <NavLink href="/profile/stats">
+                        Stats
+                    </NavLink>
 
-            <NavLink href="/how-to-play">
-                How to Play
-            </NavLink>
+                    <span class="separator">•</span>
 
-            <span class="separator">•</span>
+                    <NavLink href="/profile/settings">
+                        Settings
+                    </NavLink>
+                </div>
+            }
+            else
+            {
+                <div class="links-row links-section">
+                    <NavLink href="/" Match="NavLinkMatch.All">
+                        Daily
+                    </NavLink>
 
-            <button type="button" class="nav-profile-btn" @onclick="OpenProfile">
-                Player Stats
-            </button>
+                    <span class="separator">•</span>
+
+                    <NavLink href="@ArchiveLink">
+                        Archive
+                    </NavLink>
+
+                    <span class="separator">•</span>
+
+                    <NavLink href="/practice">
+                        Practice
+                    </NavLink>
+
+                    <span class="separator">•</span>
+
+                    <NavLink href="/how-to-play">
+                        How to Play
+                    </NavLink>
+                </div>
+            }
 
         </nav>
 
     </div>
 </header>
 
-<style>
-    .topbar {
-        display: block;
-        padding-top: 2rem;
-    }
-
-    .topbar-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .logo {
-        font-size: 5rem;
-        line-height: 1em;
-        color: var(--text);
-    }
-
-    .logo::before,
-    .logo::after {
-        content: 'III';
-        overflow: hidden;
-        user-select: none;
-    }
-
-    .logo::before {
-        background: linear-gradient(to right, transparent 20%, var(--ghost) 225%);
-        background-clip: text;
-        color: transparent;
-    }
-
-    .logo::after {
-        background: linear-gradient(to left, transparent 20%, var(--tint) 225%);
-        background-clip: text;
-        color: transparent;
-    }
-
-    .links {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        font-size: 1rem;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-    }
-
-    .links a {
-        color: var(--ghost);
-
-        display: flex;
-        align-items: center;
-        gap: .25em;
-
-        padding: .125rem .4rem;
-        border-radius: .25rem;
-        transition:
-            color 160ms ease,
-            background-color 160ms ease;
-    }
-
-    .links a:hover,
-    .links a.active {
-        color: var(--white);
-        background-color: var(--surface);
-    }
-
-    .show,
-    .hide {
-        display: flex;
-    }
-
-    .separator {
-        color: var(--ghost);
-        margin-inline: 0.75rem;
-    }
-
-    .nav-profile-btn {
-        background: none;
-        border: none;
-        font: inherit;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-        cursor: pointer;
-        color: var(--ghost);
-
-        display: flex;
-        align-items: center;
-        gap: .25em;
-
-        padding: .125rem .4rem;
-        border-radius: .25rem;
-        transition:
-            color 160ms ease,
-            background-color 160ms ease;
-    }
-
-    .nav-profile-btn:hover {
-        color: var(--white);
-        background-color: var(--surface);
-    }
-</style>
-
 @code {
     private string ArchiveLink => DayService.GetYesterdayArchiveLink();
+
+    private bool IsProfile => IsAt("/profile") || new Uri(Nav.Uri).AbsolutePath.StartsWith("/profile/", StringComparison.OrdinalIgnoreCase);
+
+    // Every other page, such as the changelog, shows the Classic links.
+    private bool IsClassic => !IsProfile;
+
+    private bool IsAt(string path) => new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').Equals(path, StringComparison.OrdinalIgnoreCase);
 
     private bool isMenuOpen = false;
 
     private string MenuVisibilityClass => isMenuOpen ? "show" : "hide";
 
-    private async Task OpenProfile()
-    {
-        var options = new DialogOptions
-        {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true,
-        };
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
-        await DialogService.ShowAsync<PlayerProfileDialog>("Player Profile", options);
-    }
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+
+    // The menu outlives enhanced navigation, so it must redraw when the section changes.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(StateHasChanged);
 
     private void ToggleMenu()
     {

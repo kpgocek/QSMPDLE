@@ -2,21 +2,28 @@
 
 @inject ICharacterStore CharacterStore
 
-
 <div class="selection-area">
     <div class="input-field">
+        @* readonly, not disabled, while a guess is in flight: disabling blurs the input and closes the phone keyboard. *@
         <input type="text" @bind="SearchText" @bind:event="oninput" @onkeydown="HandleKeyDown"
-               placeholder="Type in character's name" disabled="@IsDisabled" />
+               placeholder="Type in character's name" disabled="@IsGuessed" readonly="@IsBusy"
+               aria-busy="@(IsBusy ? "true" : "false")"
+               aria-label="Guess a character" autocomplete="off" spellcheck="false"
+               role="combobox" aria-autocomplete="list" aria-controls="character-suggestions"
+               aria-expanded="@(HasSuggestions ? "true" : "false")"
+               aria-activedescendant="@(HasSuggestions ? $"character-suggestion-{ActiveSuggestionIndex}" : null)" />
     </div>
 
-    @if (!IsDisabled && Suggestions.Any())
+    @if (HasSuggestions)
     {
-        <div class="suggestions">
+        <div id="character-suggestions" class="suggestions" role="listbox" aria-label="Matching characters">
             @foreach (var item in Suggestions.Select((m, i) => new { Character = m, Index = i }))
             {
-                <button type="button" class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
+                <button type="button" id="character-suggestion-@item.Index" role="option" tabindex="-1"
+                        aria-selected="@(item.Index == ActiveSuggestionIndex ? "true" : "false")"
+                        class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
                         @onclick="() => SelectAndGuess(item.Character)">
-                    <img src="@CharacterImageHelper.GetHeadSrc(item.Character)" alt="@item.Character.Name" loading="lazy" decoding="async" />
+                    <img src="@CharacterUrlHelper.GetHeadSrc(item.Character)" alt="" loading="lazy" decoding="async" />
                     <div class="names">
                         <span>@item.Character.Name</span>
                     </div>
@@ -24,99 +31,13 @@
             }
         </div>
     }
+    else if (ShowsEmptyState)
+    {
+        <p class="suggestions no-match" role="status">
+            @(HasGuessedEveryMatch ? "You've already guessed everyone matching that name" : "No character matches that name")
+        </p>
+    }
 </div>
-
-<style>
-    .selection-area {
-        position: relative;
-        width: min(26rem, calc(100vw - 2rem));
-    }
-
-    .input-field {
-        user-select: none;
-    }
-
-    .input-field input {
-        padding: .25rem .375rem;
-
-        width: 100%;
-
-
-        background: var(--black);
-
-        border: 0.125rem solid var(--primary-black);
-        box-shadow: var(--focus-ring);
-
-        color: var(--white);
-
-        font-size: 1.375rem;
-    }
-
-    .input-field input:focus {
-        border: 0.125em solid var(--primary);
-        box-shadow: var(--focus-ring);
-        outline: none;
-    }
-
-    .suggestions {
-        width: 100%;
-        position: absolute;
-        top: calc(100%);
-
-        display: flex;
-        flex-direction: column;
-
-        z-index: 500;
-
-        background: var(--black);
-        border: .0625rem solid var(--line-strong);
-
-        box-shadow: var(--soft-shadow);
-    }
-
-    .suggestion {
-        background: var(--primary-black);
-
-        border: none;
-
-        transition:
-            background-color 160ms ease,
-            color 160ms ease,
-            transform 160ms ease;
-
-        padding: .5rem .75rem;
-
-        display: flex;
-        align-items: center;
-        gap: .75rem;
-
-        justify-content: start;
-
-        border: none;
-        cursor: pointer;
-
-    }
-
-    .suggestion img {
-        width: 2rem;
-        height: 2rem;
-
-        flex-shrink: 0;
-
-        image-rendering: pixelated;
-    }
-
-    .names span {
-        font-weight: 700;
-    }
-
-    .suggestion:hover,
-    .suggestion.active {
-        border-color: var(--tint);
-        background-color: var(--surface);
-        transform: translateX(.125rem);
-    }
-</style>
 
 @code {
     [Parameter]
@@ -132,22 +53,47 @@
 
     [Parameter] public bool IsBusy { get; set; }
 
+    [Parameter] public IReadOnlyCollection<int> GuessedIds { get; set; } = [];
+
+    /// <summary>The game's date; only characters released by then are offered.</summary>
+    [Parameter, EditorRequired] public DateOnly AvailableOn { get; set; }
+
+    /// <summary>Always offered: a release date moved past a played day must not make that day unwinnable.</summary>
+    [Parameter, EditorRequired] public int AnswerId { get; set; }
+
+    private (DateOnly, int)? _loadedFor;
+
     private string SearchText = "";
 
     private int ActiveSuggestionIndex = 0;
 
-    private bool IsDisabled => IsGuessed || IsBusy;
+    private bool IsDismissed;
+
+    private bool IsListOpen => !IsGuessed && !IsBusy && !IsDismissed && !string.IsNullOrWhiteSpace(SearchText);
+
+    private bool HasSuggestions => IsListOpen && Suggestions.Any();
+
+    private bool ShowsEmptyState => IsListOpen && !Suggestions.Any();
+
+    private bool HasGuessedEveryMatch => Matches.Any();
 
     private IReadOnlyList<CharacterLookup> Characters = [];
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        Characters = await CharacterStore.GetLookupsAsync();
+        // A circuit can outlive midnight or switch games, so the list follows the game's date.
+        if (_loadedFor == (AvailableOn, AnswerId))
+            return;
+
+        _loadedFor = (AvailableOn, AnswerId);
+        Characters = await CharacterStore.GetLookupsAvailableOnAsync(AvailableOn);
+        if (Characters.All(character => character.Id != AnswerId) && await CharacterStore.GetLookupAsync(AnswerId) is { } answer)
+            Characters = [.. Characters, answer];
     }
 
     private async Task SelectAndGuess(CharacterLookup? character)
     {
-        if (character is null)
+        if (character is null || IsBusy)
             return;
 
         SearchText = "";
@@ -159,7 +105,18 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        var suggestions = Suggestions.ToList();
+        // First Escape closes the list and keeps the text; a second one clears it.
+        if (e.Key == "Escape")
+        {
+            if (IsListOpen)
+                IsDismissed = true;
+            else
+                SearchText = "";
+            return;
+        }
+
+        IsDismissed = false;
+        var suggestions = HasSuggestions ? Suggestions.ToList() : [];
 
         if (suggestions.Count == 0)
             return;
@@ -184,11 +141,13 @@
         }
     }
 
-    private IEnumerable<CharacterLookup> Suggestions =>
+    private IEnumerable<CharacterLookup> Matches =>
     string.IsNullOrWhiteSpace(SearchText)
         ? []
         : Characters
             .Where(p =>
-                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
-    .Take(5);
+                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<CharacterLookup> Suggestions =>
+        Matches.Where(p => !GuessedIds.Contains(p.Id)).Take(5);
 }

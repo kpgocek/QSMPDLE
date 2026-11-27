@@ -5,27 +5,42 @@
     <span>@ChildContent</span>
     @if (Icon is not null)
     {
-        <MudIcon Icon="@Icon" Size="Size.Small" Class="guess-chip-icon" />
+        <MudIcon Icon="@Icon" Size="Size.Small" Class="guess-chip-icon" aria-hidden="true" />
     }
+    <span class="visually-hidden">(@Label)</span>
 </MudChip>
-
-<style>
-    .guess-chip-icon {
-        margin-inline-start: .35em;
-    }
-</style>
 
 @code {
     [Parameter] public ComparisonResult Result { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
-    private string? Icon => Result switch
+    private string? Icon => IconFor(Result);
+
+    // Every result gets a shape, not just a colour, so red/green colour-blind players can read the board.
+    public static string? IconFor(ComparisonResult result) => result switch
     {
+        ComparisonResult.Correct => Icons.Material.Filled.Check,
+        ComparisonResult.Partial => Icons.Material.Filled.Contrast,
+        ComparisonResult.Wrong => Icons.Material.Filled.Close,
         ComparisonResult.Earlier => Icons.Material.Filled.ArrowBack,
         ComparisonResult.Later => Icons.Material.Filled.ArrowForward,
         ComparisonResult.More => Icons.Material.Filled.ArrowUpward,
         ComparisonResult.Less => Icons.Material.Filled.ArrowDownward,
         _ => null
+    };
+
+    private string Label => Describe(Result);
+
+    public static string Describe(ComparisonResult result) => result switch
+    {
+        ComparisonResult.Correct => "correct",
+        ComparisonResult.Partial => "partial match",
+        ComparisonResult.Wrong => "wrong",
+        ComparisonResult.Earlier => "answer joined earlier",
+        ComparisonResult.Later => "answer joined later",
+        ComparisonResult.More => "answer has more",
+        ComparisonResult.Less => "answer has fewer",
+        _ => "unknown"
     };
 }

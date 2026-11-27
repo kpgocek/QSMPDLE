@@ -10,11 +10,11 @@
     </h2>
 
     <p class="info">
-        Last updated: June 2026
+        Last updated: November 2026
     </p>
 
-    <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Class="mb-6">
-        <strong>TL;DR:</strong> No accounts. No ads. QSMPDLE stores local progress in your browser and anonymous gameplay statistics on the server.
+    <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mb-6">
+        <strong>TL;DR:</strong> No accounts. No ads. Minimal tracking. QSMPDLE stores local progress in your browser and gameplay records under a random id on the server.
     </MudAlert>
 
     <section class="mb-5">
@@ -36,7 +36,8 @@
         <p>
             The app does generate a random player id in your browser so daily streaks,
             game restoration, and statistics can work. That id is not connected to a
-            name, email address, account, or login.
+            name, email address, account, or login. It does link games played in the same
+            browser, so the records are pseudonymous rather than fully anonymous.
         </p>
 
         <p>
@@ -59,8 +60,8 @@
             <li>current daily, archive, or practice game state;</li>
             <li>guesses already made in an unfinished game;</li>
             <li>whether the win/loss popup was already seen;</li>
-            <li>a random player id;</li>
-            <li>daily statistics such as played games, wins, streaks, and guess distribution.</li>
+            <li>your settings from the Profile page, including the name and avatar you choose, which never leave your browser;</li>
+            <li>a random player id.</li>
         </ul>
 
         <p class="mt-3">
@@ -75,7 +76,7 @@
 
         <p>
             The server receives normal technical requests needed to display the website.
-            It also stores anonymous gameplay records used for statistics and game reliability.
+            It also stores gameplay records used for statistics and game reliability.
         </p>
 
         <p>
@@ -86,7 +87,8 @@
             <li>the random player id generated in your browser;</li>
             <li>a random game id;</li>
             <li>game mode, daily number, and target character id;</li>
-            <li>guess character ids and guess order;</li>
+            <li>guess character ids, guess order, and the time of each guess;</li>
+            <li>which version of the game rules was played;</li>
             <li>game start and finish timestamps;</li>
             <li>whether the game was won and how many guesses it took.</li>
         </ul>
@@ -104,12 +106,22 @@
 
         <p>
             Statistics are stored so the app can count games played and won exactly once,
-            calculate streaks and guess distributions, show practice stats, and build
-            aggregate global stats.
+            calculate streaks and guess distributions, show practice stats, and show
+            how many games have been played and by how many players.
         </p>
 
         <p>
-            These records are intentionally minimal and gameplay-focused.
+            The records are also analysed to see how difficult puzzles and characters are,
+            how the game versions compare, and how often a browser comes back to play
+            (for example, the next day or a week later). Only totals matter: nobody is profiled, and
+            the records are not shared or sold.
+        </p>
+
+        <p>
+            These records are intentionally minimal and gameplay-focused. They contain no
+            IP address, location, or device information, and are kept for as long as QSMPDLE runs.
+            Clearing your browser data removes the id from your browser, which disconnects
+            you from them.
         </p>
     </section>
 
@@ -186,21 +198,3 @@
 
 </WebPage>
 
-<style>
-    .privacy-card p {
-        line-height: 1.8;
-        opacity: 0.95;
-    }
-
-    .story-box {
-        padding: 2rem;
-        border-radius: .75rem;
-        background: var(--panel);
-        border: .125rem solid var(--panel-edge);
-        box-shadow: inset 0 0 0 .0625rem var(--black);
-    }
-
-    .story-box p:last-child {
-        margin-bottom: 0;
-    }
-</style>

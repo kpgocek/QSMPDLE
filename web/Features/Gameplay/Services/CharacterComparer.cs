@@ -7,7 +7,9 @@ public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterCompa
 {
     public async Task<GuessResult> CompareAsync(
         int targetId,
-        int guessedId, CancellationToken cancellationToken = default)
+        int guessedId,
+        IReadOnlySet<ClueGroup> activeClues,
+        CancellationToken cancellationToken = default)
     {
         var target = await CharacterStore.GetCharacterAsync(targetId, cancellationToken) ?? throw new ArgumentException("Guessed Id is not connected to character.", nameof(targetId));
         var guessed = await CharacterStore.GetCharacterAsync(guessedId, cancellationToken) ?? throw new ArgumentException("Guessed Id is not connected to character.", nameof(guessedId));
@@ -23,8 +25,13 @@ public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterCompa
             Joined = CompareJoinDays(target, guessed),
             Affiliation = CompareAffiliations(target, guessed),
             Species = CompareSpecies(target, guessed),
+            QPhone = activeClues.Contains(ClueGroup.QPhone) ? CompareFlag(target.HasQPhone, guessed.HasQPhone) : null,
+            Award2026 = activeClues.Contains(ClueGroup.Award2026) ? CompareFlag(target.WonAward2026, guessed.WonAward2026) : null,
         };
     }
+
+    private static ComparisonResult CompareFlag(bool target, bool guessed) =>
+        target == guessed ? ComparisonResult.Correct : ComparisonResult.Wrong;
 
     private static ComparisonResult CompareSpecies(Character target, Character guessed)
     {
@@ -65,8 +72,6 @@ public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterCompa
             return ComparisonResult.Correct;
 
         // TARGET Has Affiliations
-        if (targetAffiliations.IsSubsetOf(guessedAffiliations))
-            return ComparisonResult.Partial;
         if (targetAffiliations.Overlaps(guessedAffiliations))
             return ComparisonResult.Partial;
 
@@ -88,8 +93,8 @@ public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterCompa
 
     private static ComparisonResult CompareLanguages(Character target, Character guessed)
     {
-        var targetNumber = target.Languages;
-        var guessedNumber = guessed.Languages;
+        var targetNumber = target.LanguageCount;
+        var guessedNumber = guessed.LanguageCount;
 
         // LIMIT ON LANGUAGES -> 1, 2, 3, 4+
         var isTargetNumberOverThree = targetNumber > 3;
@@ -122,7 +127,7 @@ public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterCompa
         if (guessedPronouns.Contains("Any"))
             return ComparisonResult.Partial;
 
-        if (targetPronouns.IsSubsetOf(guessedPronouns))
+        if (targetPronouns.SetEquals(guessedPronouns))
             return ComparisonResult.Correct;
         if (targetPronouns.Overlaps(guessedPronouns))
             return ComparisonResult.Partial;

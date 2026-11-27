@@ -1,0 +1,14 @@
+.first-guess-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+
+    /* Inset to line up with the tiles inside the board's rows. */
+    padding: .25rem .5rem;
+
+    color: var(--text-muted);
+    font-size: .875rem;
+
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
+}
