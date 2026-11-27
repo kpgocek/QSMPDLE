@@ -12,7 +12,7 @@ QSMPDLE aims to be playable by as many people as possible. This page describes w
 | Focus visibility | ⚠️ Partial. Links have their focus outline removed. |
 | Screen readers | ❌ Limited. Clues and results are not announced in a usable way. |
 | Colour and contrast | ⚠️ Partial. Clues use colour plus text, but several colours have low contrast. |
-| Motion | ✅ Supported. Animations respect the system "reduce motion" setting. |
+| Motion | ✅ Supported. Animations follow the system "reduce motion" setting, or Profile → Settings → Motion overrides it. |
 | Zoom and small screens | ✅ Supported. Layout switches to cards at narrow widths or high zoom. |
 | Accounts, timers, CAPTCHAs | ✅ None. There are no time limits or sign-in steps. |
 
