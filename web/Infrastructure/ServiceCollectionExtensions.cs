@@ -11,6 +11,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGameStateStore, LocalStorageGameStateStore>();
         services.AddScoped<LocalStoragePlayerStatsStore>();
         services.AddScoped<IGameStatsStore, DatabaseGameStatsStore>();
+        services.AddScoped<IHiLoScoreStore, DatabaseHiLoScoreStore>();
 
         return services;
     }

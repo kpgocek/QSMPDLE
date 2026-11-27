@@ -71,7 +71,7 @@ public sealed class BinaryClueTests
         LanguageCount = 1,
         Species = ["Human"],
         JoinDayNumber = 1,
-        PhoneNumbers = hasQPhone ? [1234] : [],
+        PhoneNumber = hasQPhone ? 1234 : null,
         WonAward2026 = wonAward,
     };
 }

@@ -78,6 +78,23 @@ public sealed class CachedGlobalStatsServiceDatabaseTests : IAsyncLifetime
         totals.Should().Be(new GlobalTotals(FinishedGames: 2, Players: 2), "an unfinished board, or one with an unknown answer, is not decided");
     }
 
+    [Fact]
+    public async Task RecordScoreAsync_LowerScore_NeverReplacesTheBest()
+    {
+        var scores = new DatabaseHiLoScoreStore(new TestDbContextFactory(options));
+        var player = Guid.NewGuid();
+
+        await scores.RecordScoreAsync(player, 9);
+        await scores.RecordScoreAsync(player, 4);
+        await scores.RecordScoreAsync(Guid.NewGuid(), 6);
+
+        (await scores.GetBestScoreAsync(player)).Should().Be(9, "a lower score must not replace the best");
+        (await scores.GetBestScoreAsync(Guid.NewGuid())).Should().Be(0);
+
+        await scores.RecordScoreAsync(player, 10);
+        (await scores.GetBestScoreAsync(player)).Should().Be(10);
+    }
+
     private static GameSession Guessed(int target, params int[] guessedCharacterIds)
     {
         var session = Session(Guid.NewGuid(), SessionCategory.CanonicalPuzzle, finished: false);
