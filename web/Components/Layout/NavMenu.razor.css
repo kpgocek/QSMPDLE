@@ -45,11 +45,32 @@
 .links,
 ::deep .links {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
+    gap: .5rem;
     font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: .08em;
+}
+
+.links-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* The section's own links sit in a contained bar, so they read as a level below the top menu. */
+.links-section {
+    font-size: .875em;
+    gap: .25rem;
+    padding: .25rem;
+    border: .0625rem solid var(--line-strong);
+    border-radius: .5rem;
+    background: var(--surface);
+}
+
+.links-section .separator {
+    display: none;
 }
 
 .links a,
@@ -74,8 +95,36 @@
 .links a.active,
 ::deep .links a.active,
 .links ::deep a.active {
-    color: var(--white);
+    color: var(--text);
     background-color: var(--surface);
+}
+
+.links-section a,
+.links-section ::deep a {
+    padding: .25rem .75rem;
+}
+
+.links-section a:not(.active):hover,
+.links-section ::deep a:not(.active):hover,
+.links-section .nav-profile-btn:hover {
+    background-color: var(--panel);
+}
+
+.links-section a.active,
+.links-section ::deep a.active {
+    color: var(--black);
+    background-color: var(--primary);
+}
+
+/* Small enough to sit on the link's baseline without changing the row's height. */
+.nav-new {
+    padding: .0625rem .3rem;
+    border-radius: .25rem;
+    background: var(--secondary);
+    color: var(--black);
+    font-size: .625em;
+    font-weight: 800;
+    line-height: 1.2;
 }
 
 .show,
@@ -114,7 +163,7 @@
 
 .nav-profile-btn:hover,
 ::deep .nav-profile-btn:hover {
-    color: var(--white);
+    color: var(--text);
     background-color: var(--surface);
 }
 
@@ -130,8 +179,12 @@
 
     .links {
         width: 100%;
-        flex-direction: column;
         font-size: clamp(1.5rem, 6.4vw, 5rem);
+    }
+
+    .links-row {
+        width: 100%;
+        flex-direction: column;
     }
 
     .mobile-menu {

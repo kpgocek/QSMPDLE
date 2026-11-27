@@ -1,0 +1,463 @@
+h2,
+::deep h2 {
+    margin-top: 2.75rem;
+}
+
+/* The portraits give up height on short screens, so the answers stay in view. --hilo-rest is everything
+   above and below them, from the top of the page to the bottom of the buttons. */
+.hilo {
+    --hilo-width: min(28rem, calc(100vw - 2rem));
+    --hilo-gap: 1rem;
+    --hilo-rest: 34rem;
+    --hilo-portrait: min(calc((var(--hilo-width) - 1rem) / 2), max(6rem, calc(100svh - var(--hilo-rest))));
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: .5rem;
+}
+
+.hilo-score,
+.hilo-rules {
+    max-width: var(--hilo-width);
+    margin: 0;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.hilo-score strong {
+    display: inline-block;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Each point lands, the way the result headline does. */
+.hilo-scored {
+    animation: result-stamp 420ms cubic-bezier(.16, 1, .3, 1) 630ms backwards;
+}
+
+/* Lights once per run, then stays. */
+.hilo-new-best {
+    display: inline-block;
+    margin-left: .25rem;
+    color: var(--secondary);
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    animation: result-stamp 420ms cubic-bezier(.16, 1, .3, 1) 630ms backwards;
+}
+
+/* The round's heading and pair are laid out as children of .hilo. */
+.hilo-round {
+    display: contents;
+}
+
+/* Reading order inside the pair: face and name, then the category with its number. */
+.hilo-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--hilo-gap);
+    width: var(--hilo-width);
+    margin-top: .5rem;
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
+}
+
+/* Placed explicitly, so the covered card can share the first cell without pushing the pair along. */
+.hilo-pair > :first-child,
+.hilo-covered {
+    grid-area: 1 / 1;
+}
+
+.hilo-pair > :nth-child(2) {
+    grid-area: 1 / 2;
+}
+
+/* The portrait just answered slides from the right over the last known one, uncovering the next character
+   already waiting underneath, while the names and values cross-fade in place. */
+.hilo-pair.carried {
+    animation: none;
+}
+
+.hilo-pair.carried > :first-child {
+    position: relative;
+    z-index: 1;
+}
+
+/* From the centre of the right cell to the centre of the left one. */
+.hilo-pair.carried > :first-child img {
+    animation: hilo-carry 420ms cubic-bezier(.16, 1, .3, 1);
+}
+
+@keyframes hilo-carry {
+    from {
+        transform: translateX(calc((var(--hilo-width) + var(--hilo-gap)) / 2));
+    }
+}
+
+.hilo-pair.carried > :first-child :is(.hilo-name, .hilo-value) {
+    animation: overlay-enter 240ms ease-out 180ms backwards;
+}
+
+/* The new character's name and question come in only once its portrait has mostly resolved. */
+.hilo-pair.carried > :nth-child(2) :is(.hilo-name, .hilo-value) {
+    animation: overlay-enter 300ms ease-out 600ms backwards;
+}
+
+.hilo-covered :is(.hilo-name, .hilo-value) {
+    animation: hilo-fade-out 180ms ease-in forwards;
+}
+
+@keyframes hilo-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+/* Dims as it is covered, so the slide reads as one portrait passing over another. */
+.hilo-covered img {
+    animation: hilo-dim 420ms cubic-bezier(.16, 1, .3, 1) forwards;
+}
+
+@keyframes hilo-dim {
+    to {
+        filter: brightness(.5);
+    }
+}
+
+/* The uncovered character emerges slowly from the dark as the slide clears it, sharpening the way the daily
+   portrait does, then starts breathing. */
+.hilo-pair.carried.asking > :nth-child(2) img {
+    animation: hilo-focus 800ms cubic-bezier(.2, .8, .2, 1) 120ms backwards, soft-pulse 4s ease-in-out 920ms infinite;
+}
+
+@keyframes hilo-focus {
+    from {
+        opacity: .2;
+        filter: blur(.75rem) brightness(.4);
+    }
+
+    40% {
+        filter: blur(.375rem) brightness(.6);
+    }
+}
+
+/* Gone once the portrait sliding over it lands. */
+.hilo-covered {
+    align-self: start;
+    animation: hilo-covered 420ms step-end forwards;
+}
+
+@keyframes hilo-covered {
+    to {
+        visibility: hidden;
+    }
+}
+
+/* Reduced motion: nothing travels, the new pair cross-fades over the last one. !important beats the
+   site-wide rule in app.css that cuts every animation to 1ms. */
+:root[data-motion="reduced"] .hilo-pair.carried > :is(:first-child, :nth-child(2)) {
+    animation: hilo-fade-in 300ms ease-out !important;
+}
+
+:root[data-motion="reduced"] .hilo-covered {
+    animation: hilo-fade-out 300ms ease-out forwards !important;
+}
+
+@keyframes hilo-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+.hilo-character {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .25rem;
+    text-align: center;
+}
+
+.hilo-character img {
+    width: var(--hilo-portrait);
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: cover;
+    image-rendering: pixelated;
+    border: .125rem solid var(--panel-edge);
+    box-shadow: inset 0 0 0 .0625rem var(--background);
+    transition: filter 420ms cubic-bezier(.2, .8, .2, 1);
+}
+
+/* The character in question breathes like the daily portrait until it's answered, then holds its edge. */
+.hilo-pair.asking > :nth-child(2) img {
+    animation: soft-pulse 4s ease-in-out infinite;
+}
+
+/* The lights go down on the pair once the red tile has turned, so the result is the only lit thing left. */
+.hilo-pair.over img {
+    filter: grayscale(.8) brightness(.65);
+    transition-delay: 630ms;
+}
+
+.hilo-name {
+    margin-top: .25rem;
+    font-size: clamp(1.0625rem, 4.8vw, 1.25rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+/* The one place the stat is named: both values below are of it. */
+.hilo-stat {
+    max-width: var(--hilo-width);
+    margin: 1rem 0 0;
+    padding: .125rem .625rem;
+    border-radius: .25rem;
+    color: var(--text);
+    font-size: .9375rem;
+    line-height: 1.4;
+    letter-spacing: .08em;
+    text-align: center;
+    text-transform: uppercase;
+    animation: hilo-stat-highlight 1.2s ease-out, hilo-stat-pop 420ms cubic-bezier(.16, 1, .3, 1);
+}
+
+/* Holds the colour long enough to be read before it fades. */
+@keyframes hilo-stat-highlight {
+    0%, 60% {
+        background-color: var(--primary);
+        color: var(--black);
+    }
+}
+
+@keyframes hilo-stat-pop {
+    from {
+        transform: scale(.8);
+    }
+}
+
+/* Reduced motion drops the pop but keeps the colour, which marks the category and moves nothing. */
+:root[data-motion="reduced"] .hilo-stat {
+    animation: hilo-stat-highlight 1.2s ease-out;
+    animation-duration: 1.2s !important;
+}
+
+.hilo-value {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+
+    width: 100%;
+    min-height: 2.75rem;
+    margin-top: auto;
+    padding: .25rem .625rem;
+    border-radius: .75rem;
+    background: var(--surface-muted);
+
+    font-size: 1.125rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+/* A beat after the answer, the "?" plate turns over into a result tile. */
+.hilo-reveal {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .25rem .625rem;
+    border-radius: inherit;
+    animation: reveal-chip 380ms cubic-bezier(.16, 1, .3, 1) 250ms backwards;
+}
+
+.success {
+    background: var(--correct);
+    color: var(--black);
+}
+
+.failure {
+    background: var(--wrong);
+    color: var(--white);
+}
+
+/* The answers, or the end of the run, as wide as the pair. */
+.hilo-ask {
+    display: grid;
+    gap: .5rem;
+    width: var(--hilo-width);
+    margin-top: 1rem;
+}
+
+/* Three equal columns, so an answer keeps its place whatever the words are. */
+.hilo-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .5rem;
+}
+
+.hilo-buttons ::deep .mud-button-root {
+    min-width: 0;
+    min-height: 3rem;
+    padding-inline: .25rem;
+    transition: opacity 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+/* Waiting for the next round: still focusable, so the pressed button keeps focus. */
+.hilo-buttons ::deep :is(.hilo-waiting, .hilo-chosen) {
+    cursor: default;
+}
+
+.hilo-buttons ::deep .hilo-waiting {
+    opacity: .45;
+}
+
+/* The run-over section takes the buttons' place once the red tile has turned. */
+.hilo-leaving,
+.hilo-over {
+    grid-area: 1 / 1;
+}
+
+.hilo-leaving {
+    align-self: start;
+    animation: hilo-fade-out 180ms ease-in 450ms forwards;
+}
+
+/* Comes in once the red tile has turned over. */
+.hilo-over {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    text-align: center;
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1) 630ms backwards;
+}
+
+.hilo-over:focus {
+    outline: none;
+}
+
+.hilo-over-title {
+    margin: 0;
+    color: var(--wrong);
+    font-family: "Bungee", sans-serif;
+    font-size: clamp(2.5rem, 11vw, 3.5rem);
+    font-weight: 400;
+    line-height: 1;
+    animation: result-stamp 420ms cubic-bezier(.16, 1, .3, 1) 630ms backwards;
+}
+
+.hilo-over p {
+    margin: 0;
+    text-wrap: balance;
+}
+
+.hilo-over strong {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.hilo-over-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+    width: 100%;
+    margin-top: .5rem;
+}
+
+.hilo-over-actions ::deep .mud-button-root {
+    min-height: 3rem;
+}
+
+.hilo-rules {
+    margin-top: 1rem;
+    font-size: .875rem;
+    text-wrap: balance;
+}
+
+/* As tall as the score, the pair and the question, so the rules under it do not jump. */
+.hilo-loading {
+    width: var(--hilo-width);
+    height: calc(var(--hilo-portrait) + 17.75rem);
+}
+
+.hilo-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin: 0;
+    text-align: center;
+}
+
+/* The logo is taller here. */
+@media (min-width: 30rem) {
+    .hilo {
+        --hilo-rest: 37rem;
+    }
+}
+
+/* A phone on its side, or a zoomed desktop: the pair and its answers share one screen next to each other. */
+@media (max-height: 30rem) and (min-width: 40rem) {
+    .hilo {
+        --hilo-width: min(28rem, calc(50vw - 2rem));
+        --hilo-rest: 10rem;
+
+        display: grid;
+        grid-template-columns: auto auto;
+        grid-template-areas:
+            "score score"
+            "stat ask"
+            "pair ask"
+            "rules rules";
+        justify-content: center;
+        align-items: center;
+        column-gap: 2rem;
+    }
+
+    .hilo-stat {
+        grid-area: stat;
+        justify-self: center;
+    }
+
+    .hilo-pair {
+        grid-area: pair;
+    }
+
+    .hilo-ask {
+        grid-area: ask;
+    }
+
+    .hilo-score,
+    .hilo-rules,
+    .hilo-loading,
+    .hilo-error {
+        grid-column: 1 / -1;
+        justify-self: center;
+    }
+
+    .hilo-loading {
+        height: calc(var(--hilo-portrait) + 9rem);
+    }
+}
+
+/* Text enlarged to 200% on a phone. */
+@media (max-width: 17rem) {
+    .hilo {
+        --hilo-gap: .5rem;
+    }
+
+    .hilo-value {
+        padding-inline: 0;
+        font-size: .875rem;
+    }
+
+    .hilo-buttons,
+    .hilo-over-actions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

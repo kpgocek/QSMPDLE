@@ -1,5 +1,7 @@
 @rendermode InteractiveServer
+@implements IDisposable
 @using MudBlazor
+@using Microsoft.AspNetCore.Components.Routing
 @using QSMPDLE.Web.Components.UX.Dialogs
 @inject NavigationManager Nav
 @inject IDialogService DialogService
@@ -17,33 +19,57 @@
         </div>
 
         <nav id="site-nav" class="links @MenuVisibilityClass" aria-label="Main">
-            <NavLink href="/" Match="NavLinkMatch.All">
-                Daily
-            </NavLink>
+            <div class="links-row">
+                <a href="/" class="@(IsClassic ? "active" : null)" aria-current="@(IsClassic ? "true" : null)">Classic</a>
 
-            <span class="separator">•</span>
+                <span class="separator">•</span>
 
-            <NavLink href="@ArchiveLink">
-                Archive
-            </NavLink>
+                <NavLink href="/hi-lo">
+                    Hi-Lo <span class="nav-new">New</span>
+                </NavLink>
+            </div>
 
-            <span class="separator">•</span>
+            @if (IsHiLo)
+            {
+                <div class="links-row links-section">
+                    @* A dialog, because leaving the page would end the run. *@
+                    <button type="button" class="nav-profile-btn" @onclick="OpenHiLoRules">
+                        How to Play
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="links-row links-section">
+                    <NavLink href="/" Match="NavLinkMatch.All">
+                        Daily
+                    </NavLink>
 
-            <NavLink href="/practice">
-                Practice
-            </NavLink>
+                    <span class="separator">•</span>
 
-            <span class="separator">•</span>
+                    <NavLink href="@ArchiveLink">
+                        Archive
+                    </NavLink>
 
-            <NavLink href="/how-to-play">
-                How to Play
-            </NavLink>
+                    <span class="separator">•</span>
 
-            <span class="separator">•</span>
+                    <NavLink href="/practice">
+                        Practice
+                    </NavLink>
 
-            <button type="button" class="nav-profile-btn" @onclick="OpenProfile">
-                Player Stats
-            </button>
+                    <span class="separator">•</span>
+
+                    <NavLink href="/how-to-play">
+                        How to Play
+                    </NavLink>
+
+                    <span class="separator">•</span>
+
+                    <button type="button" class="nav-profile-btn" @onclick="OpenProfile">
+                        Player Stats
+                    </button>
+                </div>
+            }
 
         </nav>
 
@@ -53,21 +79,34 @@
 @code {
     private string ArchiveLink => DayService.GetYesterdayArchiveLink();
 
+    private bool IsHiLo => IsAt("/hi-lo");
+
+    // Every other page, such as the changelog, shows the Classic links.
+    private bool IsClassic => !IsHiLo;
+
+    private bool IsAt(string path) => new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').Equals(path, StringComparison.OrdinalIgnoreCase);
+
     private bool isMenuOpen = false;
 
     private string MenuVisibilityClass => isMenuOpen ? "show" : "hide";
 
-    private async Task OpenProfile()
-    {
-        var options = new DialogOptions
-        {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true,
-        };
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
-        await DialogService.ShowAsync<PlayerProfileDialog>("Player Profile", options);
-    }
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+
+    // The menu outlives enhanced navigation, so it must redraw when the section changes.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(StateHasChanged);
+
+    private static readonly DialogOptions WideDialog = new()
+    {
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseOnEscapeKey = true,
+    };
+
+    private Task OpenProfile() => DialogService.ShowAsync<PlayerProfileDialog>("Player Profile", WideDialog);
+
+    private Task OpenHiLoRules() => DialogService.ShowAsync<HiLoRulesDialog>("How to Play Hi-Lo", WideDialog);
 
     private void ToggleMenu()
     {
