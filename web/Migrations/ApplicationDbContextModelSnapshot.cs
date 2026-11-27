@@ -69,10 +69,9 @@ namespace QSMPDLE.Web.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("name");
 
-                    b.PrimitiveCollection<List<int>>("PhoneNumbers")
-                        .IsRequired()
-                        .HasColumnType("integer[]")
-                        .HasColumnName("phone_numbers");
+                    b.Property<int?>("PhoneNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("phone_number");
 
                     b.Property<Guid>("PortraitId")
                         .HasColumnType("uuid")
@@ -136,6 +135,20 @@ namespace QSMPDLE.Web.Migrations
                         .IsUnique();
 
                     b.ToTable("DailyGames");
+                });
+
+            modelBuilder.Entity("QSMPDLE.Web.Features.HiLo.Models.HiLoScore", b =>
+                {
+                    b.Property<Guid>("PlayerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BestScore")
+                        .HasColumnType("integer");
+
+                    b.HasKey("PlayerId");
+
+                    b.ToTable("HiLoScores");
                 });
 
             modelBuilder.Entity("QSMPDLE.Web.Features.Statistics.Models.GameGuess", b =>

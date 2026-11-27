@@ -236,6 +236,20 @@ internal sealed class InMemoryCharacterStore : ICharacterStore
     }
 }
 
+internal sealed class InMemoryHiLoScoreStore : IHiLoScoreStore
+{
+    private readonly Dictionary<Guid, int> _scores = [];
+
+    public Task<int> GetBestScoreAsync(Guid playerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_scores.GetValueOrDefault(playerId));
+
+    public Task RecordScoreAsync(Guid playerId, int score, CancellationToken cancellationToken = default)
+    {
+        _scores[playerId] = Math.Max(score, _scores.GetValueOrDefault(playerId));
+        return Task.CompletedTask;
+    }
+}
+
 internal static class TestSessions
 {
     /// <summary>Arranges a stored guess directly, whatever state the session is in.</summary>

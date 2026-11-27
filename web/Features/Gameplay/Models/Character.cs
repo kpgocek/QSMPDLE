@@ -50,8 +50,8 @@ public sealed class Character
     [MaxLength(32)]
     public string? MinecraftUsername { get; init; }
 
-    [Column("phone_numbers")]
-    public List<int> PhoneNumbers { get; init; } = [];
+    [Column("phone_number")]
+    public int? PhoneNumber { get; init; }
 
     [Column("youtube_subscribers")]
     public int? YouTubeSubscribers { get; init; }
@@ -74,5 +74,5 @@ public sealed class Character
 
     [NotMapped]
     [JsonIgnore]
-    public bool HasQPhone => PhoneNumbers.Count > 0;
+    public bool HasQPhone => PhoneNumber is not null;
 }

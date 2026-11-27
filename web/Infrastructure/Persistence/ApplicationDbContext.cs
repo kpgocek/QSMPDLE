@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using QSMPDLE.Web.Features.Gameplay.Models;
+using QSMPDLE.Web.Features.HiLo.Models;
 using QSMPDLE.Web.Features.Statistics.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
@@ -10,6 +11,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<DailyGame> DailyGames => Set<DailyGame>();
     public DbSet<GameSession> GameStats => Set<GameSession>();
     public DbSet<GameGuess> GameGuess => Set<GameGuess>();
+    public DbSet<HiLoScore> HiLoScores => Set<HiLoScore>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

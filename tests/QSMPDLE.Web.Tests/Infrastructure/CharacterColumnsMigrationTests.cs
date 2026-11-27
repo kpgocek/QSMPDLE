@@ -12,6 +12,7 @@ public sealed class CharacterColumnsMigrationTests : IAsyncLifetime
 {
     private const string MigrationBeforeTextArrays = "20261101170507_DropGlobalStatsView";
     private const string MigrationBeforeIconGuid = "20261117150109_CharacterListsToTextArrays";
+    private const string MigrationBeforePhoneNumber = "20261123231447_RepairMissingAnswers";
     private const string PortraitFolder = "343a2bcfa31a4cb79ebb12ab624d0d09";
     private const string WikiUrl = "https://qsmp.fandom.com/wiki/YoungMulti";
 
@@ -71,12 +72,26 @@ public sealed class CharacterColumnsMigrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Migrate_AddNewClues_DefaultsExistingRowsToNoPhoneNumbers()
+    public async Task Migrate_AddNewClues_DefaultsExistingRowsToNoPhoneNumber()
     {
         await using var database = new ApplicationDbContext(options);
         var characters = await database.Characters.AsNoTracking().ToListAsync();
 
-        characters.Should().OnlyContain(character => character.PhoneNumbers.Count == 0);
+        characters.Should().OnlyContain(character => character.PhoneNumber == null);
+    }
+
+    [Fact]
+    public async Task Migrate_PhoneNumbers_KeepsTheFirstNumber()
+    {
+        await using var database = new ApplicationDbContext(options);
+        await database.GetService<IMigrator>().MigrateAsync(MigrationBeforePhoneNumber);
+        await database.Database.ExecuteSqlRawAsync("""UPDATE "Characters" SET phone_numbers = ARRAY[768, 317] WHERE name = 'YoungMulti';""");
+
+        await database.Database.MigrateAsync();
+
+        var phoneNumbers = await database.Characters.AsNoTracking().ToDictionaryAsync(ch => ch.Name, ch => ch.PhoneNumber);
+        phoneNumbers["YoungMulti"].Should().Be(768);
+        phoneNumbers["Wuant"].Should().BeNull();
     }
 
     [Fact]
