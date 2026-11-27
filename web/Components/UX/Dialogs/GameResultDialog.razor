@@ -1,11 +1,13 @@
 @using MudBlazor
 @using QSMPDLE.Web.Features.Gameplay.Models
+@using QSMPDLE.Web.Features.Personalization.Services
 @using QSMPDLE.Web.Features.Sharing
 @using QSMPDLE.Web.Features.Statistics.Models
 @using QSMPDLE.Web.Infrastructure.LocalStorage
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
 @inject IPlayerStatsStore PlayerStatsStore
+@inject IPreferencesService PreferencesService
 @inject ILogger<GameResultDialog> Logger
 
 <div class="result-overlay" @onkeydown="CloseOnEscape">
@@ -160,8 +162,13 @@
 
     private ElementReference modal;
 
+    // Loaded up front: the share links below are plain hrefs, built while rendering.
+    private string? _playerName;
+
     protected override async Task OnInitializedAsync()
     {
+        _playerName = await PreferencesService.GetDisplayNameAsync();
+
         // Only canonical wins show statistics; practice games don't count towards them.
         if (!IsWon || GameState.SessionCategory != GameModeSessionCategory)
             return;
@@ -220,8 +227,8 @@
         ArgumentNullException.ThrowIfNull(DayNumber);
 
         return IsWon
-            ? ShareText.BuildDailyResult(DayNumber.Value, Guesses)
-            : ShareText.BuildDailyChallenge(DayNumber.Value);
+            ? ShareText.BuildDailyResult(DayNumber.Value, Guesses, _playerName)
+            : ShareText.BuildDailyChallenge(DayNumber.Value, _playerName);
     }
 
     private async Task Share()
