@@ -85,20 +85,4 @@ public sealed class ShareTextTests
             + "😭" + Crlf + Crlf
             + "https://qsmpdle.com");
     }
-
-    [Fact]
-    public void BuildDailyChallenge_WithName_UsesItInPlaceOfI()
-    {
-        var text = ShareText.BuildDailyChallenge(42, "Krzysztof");
-
-        text.Should().Contain("Krzysztof was unable to beat today's challenge.");
-    }
-
-    [Fact]
-    public void BuildDailyResult_WithName_PutsItBeforeTheScore()
-    {
-        var text = ShareText.BuildDailyResult(42, [SevenClueWin], "Krzysztof");
-
-        text.Should().Contain("Krzysztof: 1/6");
-    }
 }

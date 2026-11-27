@@ -1,9 +1,8 @@
 @rendermode InteractiveServer
-@implements IDisposable
 @using MudBlazor
-@using Microsoft.AspNetCore.Components.Routing
 @using QSMPDLE.Web.Components.UX.Dialogs
 @inject NavigationManager Nav
+@inject IDialogService DialogService
 @inject QSMPDLE.Web.Features.Gameplay.Services.IDayService DayService
 
 <header class="topbar">
@@ -18,62 +17,33 @@
         </div>
 
         <nav id="site-nav" class="links @MenuVisibilityClass" aria-label="Main">
-            <div class="links-row">
-                <a href="/" class="@(IsClassic ? "active" : null)" aria-current="@(IsClassic ? "true" : null)">Classic</a>
+            <NavLink href="/" Match="NavLinkMatch.All">
+                Daily
+            </NavLink>
 
-                <span class="separator">•</span>
+            <span class="separator">•</span>
 
-                <NavLink href="/profile">
-                    Profile
-                </NavLink>
-            </div>
+            <NavLink href="@ArchiveLink">
+                Archive
+            </NavLink>
 
-            @if (IsProfile)
-            {
-                <div class="links-row links-section">
-                    <NavLink href="/profile" Match="NavLinkMatch.All">
-                        Player
-                    </NavLink>
+            <span class="separator">•</span>
 
-                    <span class="separator">•</span>
+            <NavLink href="/practice">
+                Practice
+            </NavLink>
 
-                    <NavLink href="/profile/stats">
-                        Stats
-                    </NavLink>
+            <span class="separator">•</span>
 
-                    <span class="separator">•</span>
+            <NavLink href="/how-to-play">
+                How to Play
+            </NavLink>
 
-                    <NavLink href="/profile/settings">
-                        Settings
-                    </NavLink>
-                </div>
-            }
-            else
-            {
-                <div class="links-row links-section">
-                    <NavLink href="/" Match="NavLinkMatch.All">
-                        Daily
-                    </NavLink>
+            <span class="separator">•</span>
 
-                    <span class="separator">•</span>
-
-                    <NavLink href="@ArchiveLink">
-                        Archive
-                    </NavLink>
-
-                    <span class="separator">•</span>
-
-                    <NavLink href="/practice">
-                        Practice
-                    </NavLink>
-
-                    <span class="separator">•</span>
-
-                    <NavLink href="/how-to-play">
-                        How to Play
-                    </NavLink>
-                </div>
-            }
+            <button type="button" class="nav-profile-btn" @onclick="OpenProfile">
+                Player Stats
+            </button>
 
         </nav>
 
@@ -83,23 +53,21 @@
 @code {
     private string ArchiveLink => DayService.GetYesterdayArchiveLink();
 
-    private bool IsProfile => IsAt("/profile") || new Uri(Nav.Uri).AbsolutePath.StartsWith("/profile/", StringComparison.OrdinalIgnoreCase);
-
-    // Every other page, such as the changelog, shows the Classic links.
-    private bool IsClassic => !IsProfile;
-
-    private bool IsAt(string path) => new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').Equals(path, StringComparison.OrdinalIgnoreCase);
-
     private bool isMenuOpen = false;
 
     private string MenuVisibilityClass => isMenuOpen ? "show" : "hide";
 
-    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+    private async Task OpenProfile()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseOnEscapeKey = true,
+        };
 
-    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
-
-    // The menu outlives enhanced navigation, so it must redraw when the section changes.
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(StateHasChanged);
+        await DialogService.ShowAsync<PlayerProfileDialog>("Player Profile", options);
+    }
 
     private void ToggleMenu()
     {

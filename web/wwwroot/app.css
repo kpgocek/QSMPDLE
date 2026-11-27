@@ -284,16 +284,16 @@ h4.mud-typography {
     }
 }
 
-/* Set by the script at the top of App.razor from the Motion setting, which can follow the system's
-   reduce-motion setting or override it. */
-:root[data-motion="reduced"] *,
-:root[data-motion="reduced"] *::before,
-:root[data-motion="reduced"] *::after {
-    animation-delay: 0ms !important;
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 1ms !important;
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-delay: 0ms !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+    }
 }
 
 /* WebPage */
