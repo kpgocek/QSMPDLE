@@ -9,8 +9,7 @@ window.qsmpdleShare = {
                 });
 
                 return true;
-            }
-            catch (error) {
+            } catch (error) {
                 // Cancelling the sheet counts as handled; anything else (e.g. NotAllowedError once the
                 // click's activation lapsed during the server round trip) falls back to copying.
                 return error?.name === 'AbortError';
@@ -26,8 +25,7 @@ window.qsmpdleShare = {
                 try {
                     await navigator.clipboard.writeText(text);
                     return true;
-                }
-                catch {
+                } catch {
                     // Denied or unfocused clipboard access still has the legacy path below.
                 }
             }
@@ -42,12 +40,10 @@ window.qsmpdleShare = {
 
             try {
                 return document.execCommand('copy');
-            }
-            finally {
+            } finally {
                 textarea.remove();
             }
-        }
-        catch {
+        } catch {
             return false;
         }
     }

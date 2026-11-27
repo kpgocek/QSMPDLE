@@ -1,5 +1,4 @@
 @using QSMPDLE.Web.Infrastructure.Persistence
-
 @inject ICharacterStore CharacterStore
 
 <div class="selection-area">
@@ -11,7 +10,7 @@
                aria-label="Guess a character" autocomplete="off" spellcheck="false"
                role="combobox" aria-autocomplete="list" aria-controls="character-suggestions"
                aria-expanded="@(HasSuggestions ? "true" : "false")"
-               aria-activedescendant="@(HasSuggestions ? $"character-suggestion-{ActiveSuggestionIndex}" : null)" />
+               aria-activedescendant="@(HasSuggestions ? $"character-suggestion-{ActiveSuggestionIndex}" : null)"/>
     </div>
 
     @if (HasSuggestions)
@@ -23,7 +22,7 @@
                         aria-selected="@(item.Index == ActiveSuggestionIndex ? "true" : "false")"
                         class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
                         @onclick="() => SelectAndGuess(item.Character)">
-                    <img src="@CharacterUrlHelper.GetHeadSrc(item.Character)" alt="" loading="lazy" decoding="async" />
+                    <img src="@CharacterUrlHelper.GetHeadSrc(item.Character)" alt="" loading="lazy" decoding="async"/>
                     <div class="names">
                         <span>@item.Character.Name</span>
                     </div>
@@ -40,14 +39,11 @@
 </div>
 
 @code {
-    [Parameter]
-    public CharacterLookup? Value { get; set; }
+    [Parameter] public CharacterLookup? Value { get; set; }
 
-    [Parameter]
-    public EventCallback<CharacterLookup?> ValueChanged { get; set; }
+    [Parameter] public EventCallback<CharacterLookup?> ValueChanged { get; set; }
 
-    [Parameter]
-    public EventCallback<CharacterLookup> OnGuessConfirmed { get; set; }
+    [Parameter] public EventCallback<CharacterLookup> OnGuessConfirmed { get; set; }
 
     [Parameter] public bool IsGuessed { get; set; }
 
@@ -56,16 +52,18 @@
     [Parameter] public IReadOnlyCollection<int> GuessedIds { get; set; } = [];
 
     /// <summary>The game's date; only characters released by then are offered.</summary>
-    [Parameter, EditorRequired] public DateOnly AvailableOn { get; set; }
+    [Parameter][EditorRequired]
+    public DateOnly AvailableOn { get; set; }
 
     /// <summary>Always offered: a release date moved past a played day must not make that day unwinnable.</summary>
-    [Parameter, EditorRequired] public int AnswerId { get; set; }
+    [Parameter][EditorRequired]
+    public int AnswerId { get; set; }
 
     private (DateOnly, int)? _loadedFor;
 
     private string SearchText = "";
 
-    private int ActiveSuggestionIndex = 0;
+    private int ActiveSuggestionIndex;
 
     private bool IsDismissed;
 
@@ -142,12 +140,13 @@
     }
 
     private IEnumerable<CharacterLookup> Matches =>
-    string.IsNullOrWhiteSpace(SearchText)
-        ? []
-        : Characters
-            .Where(p =>
-                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+        string.IsNullOrWhiteSpace(SearchText)
+            ? []
+            : Characters
+                .Where(p =>
+                    p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
     private IEnumerable<CharacterLookup> Suggestions =>
         Matches.Where(p => !GuessedIds.Contains(p.Id)).Take(5);
+
 }

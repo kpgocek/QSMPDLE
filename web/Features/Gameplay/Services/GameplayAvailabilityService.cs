@@ -3,7 +3,8 @@ using QSMPDLE.Web.Features.Gameplay.Models;
 
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
-public sealed class GameplayAvailabilityService(IDayService dayService, IOptions<GameplayOptions> options) : IGameplayAvailabilityService
+public sealed class GameplayAvailabilityService(IDayService dayService, IOptions<GameplayOptions> options)
+    : IGameplayAvailabilityService
 {
     public DateOnly GetEffectiveDate(int? puzzleId) =>
         dayService.GetArchiveDate(puzzleId ?? dayService.GetTodayDayNumber());

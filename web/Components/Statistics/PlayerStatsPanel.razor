@@ -2,13 +2,12 @@
 @using QSMPDLE.Web.Components.UX.StatDisplay
 @using QSMPDLE.Web.Features.Statistics.Models
 @using QSMPDLE.Web.Features.Statistics.Services
-
 @inject IPlayerProfileService PlayerProfileService
 @inject ILogger<PlayerStatsPanel> Logger
 
 @if (loading)
 {
-    <MudProgressCircular Color="MudBlazor.Color.Primary" Indeterminate="true" Class="mb-4" />
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-4"/>
 }
 else if (loadFailed)
 {
@@ -18,7 +17,7 @@ else
 {
     @if (playerCharacterStats is null)
     {
-        <MudText Typo="Typo.body2" Color="MudBlazor.Color.Secondary">No data available yet</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">No data available yet</MudText>
     }
     else
     {
@@ -27,7 +26,7 @@ else
                 <MudCardHeader>
                     <CardHeaderContent>
                         <span class="d-flex">
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1" />Most Guessed
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1"/>Most Guessed
                             (Wrong)
                         </span>
                         <h3>@(playerCharacterStats.MostGuessedCharacterName ?? "-")</h3>
@@ -35,15 +34,16 @@ else
                     <CardHeaderAvatar>
                         @if (playerCharacterStats.MostGuessedPortraitFolder is not null)
                         {
-                            <MudImage Src="@CharacterUrlHelper.GetPortraitSrc(playerCharacterStats.MostGuessedPortraitFolder)"
-                                      Height="80" Alt="" />
+                            <MudImage
+                                Src="@CharacterUrlHelper.GetPortraitSrc(playerCharacterStats.MostGuessedPortraitFolder)"
+                                Height="80" Alt=""/>
                         }
                     </CardHeaderAvatar>
                 </MudCardHeader>
                 <MudCardContent Class="pt-0">
                     @if (playerCharacterStats.MostGuessedCount > 0)
                     {
-                        <MudText Color="MudBlazor.Color.Secondary">
+                        <MudText Color="Color.Secondary">
                             Guessed @(playerCharacterStats.MostGuessedCount)× as the wrong answer
                         </MudText>
                     }
@@ -54,7 +54,7 @@ else
                 <MudCardHeader>
                     <CardHeaderContent>
                         <span class="d-flex">
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1" />Most
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1"/>Most
                             Correctly Guessed
                         </span>
                         <h3>@(playerCharacterStats.MostCorrectlyGuessedCharacterName ?? "-")</h3>
@@ -63,8 +63,8 @@ else
                         @if (playerCharacterStats.MostCorrectlyGuessedPortraitFolder is not null)
                         {
                             <MudImage
-                            Src="@CharacterUrlHelper.GetPortraitSrc(playerCharacterStats.MostCorrectlyGuessedPortraitFolder)"
-                            Height="80" Alt="" />
+                                Src="@CharacterUrlHelper.GetPortraitSrc(playerCharacterStats.MostCorrectlyGuessedPortraitFolder)"
+                                Height="80" Alt=""/>
                         }
                     </CardHeaderAvatar>
                 </MudCardHeader>
@@ -72,7 +72,7 @@ else
                 <MudCardContent Class="pt-0">
                     @if (playerCharacterStats.MostCorrectlyGuessedCount > 0)
                     {
-                        <MudText Color="MudBlazor.Color.Secondary">
+                        <MudText Color="Color.Secondary">
                             Correctly identified @(playerCharacterStats.MostCorrectlyGuessedCount)× as the answer
                         </MudText>
                     }
@@ -85,64 +85,65 @@ else
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Puzzle Games" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
-                      Value="@($"{DailyGamesPlayed}")" />
+                      Value="@($"{DailyGamesPlayed}")"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Puzzle Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
-                      Value="@($"{DailyGamesWon}")" />
+                      Value="@($"{DailyGamesWon}")"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Practice Games" Delay="100" Icon="@Icons.Material.Filled.SportsEsports"
                       Value="@($"{PracticeGamesFinished}")"
-                      Comment="@($"{PracticeGamesStarted - PracticeGamesFinished} abandoned")" />
+                      Comment="@($"{PracticeGamesStarted - PracticeGamesFinished} abandoned")"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Current Streak" Delay="250" Icon="@Icons.Material.Filled.Whatshot"
-                      Value="@($"{CurrentStreak}")" />
+                      Value="@($"{CurrentStreak}")"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Practice Games Won" Delay="150" Icon="@Icons.Material.Filled.EmojiEvents"
-                      Value="@($"{PracticeGamesWon}")" />
+                      Value="@($"{PracticeGamesWon}")"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Best Streak" Delay="300" Icon="@Icons.Material.Filled.WorkspacePremium"
-                      Value="@($"{LongestStreak}")" />
+                      Value="@($"{LongestStreak}")"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Puzzle Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
-                      Value="@($"{DailyWinRate:0}%")" />
+                      Value="@($"{DailyWinRate:0}%")"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Practice Win Rate" Delay="200" Icon="@Icons.Material.Filled.LocalFireDepartment"
-                      Value="@($"{FinishedPracticeWinRate:0}%")" Comment="@($"{AllPracticeWinRate:0}% of all started")" />
+                      Value="@($"{FinishedPracticeWinRate:0}%")"
+                      Comment="@($"{AllPracticeWinRate:0}% of all started")"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Avg Guesses" Delay="350" Icon="@Icons.Material.Filled.Tag"
                       Value="@(DailyGamesWon > 0 ? $"{AvgGuessesPerDailyWin:0.0}" : "-")"
-                      Comment="The lower, the better" />
+                      Comment="The lower, the better"/>
         </MudItem>
 
         <MudItem xs="6" sm="4" Style="display:flex;">
             <StatCard Title="Hi-Lo Best" Delay="300" Icon="@Icons.Material.Filled.SwapVert"
-                      Value="@($"{HiLoBestScore}")" />
+                      Value="@($"{HiLoBestScore}")"/>
         </MudItem>
 
     </MudGrid>
 
     @if (DailyGamesWon > 0)
     {
-        <MudDivider />
+        <MudDivider/>
 
         <section class="mt-5">
-            <GuessDistributionChart Distribution="@GuessDistributionAsDoubles" Title="Your Guess Distribution" />
+            <GuessDistributionChart Distribution="@GuessDistributionAsDoubles" Title="Your Guess Distribution"/>
         </section>
     }
 }
@@ -174,10 +175,15 @@ else
 
     private int HiLoBestScore { get; set; }
 
-    private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) /
-(double)PracticeGamesFinished;
-    private double AllPracticeWinRate => PracticeGamesStarted == 0 ? 0 : (PracticeGamesWon * 100) /
-(double)PracticeGamesStarted;
+    private double FinishedPracticeWinRate => PracticeGamesFinished == 0
+        ? 0
+        : PracticeGamesWon * 100 /
+          (double)PracticeGamesFinished;
+
+    private double AllPracticeWinRate => PracticeGamesStarted == 0
+        ? 0
+        : PracticeGamesWon * 100 /
+          (double)PracticeGamesStarted;
 
     // Character stats
     private PlayerCharacterStats? playerCharacterStats;
@@ -228,4 +234,5 @@ else
             loading = false;
         }
     }
+
 }

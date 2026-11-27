@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace QSMPDLE.Web.Features.Gameplay.Models;
 
-public sealed class GameState()
+public sealed class GameState
 {
     public required Guid GameId { get; set; }
     public Guid PlayerId { get; set; }
@@ -22,8 +22,7 @@ public sealed class GameState()
 
     public bool SeenPopup { get; set; }
 
-    [JsonIgnore]
-    public bool IsFinished => IsWon || IsLost;
+    [JsonIgnore] public bool IsFinished => IsWon || IsLost;
 
     [JsonIgnore]
     public GameOutcome Outcome

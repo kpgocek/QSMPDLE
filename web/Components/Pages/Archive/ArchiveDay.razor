@@ -1,12 +1,8 @@
 @page "/archive/day/{DayNumber:int}"
-@rendermode InteractiveServer
-
 @using MudBlazor
 @using QSMPDLE.Web.Components.Game
-@using QSMPDLE.Web.Components.Layout
 @using QSMPDLE.Web.Components.UX.Navigation
-@using QSMPDLE.Web.Features.Gameplay.Models
-@using QSMPDLE.Web.Features.Gameplay.Services
+@rendermode InteractiveServer
 
 @inject IDayService DayService
 @inject NavigationManager NavigationManager
@@ -15,16 +11,16 @@
 
 <HeadContent>
     <meta name="description"
-          content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy")). Guess the QSMP2 character from the past daily challenge." />
+          content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy")). Guess the QSMP2 character from the past daily challenge."/>
 
-    <link rel="canonical" href="@CanonicalUrl" />
+    <link rel="canonical" href="@CanonicalUrl"/>
 
     <meta property="og:title"
-          content="Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE" />
+          content="Archive Day #@DayNumber.ToString("00") - @ArchiveDate.ToString("MMM d, yyyy") | QSMPDLE"/>
     <meta property="og:description"
-          content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy"))." />
-    <meta property="og:url" content="@CanonicalUrl" />
-    <meta property="og:type" content="website" />
+          content="Play the QSMPDLE Archive puzzle from Day #@DayNumber (@ArchiveDate.ToString("MMMM d, yyyy"))."/>
+    <meta property="og:url" content="@CanonicalUrl"/>
+    <meta property="og:type" content="website"/>
 </HeadContent>
 
 @if (!_isValidDay)
@@ -42,22 +38,22 @@ else
     @if (!_isGameLoaded)
     {
         <h2>
-            <MudSkeleton SkeletonType="SkeletonType.Text" Width="22rem" Height="2.375rem" />
+            <MudSkeleton SkeletonType="SkeletonType.Text" Width="22rem" Height="2.375rem"/>
         </h2>
 
-        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="8rem" Height="2rem" />
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="8rem" Height="2rem"/>
     }
     else
     {
         <div class="archive-header">
             <button @onclick="NavigateToPrevious" class="@(DayNumber > 1 ? "" : "hidden")" aria-label="Previous day">
-                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Medium" />
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Medium"/>
             </button>
 
             <h2 class="header-text">ARCHIVE<span class="separator">|</span>DAY #@DayNumber.ToString("00")</h2>
 
             <button @onclick="NavigateToNext" aria-label="Next day" class="@(DayNumber < _maxDay ? "" : "hidden")">
-                <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Medium" />
+                <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Medium"/>
             </button>
         </div>
 
@@ -66,26 +62,25 @@ else
         </MudButton>
 
         <div class="@(_showCalendar ? "" : "collapsed") mt-3">
-            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay" DateSelected="ToggleCalendar"
-                              @ref="_navigator" />
+            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay"
+                              DateSelected="ToggleCalendar"
+                              @ref="_navigator"/>
         </div>
     }
 
     <Gameplay @key="DayNumber" EntryPoint="EntryPoint.Archive" ArchiveGameNumber="DayNumber"
-              GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
+              GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded"/>
 }
 
 @code {
-    [Parameter]
-    public int DayNumber { get; set; }
+    [Parameter] public int DayNumber { get; set; }
 
     // Only while prerendering.
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
 
     private bool _isValidDay = true;
-    private bool _isGameLoaded = false;
-    private bool _showCalendar = false;
+    private bool _isGameLoaded;
+    private bool _showCalendar;
     private int _maxDay;
     private DateOnly _firstDay;
     private bool _isInitialized;
@@ -169,4 +164,5 @@ else
     {
         _showCalendar = !_showCalendar;
     }
+
 }

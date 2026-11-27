@@ -2,9 +2,6 @@
 @using QSMPDLE.Web.Components.Game.Modules
 @using QSMPDLE.Web.Components.UX.Dialogs
 @using QSMPDLE.Web.Components.UX.StatDisplay
-@using QSMPDLE.Web.Features.Gameplay.Models
-@using QSMPDLE.Web.Features.Gameplay.Services
-
 @inject IGameStateManager GameStateManager
 @inject ILogger<Gameplay> Logger
 
@@ -22,14 +19,14 @@
     {
         @* Placeholders match the size and order of what replaces them, so nothing jumps on load. *@
         <MudPaper Class="portrait-frame" Elevation="0">
-            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100%" Width="100%" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100%" Width="100%"/>
         </MudPaper>
 
-        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="min(26rem, calc(100vw - 2rem))" Height="2.8125rem" />
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="min(26rem, calc(100vw - 2rem))" Height="2.8125rem"/>
 
         @if (EntryPoint == EntryPoint.Practice)
         {
-            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="11.5rem" Height="2.25rem" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="11.5rem" Height="2.25rem"/>
         }
     }
     else
@@ -37,13 +34,13 @@
         <CharacterPortrait PortraitFolder="@(GameStateManager.GameState?.Game.PortraitUrl ?? string.Empty)"
                            GuessesMade="@(GameStateManager.GameState?.GuessesMade.Count ?? 0)"
                            IsGuessed="@(GameStateManager.GameState?.IsWon ?? false)"
-                           IsFailed="@(GameStateManager.GameState?.IsLost ?? false)" />
+                           IsFailed="@(GameStateManager.GameState?.IsLost ?? false)"/>
 
         @if (GameStateManager.GameState?.IsFinished ?? false)
         {
             var result = GameStateManager.GameState.IsWon ? ComparisonResult.Correct : ComparisonResult.Wrong;
             <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
-                <MudIcon Icon="@GuessChip.IconFor(result)" Class="answer-icon" aria-hidden="true" />
+                <MudIcon Icon="@GuessChip.IconFor(result)" Class="answer-icon" aria-hidden="true"/>
                 <h3 tabindex="-1" @ref="_answerHeading">@TargetName</h3>
             </div>
         }
@@ -52,11 +49,12 @@
             <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess"
                                IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" IsBusy="@_isGuessing"
                                GuessedIds="@GuessedIds" AvailableOn="@GameStateManager.EffectiveDate"
-                               AnswerId="@(GameStateManager.GameState?.Game.TargetId ?? 0)" />
+                               AnswerId="@(GameStateManager.GameState?.Game.TargetId ?? 0)"/>
 
             @if (_guessFailed)
             {
-                <p class="guess-error" role="alert">That guess didn't go through. Refresh the page if your board looks wrong.</p>
+                <p class="guess-error" role="alert">That guess didn't go through. Refresh the page if your board looks
+                    wrong.</p>
             }
 
             <p class="guess-hint">
@@ -73,11 +71,11 @@
                 New Character
             </MudButton>
         }
-
     }
 
     <div class="guess-board-container">
-        <GuessBoard Guesses="@(ShowsGame ? GameStateManager.GameState?.GuessesMade ?? [] : [])" ShowLegend="@GameStateManager.IsFirstGame" ActiveClues="@GameStateManager.ActiveClues" />
+        <GuessBoard Guesses="@(ShowsGame ? GameStateManager.GameState?.GuessesMade ?? [] : [])"
+                    ShowLegend="@GameStateManager.IsFirstGame" ActiveClues="@GameStateManager.ActiveClues"/>
     </div>
 
 </MudStack>
@@ -85,24 +83,20 @@
 @* Waits for the guess to finish so the victory dialog loads statistics that include this game. *@
 @if (ShowsGame && !_isGuessing && !(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsFinished ?? false))
 {
-    <GameResultDialog GameState="@GameStateManager.GameState" OnClose="ClosePopups" />
+    <GameResultDialog GameState="@GameStateManager.GameState" OnClose="ClosePopups"/>
 }
 
 @code {
-    [Parameter]
-    public EntryPoint EntryPoint { get; set; }
+    [Parameter] public EntryPoint EntryPoint { get; set; }
 
-    [Parameter]
-    public int? ArchiveGameNumber { get; set; }
+    [Parameter] public int? ArchiveGameNumber { get; set; }
 
-    [Parameter]
-    public EventCallback<GameState> GameStateChanged { get; set; }
+    [Parameter] public EventCallback<GameState> GameStateChanged { get; set; }
 
-    [Parameter]
-    public EventCallback GameLoaded { get; set; }
+    [Parameter] public EventCallback GameLoaded { get; set; }
 
     private CharacterLookup? GuessedCharacter;
-    private bool IsGameLoaded = false;
+    private bool IsGameLoaded;
     private bool _isGuessing;
     private bool _loadFailed;
     private bool _guessFailed;
@@ -133,7 +127,7 @@
     public async Task Guess(CharacterLookup? _ = null)
     {
         if (_isGuessing || GameStateManager.GameState is null || GameStateManager.GameState.IsFinished || GuessedCharacter is
-null)
+                null)
             return;
 
         _isGuessing = true;

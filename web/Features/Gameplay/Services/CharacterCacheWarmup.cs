@@ -3,8 +3,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 /// <summary>
-/// Loads the shared character catalog and today's target before the server takes traffic, so a
-/// redeploy during a stream does not make the first wave of players wait on a cold cache.
+///     Loads the shared character catalog and today's target before the server takes traffic, so a
+///     redeploy during a stream does not make the first wave of players wait on a cold cache.
 /// </summary>
 public sealed class CharacterCacheWarmup(
     IServiceScopeFactory scopeFactory,

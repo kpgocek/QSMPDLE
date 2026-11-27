@@ -1,9 +1,8 @@
 @page "/profile/settings"
-@rendermode InteractiveServer
-
 @using MudBlazor
 @using QSMPDLE.Web.Features.Personalization.Models
 @using QSMPDLE.Web.Features.Personalization.Services
+@rendermode InteractiveServer
 
 @inject IPreferencesService PreferencesService
 @inject ILogger<Settings> Logger
@@ -59,9 +58,15 @@
         StateHasChanged();
     }
 
-    private Task SetMotionAsync(MotionPreference motion) => SaveAsync(_preferences! with { Motion = motion });
+    private Task SetMotionAsync(MotionPreference motion)
+    {
+        return SaveAsync(_preferences! with { Motion = motion });
+    }
 
-    private Task SetThemeAsync(string theme) => SaveAsync(_preferences! with { Theme = theme });
+    private Task SetThemeAsync(string theme)
+    {
+        return SaveAsync(_preferences! with { Theme = theme });
+    }
 
     private async Task SaveAsync(PlayerPreferences preferences)
     {
@@ -76,4 +81,5 @@
             Logger.LogWarning(exception, "Preferences failed to save");
         }
     }
+
 }

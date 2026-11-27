@@ -7,8 +7,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Features.Statistics.Services;
 
 /// <summary>
-/// Keeps only the anonymous browser identity locally and derives all statistics
-/// from persisted game sessions and guesses.
+///     Keeps only the anonymous browser identity locally and derives all statistics
+///     from persisted game sessions and guesses.
 /// </summary>
 public sealed class DatabasePlayerStatsStore(
     LocalStoragePlayerStatsStore localIdentityStore,
@@ -27,7 +27,8 @@ public sealed class DatabasePlayerStatsStore(
 
 public static class PlayerStatsProjection
 {
-    public static PlayerStats Create(PlayerStats localIdentity, IEnumerable<GameSession> sessions, IDayService dayService)
+    public static PlayerStats Create(PlayerStats localIdentity, IEnumerable<GameSession> sessions,
+        IDayService dayService)
     {
         var games = sessions.Where(game => !game.IsLegacyDuplicate).ToList();
         var canonicalGames = games.Where(game => game.SessionCategory == SessionCategory.CanonicalPuzzle).ToList();
@@ -45,8 +46,9 @@ public static class PlayerStatsProjection
             CurrentStreak = streak.Current,
             MaxStreak = streak.Max,
             GuessDistribution = Enumerable.Range(1, GameRules.MaxGuesses)
-                .Select(guessCount => wonGames.Count(game => Math.Clamp(game.Guesses.Count, 1, GameRules.MaxGuesses) == guessCount))
-                .ToArray(),
+                .Select(guessCount =>
+                    wonGames.Count(game => Math.Clamp(game.Guesses.Count, 1, GameRules.MaxGuesses) == guessCount))
+                .ToArray()
         };
     }
 
@@ -56,8 +58,10 @@ public static class PlayerStatsProjection
         var eligible = dailyGames
             .Where(game => game.FinishedOnUtc.HasValue
                            && game.PuzzleId.HasValue
-                           && DateOnly.FromDateTime(game.StartedOnUtc.UtcDateTime) == dayService.GetArchiveDate(game.PuzzleId.Value)
-                           && DateOnly.FromDateTime(game.FinishedOnUtc!.Value.UtcDateTime) == dayService.GetArchiveDate(game.PuzzleId.Value))
+                           && DateOnly.FromDateTime(game.StartedOnUtc.UtcDateTime) ==
+                           dayService.GetArchiveDate(game.PuzzleId.Value)
+                           && DateOnly.FromDateTime(game.FinishedOnUtc!.Value.UtcDateTime) ==
+                           dayService.GetArchiveDate(game.PuzzleId.Value))
             .OrderBy(game => game.PuzzleId)
             .ToList();
 
@@ -83,7 +87,9 @@ public static class PlayerStatsProjection
 
         // A streak survives only while yesterday's daily was won; today's can still be played.
         if (previousWinningPuzzle < dayService.GetTodayDayNumber() - 1)
+        {
             current = 0;
+        }
 
         return new Streak(current, max);
     }

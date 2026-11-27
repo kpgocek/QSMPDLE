@@ -12,16 +12,19 @@ public sealed class HiLoService(
     IPlayerStatsStore playerStatsStore,
     IHiLoScoreStore scoreStore) : IHiLoService
 {
-    public async Task<HiLoRound> CreateRoundAsync(HiLoRound? previous = null, CancellationToken cancellationToken = default)
+    public async Task<HiLoRound> CreateRoundAsync(HiLoRound? previous = null,
+        CancellationToken cancellationToken = default)
     {
         var today = availability.GetEffectiveDate(null);
         var hasQPhones = availability.GetActiveClues(today).Contains(ClueGroup.QPhone);
-        var characters = (await characterStore.GetCharactersAsync(cancellationToken)).Where(character => character.IsAvailableOn(today)).ToList();
+        var characters = (await characterStore.GetCharactersAsync(cancellationToken))
+            .Where(character => character.IsAvailableOn(today)).ToList();
 
         // Flat on purpose: a stat comes up as often as characters have it, so a rare one does not repeat its few pairs.
         var entries = Enum.GetValues<HiLoStat>()
             .Where(stat => hasQPhones || stat != HiLoStat.QPhoneNumber)
-            .Select(stat => characters.Where(character => stat.GetValue(character) is not null).Select(character => (Stat: stat, Character: character)).ToList())
+            .Select(stat => characters.Where(character => stat.GetValue(character) is not null)
+                .Select(character => (Stat: stat, Character: character)).ToList())
             .Where(statEntries => statEntries.Count > 1)
             .SelectMany(statEntries => statEntries)
             .ToList();
@@ -30,14 +33,16 @@ public sealed class HiLoService(
         {
             var carried = previous.Hidden;
             var drafts = entries
-                .Where(entry => entry.Character.Id != carried.Id && entry.Character.Id != previous.Known.Id && entry.Stat.GetValue(carried) is not null)
+                .Where(entry => entry.Character.Id != carried.Id && entry.Character.Id != previous.Known.Id &&
+                                entry.Stat.GetValue(carried) is not null)
                 .ToList();
 
             // Nobody left to compare the carried character with starts a fresh pair instead of ending the run.
             if (drafts.Count > 0)
             {
                 var draft = drafts[Random.Shared.Next(drafts.Count)];
-                return new HiLoRound(draft.Stat, carried, draft.Stat.GetValue(carried)!.Value, draft.Character, draft.Stat.GetValue(draft.Character)!.Value);
+                return new HiLoRound(draft.Stat, carried, draft.Stat.GetValue(carried)!.Value, draft.Character,
+                    draft.Stat.GetValue(draft.Character)!.Value);
             }
         }
 

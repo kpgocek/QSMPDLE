@@ -1,6 +1,6 @@
 namespace QSMPDLE.Web.Features.Personalization.Models;
 
-/// <summary>A theme the player can pick. <see cref="Id"/> names its <c>[data-theme]</c> block in wwwroot/css/themes.css.</summary>
+/// <summary>A theme the player can pick. <see cref="Id" /> names its <c>[data-theme]</c> block in wwwroot/css/themes.css.</summary>
 public sealed record ColourTheme(string Id, string Name)
 {
     private static readonly ColourTheme Classic = new("classic", "Classic");
@@ -11,7 +11,7 @@ public sealed record ColourTheme(string Id, string Name)
     private static readonly ColourTheme Ashswag = new("ashswag", "Swag");
     private static readonly ColourTheme Mike = new("mike", "Mikey");
     private static readonly ColourTheme Katie = new("katie", "Katie");
-    
+
     public static readonly ColourTheme Default = Classic;
 
     public static readonly IReadOnlyList<ColourTheme> All =
@@ -26,6 +26,6 @@ public sealed record ColourTheme(string Id, string Name)
         Katie
     ];
 
-    /// <summary>The saved theme, or <see cref="Default"/> when none is saved or it was removed.</summary>
+    /// <summary>The saved theme, or <see cref="Default" /> when none is saved or it was removed.</summary>
     public static ColourTheme Find(string? id) => All.FirstOrDefault(theme => theme.Id == id) ?? Default;
 }

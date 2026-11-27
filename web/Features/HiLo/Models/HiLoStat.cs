@@ -23,7 +23,7 @@ public static class HiLoStatExtensions
             HiLoStat.YouTubeSubscribers => character.YouTubeSubscribers,
             HiLoStat.TwitchFollowers => character.TwitchFollowers,
             HiLoStat.KickFollowers => character.KickFollowers,
-            _ => throw new ArgumentOutOfRangeException(nameof(stat)),
+            _ => throw new ArgumentOutOfRangeException(nameof(stat))
         };
 
         return value > 0 ? value : null;

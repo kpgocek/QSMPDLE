@@ -1,10 +1,10 @@
 @using MudBlazor
-
 <MudPaper Class="@(IsGuessed || IsFailed ? "portrait-frame solved" : "portrait-frame")" Elevation="0">
-    <img src="@ImageUrl" alt="@AltText" class="portrait-image" width="320" height="320" loading="eager" decoding="async" fetchpriority="high" />
+    <img src="@ImageUrl" alt="@AltText" class="portrait-image" width="320" height="320" loading="eager" decoding="async"
+         fetchpriority="high"/>
 </MudPaper>
 
-    @code {
+@code {
     [Parameter] public string PortraitFolder { get; set; } = string.Empty;
 
     [Parameter] public int GuessesMade { get; set; }
@@ -19,4 +19,5 @@
     private string ImageUrl => IsGuessed || IsFailed
         ? CharacterUrlHelper.GetPortraitSrc(PortraitFolder)
         : CharacterUrlHelper.GetBlurredPortraitSrc(PortraitFolder, GuessesMade);
+
 }

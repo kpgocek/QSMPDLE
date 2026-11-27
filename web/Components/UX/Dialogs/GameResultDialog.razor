@@ -1,5 +1,4 @@
 @using MudBlazor
-@using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Features.Personalization.Services
 @using QSMPDLE.Web.Features.Sharing
 @using QSMPDLE.Web.Features.Statistics.Models
@@ -23,14 +22,15 @@
             @if (DayNumber is not null)
             {
                 <p>
-                    You guessed character #@DayNumber in <strong>@Guesses.Count</strong> @(Guesses.Count == 1 ? "guess" : "guesses").
+                    You guessed character #@DayNumber in
+                    <strong>@Guesses.Count</strong> @(Guesses.Count == 1 ? "guess" : "guesses").
                 </p>
             }
             else
             {
                 <p>
                     It took you
-                    @if (@Guesses.Count > 1)
+                    @if (Guesses.Count > 1)
                     {
                         <span><strong>@Guesses.Count</strong> guesses</span>
                     }
@@ -95,7 +95,8 @@
                             <span class="guess-number">@(i + 1)</span>
 
                             <div class="distribution-bar-container">
-                                <div class="distribution-bar @(i == TodayBarIndex ? "today" : "")" style="width:@GetBarWidth(i)%">
+                                <div class="distribution-bar @(i == TodayBarIndex ? "today" : "")"
+                                     style="width:@GetBarWidth(i)%">
                                     @Stats.GuessDistribution[i]
                                 </div>
                             </div>
@@ -108,30 +109,31 @@
         <div class="buttons">
             @if (GameState.SessionCategory == GameModeSessionCategory)
             {
-                <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary" AriaLabel="Share result">
+                <MudMenu Icon="@Icons.Material.Filled.Share" Variant="Variant.Filled" Color="Color.Primary"
+                         AriaLabel="Share result">
 
                     <MudMenuItem OnClick="Share">
-                        <MudIcon Icon="@Icons.Material.Filled.Share" />
+                        <MudIcon Icon="@Icons.Material.Filled.Share"/>
                         @(IsWon ? "Share Results" : "Challenge Others")
                     </MudMenuItem>
 
                     <MudMenuItem OnClick="Copy">
-                        <MudIcon Icon="@Icons.Material.Filled.ContentCopy" />
+                        <MudIcon Icon="@Icons.Material.Filled.ContentCopy"/>
                         Copy
                     </MudMenuItem>
 
                     <MudMenuItem Href="@BuildXLink()" Target="_blank">
-                        <MudIcon Icon="@Icons.Custom.Brands.Twitter" />
+                        <MudIcon Icon="@Icons.Custom.Brands.Twitter"/>
                         X
                     </MudMenuItem>
 
                     <MudMenuItem Href="@BuildTelegramLink()" Target="_blank">
-                        <MudIcon Icon="@Icons.Custom.Brands.Telegram" />
+                        <MudIcon Icon="@Icons.Custom.Brands.Telegram"/>
                         Telegram
                     </MudMenuItem>
 
                     <MudMenuItem Href="@BuildRedditLink()" Target="_blank">
-                        <MudIcon Icon="@Icons.Custom.Brands.Reddit" />
+                        <MudIcon Icon="@Icons.Custom.Brands.Reddit"/>
                         Reddit
                     </MudMenuItem>
 
@@ -193,7 +195,10 @@
         }
     }
 
-    private async Task FocusModalAsync() => await modal.FocusAsync();
+    private async Task FocusModalAsync()
+    {
+        await modal.FocusAsync();
+    }
 
     private async Task CloseOnEscape(KeyboardEventArgs e)
     {
@@ -240,7 +245,10 @@
             await CopyWithFeedbackAsync(text);
     }
 
-    private async Task Copy() => await CopyWithFeedbackAsync(BuildShareText());
+    private async Task Copy()
+    {
+        await CopyWithFeedbackAsync(BuildShareText());
+    }
 
     private async Task CopyWithFeedbackAsync(string text)
     {
@@ -264,4 +272,5 @@
     {
         return $"https://reddit.com/submit?title={Uri.EscapeDataString(BuildShareText())}";
     }
+
 }

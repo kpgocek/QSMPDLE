@@ -5,8 +5,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 /// <summary>
-/// Keeps the DailyGames table filled ahead of today, replacing the retired offline generator.
-/// Rows already written are never changed, so a scheduled answer stays fixed once it exists.
+///     Keeps the DailyGames table filled ahead of today, replacing the retired offline generator.
+///     Rows already written are never changed, so a scheduled answer stays fixed once it exists.
 /// </summary>
 public sealed class DailyScheduleService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
@@ -35,7 +35,9 @@ public sealed class DailyScheduleService(
         // now would change an answer players may have seen.
         var firstDay = Math.Max(lastScheduled + 1, today + 1);
         if (firstDay > horizon)
+        {
             return 0;
+        }
 
         var availableFrom = await database.Characters
             .AsNoTracking()
@@ -46,14 +48,12 @@ public sealed class DailyScheduleService(
             availableFrom.Keys,
             history.ConvertAll(game => game.CharacterId),
             horizon - firstDay + 1,
-            seed: firstDay,
+            firstDay,
             (id, offset) => availableFrom[id] is not { } from || from <= dayService.GetArchiveDate(firstDay + offset));
 
         database.DailyGames.AddRange(picks.Select((characterId, offset) => new DailyGame
         {
-            Id = firstDay + offset,
-            Date = dayService.GetArchiveDate(firstDay + offset),
-            CharacterId = characterId,
+            Id = firstDay + offset, Date = dayService.GetArchiveDate(firstDay + offset), CharacterId = characterId
         }));
 
         await database.SaveChangesAsync(cancellationToken);

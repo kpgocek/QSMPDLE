@@ -6,8 +6,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Features.Statistics.Services;
 
 /// <summary>
-/// Serves the site-wide totals from memory, since every page's footer shows them: one load per
-/// expiry window instead of one per page view. Singleton by design: the totals hold no per-player data.
+///     Serves the site-wide totals from memory, since every page's footer shows them: one load per
+///     expiry window instead of one per page view. Singleton by design: the totals hold no per-player data.
 /// </summary>
 public sealed class CachedGlobalStatsService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
@@ -23,13 +23,17 @@ public sealed class CachedGlobalStatsService(
     public async Task<GlobalTotals> GetTotalsAsync()
     {
         if (cache.TryGetValue(TotalsKey, out GlobalTotals? cached) && cached is not null)
+        {
             return cached;
+        }
 
         await _loadGate.WaitAsync();
         try
         {
             if (cache.TryGetValue(TotalsKey, out cached) && cached is not null)
+            {
                 return cached;
+            }
 
             await using var database = await dbContextFactory.CreateDbContextAsync();
             // Abandoned games are left out: a game, and its player, count once it is won or lost.
@@ -38,7 +42,8 @@ public sealed class CachedGlobalStatsService(
                 .Where(GameSession.IsDecided)
                 // One group, so both numbers come from one pass over the games.
                 .GroupBy(_ => 1)
-                .Select(games => new GlobalTotals(games.LongCount(), games.Select(game => game.PlayerId).Distinct().LongCount()))
+                .Select(games =>
+                    new GlobalTotals(games.LongCount(), games.Select(game => game.PlayerId).Distinct().LongCount()))
                 .SingleOrDefaultAsync() ?? new GlobalTotals(0, 0);
 
             cache.Set(TotalsKey, totals, timeProvider.GetUtcNow().Add(Expiry));

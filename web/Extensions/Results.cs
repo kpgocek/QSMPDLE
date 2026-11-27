@@ -4,5 +4,5 @@ public enum LoadGameResult
 {
     LoadedExisting,
     CreatedNew,
-    Failed,
+    Failed
 }

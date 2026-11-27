@@ -5,4 +5,3 @@ internal sealed record SitemapEntry(
     decimal Priority,
     string ChangeFrequency,
     DateOnly? LastModified = null);
-

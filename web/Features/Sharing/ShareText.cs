@@ -9,16 +9,16 @@ public static class ShareText
     public static string BuildDailyChallenge(int dayNumber, string? name = null)
     {
         return
-    $"""
-QSMPDLE #{dayNumber}
+            $"""
+             QSMPDLE #{dayNumber}
 
-{name ?? "I"} was unable to beat today's challenge.
-Will you do better?
+             {name ?? "I"} was unable to beat today's challenge.
+             Will you do better?
 
-😭
+             😭
 
-https://qsmpdle.com
-""";
+             https://qsmpdle.com
+             """;
     }
 
     public static string BuildDailyResult(
@@ -29,35 +29,37 @@ https://qsmpdle.com
         var rows = guesses.Select(ToEmoji);
 
         var result = guesses[guesses.Count - 1].IsCorrect
-                ? $"{guesses.Count}/{GameRules.MaxGuesses}"
-                : $"X/{GameRules.MaxGuesses}";
+            ? $"{guesses.Count}/{GameRules.MaxGuesses}"
+            : $"X/{GameRules.MaxGuesses}";
 
         if (name is not null)
+        {
             result = $"{name}: {result}";
+        }
 
         return
-    $"""
-QSMPDLE #{dayNumber}
+            $"""
+             QSMPDLE #{dayNumber}
 
-{string.Join(Environment.NewLine, rows)}
+             {string.Join(Environment.NewLine, rows)}
 
-{result}
+             {result}
 
-https://qsmpdle.com
-""";
+             https://qsmpdle.com
+             """;
     }
 
     public static string BuildHiLoResult(int score)
     {
         return
-    $"""
-QSMPDLE Hi-Lo
+            $"""
+             QSMPDLE Hi-Lo
 
-I got {score} in a row.
-Can you beat it?
+             I got {score} in a row.
+             Can you beat it?
 
-https://qsmpdle.com/hi-lo
-""";
+             https://qsmpdle.com/hi-lo
+             """;
     }
 
     /// <summary>True when the native share sheet handled the text, including a user cancel; false when the browser has none.</summary>
@@ -67,7 +69,9 @@ https://qsmpdle.com/hi-lo
     public static Task<bool> CopyAsync(IJSRuntime js, string text) =>
         js.InvokeAsync<bool>("qsmpdleShare.copy", text).AsTask();
 
-    private static string ToEmoji(GuessResult guess) => string.Concat(ToEmoji(guess.Pronouns), ToEmoji(guess.Species), ToEmoji(guess.Languages), ToEmoji(guess.Joined), ToEmoji(guess.QPhone), ToEmoji(guess.Award2026), ToEmoji(guess.Affiliation));
+    private static string ToEmoji(GuessResult guess) => string.Concat(ToEmoji(guess.Pronouns), ToEmoji(guess.Species),
+        ToEmoji(guess.Languages), ToEmoji(guess.Joined), ToEmoji(guess.QPhone), ToEmoji(guess.Award2026),
+        ToEmoji(guess.Affiliation));
 
     // A clue released after the puzzle's date has no result and no square.
     private static string ToEmoji(ComparisonResult? result) => result is { } value ? ToEmoji(value) : string.Empty;
@@ -83,7 +87,7 @@ https://qsmpdle.com/hi-lo
             ComparisonResult.More => "⬆️",
             ComparisonResult.Partial => "🟨",
             ComparisonResult.Wrong => "🟥",
-            _ => "⬜",
+            _ => "⬜"
         };
     }
 }

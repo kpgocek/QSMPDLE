@@ -1,5 +1,4 @@
-namespace QSMPDLE.Web.Features.Gameplay.Services;
-
+using System.Diagnostics;
 using Microsoft.Extensions.Options;
 using QSMPDLE.Web.Extensions;
 using QSMPDLE.Web.Features.Gameplay.Helpers;
@@ -7,6 +6,8 @@ using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Statistics.Models;
 using QSMPDLE.Web.Infrastructure.LocalStorage;
 using QSMPDLE.Web.Infrastructure.Persistence;
+
+namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 /// <summary>Owns the browser state while PostgreSQL is the source of truth after a first guess.</summary>
 public sealed class GameStateManager(
@@ -25,10 +26,10 @@ public sealed class GameStateManager(
     private readonly IGameplayAvailabilityService _availability =
         availability ?? new GameplayAvailabilityService(dayService, Options.Create(new GameplayOptions()));
 
-    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
-
     // The state and the store's key are shared by the whole circuit, so operations that use them never overlap.
     private readonly SemaphoreSlim _operationGate = new(1, 1);
+
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
 
     public DateOnly EffectiveDate => _availability.GetEffectiveDate(GameState?.Game.PuzzleId);
 
@@ -38,14 +39,17 @@ public sealed class GameStateManager(
 
     public bool IsFirstGame { get; private set; }
 
-    public async Task<LoadGameResult> StartGameAsync(EntryPoint entryPoint, int? puzzleId = null, CancellationToken cancellationToken = default)
+    public async Task<LoadGameResult> StartGameAsync(EntryPoint entryPoint, int? puzzleId = null,
+        CancellationToken cancellationToken = default)
     {
         await _operationGate.WaitAsync(cancellationToken);
         try
         {
             var result = await LoadGameAsync(entryPoint, puzzleId, cancellationToken);
             if (result != LoadGameResult.Failed)
+            {
                 await ResolveFirstGameAsync();
+            }
 
             return result;
         }
@@ -55,7 +59,72 @@ public sealed class GameStateManager(
         }
     }
 
-    private async Task<LoadGameResult> LoadGameAsync(EntryPoint entryPoint, int? puzzleId, CancellationToken cancellationToken)
+    public async Task StartNewPracticeGameAsync(CancellationToken cancellationToken = default)
+    {
+        await _operationGate.WaitAsync(cancellationToken);
+        try
+        {
+            await gameStateStore.Init("practice-current");
+            var playerId = await GetPlayerIdAsync();
+            GameState = await gameService.StartPracticeAsync(cancellationToken);
+            GameState.PlayerId = playerId;
+            GameState.SessionCategory = SessionCategory.Practice;
+            GameState.EntryPoint = EntryPoint.Practice;
+            GameState.FirstEntryPoint = EntryPoint.Practice;
+            await gameStateStore.SaveAsync(GameState);
+            await ResolveFirstGameAsync();
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
+    public async Task<GuessResult?> MakeGuessAsync(int characterId, CancellationToken cancellationToken = default)
+    {
+        if (GameState is null)
+        {
+            throw new InvalidOperationException("Game state is not initialized.");
+        }
+
+        var gameId = GameState.GameId;
+        await _operationGate.WaitAsync(cancellationToken);
+        try
+        {
+            // The guess was meant for the game on screen, not for one that loaded while it waited.
+            return GameState.GameId == gameId ? await PlayGuessAsync(characterId, cancellationToken) : null;
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
+    public async Task<string> GetTargetName(CancellationToken cancellationToken = default) =>
+        (await characterStore.GetCharacterAsync(GameState.Game.TargetId, cancellationToken))?.Name ?? string.Empty;
+
+    public async Task MarkPopupAsSeenAsync(CancellationToken cancellationToken = default)
+    {
+        var gameId = GameState.GameId;
+        await _operationGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (GameState.GameId != gameId)
+            {
+                return;
+            }
+
+            GameState.SeenPopup = true;
+            await gameStateStore.SaveAsync(GameState);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
+    private async Task<LoadGameResult> LoadGameAsync(EntryPoint entryPoint, int? puzzleId,
+        CancellationToken cancellationToken)
     {
         var category = entryPoint == EntryPoint.Practice ? SessionCategory.Practice : SessionCategory.CanonicalPuzzle;
 
@@ -63,7 +132,9 @@ public sealed class GameStateManager(
         {
             puzzleId ??= entryPoint == EntryPoint.Daily ? dayService.GetTodayDayNumber() : null;
             if (!puzzleId.HasValue)
+            {
                 return LoadGameResult.Failed;
+            }
 
             await gameStateStore.Init($"canonical-{puzzleId.Value}");
         }
@@ -93,12 +164,14 @@ public sealed class GameStateManager(
             // Browser state can predate a clue, which would deserialize as Wrong, so results are recomputed from character data.
             try
             {
-                GameState.GuessesMade = await CompareGuessesAsync(GameState.Game.TargetId, GameState.GuessesMade.Select(guess => guess.Character.Id).ToList(), ActiveClues, cancellationToken);
+                GameState.GuessesMade = await CompareGuessesAsync(GameState.Game.TargetId,
+                    GameState.GuessesMade.Select(guess => guess.Character.Id).ToList(), ActiveClues, cancellationToken);
             }
             catch (ArgumentException)
             {
                 // A character removed since the guess keeps its stored results rather than blocking the game from loading.
             }
+
             await gameStateStore.SaveAsync(GameState);
             return LoadGameResult.LoadedExisting;
         }
@@ -115,27 +188,6 @@ public sealed class GameStateManager(
         GameState.FirstEntryPoint = entryPoint;
         await gameStateStore.SaveAsync(GameState);
         return LoadGameResult.CreatedNew;
-    }
-
-    public async Task StartNewPracticeGameAsync(CancellationToken cancellationToken = default)
-    {
-        await _operationGate.WaitAsync(cancellationToken);
-        try
-        {
-            await gameStateStore.Init("practice-current");
-            var playerId = await GetPlayerIdAsync();
-            GameState = await gameService.StartPracticeAsync(cancellationToken);
-            GameState.PlayerId = playerId;
-            GameState.SessionCategory = SessionCategory.Practice;
-            GameState.EntryPoint = EntryPoint.Practice;
-            GameState.FirstEntryPoint = EntryPoint.Practice;
-            await gameStateStore.SaveAsync(GameState);
-            await ResolveFirstGameAsync();
-        }
-        finally
-        {
-            _operationGate.Release();
-        }
     }
 
     private async Task ResolveFirstGameAsync()
@@ -158,28 +210,12 @@ public sealed class GameStateManager(
         IsFirstGame = true;
     }
 
-    public async Task<GuessResult?> MakeGuessAsync(int characterId, CancellationToken cancellationToken = default)
-    {
-        if (GameState is null)
-            throw new InvalidOperationException("Game state is not initialized.");
-
-        var gameId = GameState.GameId;
-        await _operationGate.WaitAsync(cancellationToken);
-        try
-        {
-            // The guess was meant for the game on screen, not for one that loaded while it waited.
-            return GameState.GameId == gameId ? await PlayGuessAsync(characterId, cancellationToken) : null;
-        }
-        finally
-        {
-            _operationGate.Release();
-        }
-    }
-
     private async Task<GuessResult?> PlayGuessAsync(int characterId, CancellationToken cancellationToken)
     {
         if (GameState.IsFinished || GameState.GuessesMade.Any(guess => guess.Character.Id == characterId))
+        {
             return null;
+        }
 
         // The selector only offers released characters and the answer, so this catches calls that bypass it.
         var guessed = await characterStore.GetCharacterAsync(characterId, cancellationToken);
@@ -191,20 +227,22 @@ public sealed class GameStateManager(
 
         EnsureValidPlayerId();
 
-        var startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        var startedAt = Stopwatch.GetTimestamp();
         var stage = "compare";
         var guessRecorded = false;
         var localSaved = false;
         try
         {
             var isFirstGuess = GameState.GuessesMade.Count == 0;
-            var result = await characterComparer.CompareAsync(GameState.Game.TargetId, characterId, ActiveClues, cancellationToken);
+            var result = await characterComparer.CompareAsync(GameState.Game.TargetId, characterId, ActiveClues,
+                cancellationToken);
 
             stage = "record-guess";
             int[] board = [.. GameState.GuessesMade.Select(guess => guess.Character.Id), characterId];
             var stored = await RecordGuessAsync(board);
             guessRecorded = stored is not null;
-            if (stored is not null && (stored.GameId != GameState.GameId || !stored.GuessedCharacterIds.SequenceEqual(board)))
+            if (stored is not null &&
+                (stored.GameId != GameState.GameId || !stored.GuessedCharacterIds.SequenceEqual(board)))
             {
                 GameState = await CreateStateFromSessionAsync(stored, GameState.EntryPoint, cancellationToken);
                 stage = "save-reconciled-local";
@@ -232,15 +270,16 @@ public sealed class GameStateManager(
         }
         catch (Exception exception)
         {
-            logger?.LogError(exception, "Guess failed Stage={Stage} GuessRecorded={GuessRecorded} LocalSaved={LocalSaved} ElapsedMs={ElapsedMs}",
-                stage, guessRecorded, localSaved, System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
+            logger?.LogError(exception,
+                "Guess failed Stage={Stage} GuessRecorded={GuessRecorded} LocalSaved={LocalSaved} ElapsedMs={ElapsedMs}",
+                stage, guessRecorded, localSaved, Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
             throw;
         }
     }
 
     /// <summary>
-    /// Null when a practice guess could not be recorded: only statistics depend on it, and the next guess
-    /// sends the whole board again. Canonical games fail instead, because the database restores them.
+    ///     Null when a practice guess could not be recorded: only statistics depend on it, and the next guess
+    ///     sends the whole board again. Canonical games fail instead, because the database restores them.
     /// </summary>
     private async Task<GameSession?> RecordGuessAsync(IReadOnlyList<int> board)
     {
@@ -256,39 +295,23 @@ public sealed class GameStateManager(
         }
     }
 
-    public async Task<string> GetTargetName(CancellationToken cancellationToken = default) =>
-        (await characterStore.GetCharacterAsync(GameState.Game.TargetId, cancellationToken))?.Name ?? string.Empty;
-
-    public async Task MarkPopupAsSeenAsync(CancellationToken cancellationToken = default)
-    {
-        var gameId = GameState.GameId;
-        await _operationGate.WaitAsync(cancellationToken);
-        try
-        {
-            if (GameState.GameId != gameId)
-                return;
-
-            GameState.SeenPopup = true;
-            await gameStateStore.SaveAsync(GameState);
-        }
-        finally
-        {
-            _operationGate.Release();
-        }
-    }
-
     // The browser's copy can be edited or outdated, so only the server decides a puzzle's answer.
-    private async Task<bool> IsCompatibleAsync(GameState state, SessionCategory category, int? puzzleId, CancellationToken cancellationToken) =>
+    private async Task<bool> IsCompatibleAsync(GameState state, SessionCategory category, int? puzzleId,
+        CancellationToken cancellationToken) =>
         category == SessionCategory.Practice
             ? state.Game.PuzzleId is null
             : state.Game.PuzzleId == puzzleId
-              && state.Game.TargetId == (await characterStore.GetCharacterForDayAsync(puzzleId!.Value, cancellationToken)).Id;
+              && state.Game.TargetId ==
+              (await characterStore.GetCharacterForDayAsync(puzzleId!.Value, cancellationToken)).Id;
 
-    private static GameState NormalizeLocalState(GameState state, Guid playerId, EntryPoint entryPoint, SessionCategory category, int? puzzleId)
+    private static GameState NormalizeLocalState(GameState state, Guid playerId, EntryPoint entryPoint,
+        SessionCategory category, int? puzzleId)
     {
         // Game ids are unique across players: one saved under another identity could never be recorded again.
         if (state.PlayerId != playerId)
+        {
             state.GameId = Guid.NewGuid();
+        }
 
         state.PlayerId = playerId;
         state.SessionCategory = category;
@@ -300,7 +323,8 @@ public sealed class GameStateManager(
         return state;
     }
 
-    private async Task<GameState> CreateStateFromSessionAsync(GameSession session, EntryPoint entryPoint, CancellationToken cancellationToken)
+    private async Task<GameState> CreateStateFromSessionAsync(GameSession session, EntryPoint entryPoint,
+        CancellationToken cancellationToken)
     {
         var characters = await characterStore.GetCharacterMapAsync(cancellationToken);
         var target = characters.GetValueOrDefault(session.TargetCharacterId);
@@ -316,18 +340,27 @@ public sealed class GameStateManager(
             SessionCategory = session.SessionCategory,
             EntryPoint = entryPoint,
             FirstEntryPoint = session.FirstEntryPoint,
-            Game = new Game { PuzzleId = session.PuzzleId, TargetId = session.TargetCharacterId, PortraitUrl = target is null ? string.Empty : CharacterUrlHelper.GetPortraitFolder(target.PortraitId) },
+            Game = new Game
+            {
+                PuzzleId = session.PuzzleId,
+                TargetId = session.TargetCharacterId,
+                PortraitUrl =
+                    target is null ? string.Empty : CharacterUrlHelper.GetPortraitFolder(target.PortraitId)
+            },
             Outcome = session.Outcome,
             SeenPopup = session.FinishedOnUtc.HasValue,
-            GuessesMade = guesses,
+            GuessesMade = guesses
         };
     }
 
-    private async Task<List<GuessResult>> CompareGuessesAsync(int targetId, IReadOnlyList<int> guessedIds, IReadOnlySet<ClueGroup> activeClues, CancellationToken cancellationToken)
+    private async Task<List<GuessResult>> CompareGuessesAsync(int targetId, IReadOnlyList<int> guessedIds,
+        IReadOnlySet<ClueGroup> activeClues, CancellationToken cancellationToken)
     {
         var guesses = new List<GuessResult>();
         foreach (var guessedId in guessedIds)
+        {
             guesses.Add(await characterComparer.CompareAsync(targetId, guessedId, activeClues, cancellationToken));
+        }
 
         return guesses;
     }
@@ -341,18 +374,22 @@ public sealed class GameStateManager(
         FirstEntryPoint = GameState.FirstEntryPoint,
         TargetCharacterId = GameState.Game.TargetId,
         Ruleset = _availability.GetRuleset(EffectiveDate),
-        StartedOnUtc = startedOnUtc,
+        StartedOnUtc = startedOnUtc
     };
 
     private void EnsureValidPlayerId()
     {
         if (GameState.PlayerId == Guid.Empty)
+        {
             throw new InvalidOperationException("Cannot record telemetry without a valid player id.");
+        }
     }
 
     private async Task<Guid> GetPlayerIdAsync()
     {
         var playerId = await playerStatsStore.GetPlayerIdAsync();
-        return playerId == Guid.Empty ? throw new InvalidOperationException("Player identity was not initialized.") : playerId;
+        return playerId == Guid.Empty
+            ? throw new InvalidOperationException("Player identity was not initialized.")
+            : playerId;
     }
 }

@@ -1,26 +1,26 @@
 @page "/"
-@rendermode InteractiveServer
-
 @using MudBlazor
 @using QSMPDLE.Web.Components.Game
-@using QSMPDLE.Web.Features.Gameplay.Models
+@rendermode InteractiveServer
 
 <PageTitle>Daily Game - QSMPDLE</PageTitle>
 
 @if (!IsGameLoaded)
 {
-    <h2><MudSkeleton SkeletonType="SkeletonType.Text" Width="min(25rem, calc(100vw - 2rem))" Height="2.375rem" /></h2>
+    <h2>
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="min(25rem, calc(100vw - 2rem))" Height="2.375rem"/>
+    </h2>
 }
-else 
+else
 {
     <h2>DAILY CHARACTER<span class="separator">|</span>#@DailyNumber.ToString("00")</h2>
 }
 
-<Gameplay EntryPoint="EntryPoint.Daily" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded" />
+<Gameplay EntryPoint="EntryPoint.Daily" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded"/>
 
 @code {
-    private int DailyNumber = 0;
-    private bool IsGameLoaded = false;
+    private int DailyNumber;
+    private bool IsGameLoaded;
 
     private async Task OnGameStateChange(GameState gameState)
     {
@@ -31,5 +31,6 @@ else
     {
         IsGameLoaded = true;
     }
+
 }
 

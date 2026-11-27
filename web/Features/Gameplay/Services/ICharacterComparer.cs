@@ -4,5 +4,6 @@ namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 public interface ICharacterComparer
 {
-    Task<GuessResult> CompareAsync(int targetId, int guessedId, IReadOnlySet<ClueGroup> activeClues, CancellationToken cancellationToken = default);
+    Task<GuessResult> CompareAsync(int targetId, int guessedId, IReadOnlySet<ClueGroup> activeClues,
+        CancellationToken cancellationToken = default);
 }

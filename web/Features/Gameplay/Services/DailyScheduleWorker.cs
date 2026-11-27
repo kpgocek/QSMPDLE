@@ -1,8 +1,8 @@
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 /// <summary>
-/// Tops up the daily schedule at startup and twice a day, so it never runs out while the app is
-/// deployed. A failed run is harmless: unscheduled days fall back to a deterministic pick.
+///     Tops up the daily schedule at startup and twice a day, so it never runs out while the app is
+///     deployed. A failed run is harmless: unscheduled days fall back to a deterministic pick.
 /// </summary>
 public sealed class DailyScheduleWorker(
     IDailyScheduleService schedule,
@@ -30,7 +30,9 @@ public sealed class DailyScheduleWorker(
         {
             var added = await schedule.EnsureScheduledAsync(cancellationToken);
             if (added > 0)
+            {
                 logger.LogInformation("Scheduled {Count} upcoming daily games.", added);
+            }
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

@@ -1,6 +1,5 @@
 using Microsoft.JSInterop;
 using QSMPDLE.Web.Features.Gameplay.Models;
-using QSMPDLE.Web.Infrastructure.LocalStorage;
 
 namespace QSMPDLE.Web.Features.Archive.Services;
 
@@ -32,7 +31,9 @@ public sealed class ArchiveGameStateSource(ILocalStorageService localStorage, IJ
             foreach (var key in keys)
             {
                 if (int.TryParse(key, out var day))
+                {
                     days.Add(day);
+                }
             }
 
             return days;

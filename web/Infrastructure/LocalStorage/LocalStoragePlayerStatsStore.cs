@@ -24,6 +24,8 @@ public sealed class LocalStoragePlayerStatsStore(ILocalStorageService localStora
         }
     }
 
+    public async Task<Guid> GetPlayerIdAsync() => (await LoadAsync()).Id;
+
     private async Task<PlayerStats> LoadOrCreateAsync()
     {
         var identity = await localStorage.GetItemAsync<LocalPlayerIdentity>(Key);
@@ -31,7 +33,10 @@ public sealed class LocalStoragePlayerStatsStore(ILocalStorageService localStora
         {
             identity ??= new LocalPlayerIdentity();
             if (identity.Id == Guid.Empty)
+            {
                 identity.Id = Guid.NewGuid();
+            }
+
             identity.Version = PlayerStats.CurrentVersion;
 
             // Rewrite a missing or legacy PlayerStats object as identity-only data once, not on every read.
@@ -40,8 +45,6 @@ public sealed class LocalStoragePlayerStatsStore(ILocalStorageService localStora
 
         return new PlayerStats { Id = identity.Id, Version = identity.Version };
     }
-
-    public async Task<Guid> GetPlayerIdAsync() => (await LoadAsync()).Id;
 
     private sealed class LocalPlayerIdentity
     {

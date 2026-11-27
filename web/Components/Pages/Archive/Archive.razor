@@ -1,10 +1,12 @@
 @page "/archive"
 @inject NavigationManager NavigationManager
-@inject QSMPDLE.Web.Features.Gameplay.Services.IDayService DayService
+@inject IDayService DayService
 
 @code {
+
     protected override void OnInitialized()
     {
         NavigationManager.NavigateTo(DayService.GetYesterdayArchiveLink(), replace: true);
     }
+
 }

@@ -2,9 +2,8 @@
     display: flex;
     flex-direction: column;
 
-    background:
-        radial-gradient(circle at top center, var(--surface-strong), transparent 34rem),
-        radial-gradient(circle at bottom left, var(--surface), transparent 28rem);
+    background: radial-gradient(circle at top center, var(--surface-strong), transparent 34rem),
+    radial-gradient(circle at bottom left, var(--surface), transparent 28rem);
 
     /* 100vw would include the scrollbar and push every page sideways by its width. */
     width: 100%;

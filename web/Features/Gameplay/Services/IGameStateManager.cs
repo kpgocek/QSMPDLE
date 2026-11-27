@@ -1,7 +1,7 @@
-namespace QSMPDLE.Web.Features.Gameplay.Services;
-
-using Models;
 using QSMPDLE.Web.Extensions;
+using QSMPDLE.Web.Features.Gameplay.Models;
+
+namespace QSMPDLE.Web.Features.Gameplay.Services;
 
 public interface IGameStateManager
 {
@@ -15,7 +15,9 @@ public interface IGameStateManager
 
     IReadOnlySet<ClueGroup> ActiveClues { get; }
 
-    Task<LoadGameResult> StartGameAsync(EntryPoint entryPoint, int? puzzleId = null, CancellationToken cancellationToken = default);
+    Task<LoadGameResult> StartGameAsync(EntryPoint entryPoint, int? puzzleId = null,
+        CancellationToken cancellationToken = default);
+
     Task StartNewPracticeGameAsync(CancellationToken cancellationToken = default);
     Task<GuessResult?> MakeGuessAsync(int characterId, CancellationToken cancellationToken = default);
     Task<string> GetTargetName(CancellationToken cancellationToken = default);

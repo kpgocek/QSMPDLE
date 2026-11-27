@@ -89,10 +89,9 @@
 
     border: none;
 
-    transition:
-        background-color 160ms ease,
-        color 160ms ease,
-        transform 160ms ease;
+    transition: background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 
     padding: .5rem .75rem;
 

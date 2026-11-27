@@ -4,4 +4,3 @@ public interface ISitemapService
 {
     Task<string> GenerateAsync(CancellationToken cancellationToken = default);
 }
-

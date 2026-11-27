@@ -14,6 +14,8 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
 
     private string Key { get; set; } = string.Empty;
 
+    public bool IsInitialized => !string.IsNullOrEmpty(Key);
+
     // Assign the key for the game state store, which will be used to store and retrieve the game state from local storage.
     public Task Init(string key)
     {
@@ -24,7 +26,10 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
     public async Task<GameState?> GetAsync()
     {
         if (!IsInitialized)
+        {
             throw new NullReferenceException(nameof(Key));
+        }
+
         try
         {
             var state = await localStorage.GetItemAsync<GameState>(Key);
@@ -48,7 +53,9 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
     public async Task SaveAsync(GameState state)
     {
         if (!IsInitialized)
+        {
             throw new NullReferenceException(nameof(Key));
+        }
 
         // Marked with the current schema version so future loads can detect compatibility.
         state.SchemaVersion = CurrentSchemaVersion;
@@ -77,13 +84,17 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
             {
                 var key = prefix + suffix;
                 if (key == Key)
+                {
                     continue;
+                }
 
                 try
                 {
                     var state = await localStorage.GetItemAsync<GameState>(key);
                     if (state?.GuessesMade.Count > 0)
+                    {
                         return true;
+                    }
                 }
                 catch
                 {
@@ -95,7 +106,6 @@ public sealed class LocalStorageGameStateStore(ILocalStorageService localStorage
         return false;
     }
 
-    public bool IsInitialized => !string.IsNullOrEmpty(Key);
-
-    private Task<string[]> GetKeySuffixesAsync(string prefix) => js.InvokeAsync<string[]>("storageKeys", prefix).AsTask();
+    private Task<string[]> GetKeySuffixesAsync(string prefix) =>
+        js.InvokeAsync<string[]>("storageKeys", prefix).AsTask();
 }

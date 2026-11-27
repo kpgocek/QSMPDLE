@@ -7,7 +7,6 @@
 @using QSMPDLE.Web.Features.HiLo.Models
 @using QSMPDLE.Web.Features.HiLo.Services
 @using QSMPDLE.Web.Features.Sharing
-
 @implements IDisposable
 
 @inject IHiLoService HiLoService
@@ -24,13 +23,15 @@
     {
         <div class="hilo-error" role="alert">
             <p>We couldn't load the game. Check your connection and try again.</p>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@_isLoading" OnClick="StartRoundAsync">Try again</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@_isLoading"
+                       OnClick="StartRoundAsync">Try again
+            </MudButton>
         </div>
     }
     else if (_round is null)
     {
         <div class="hilo-loading">
-            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100%" Height="100%" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100%" Height="100%"/>
         </div>
     }
     else
@@ -56,7 +57,8 @@
                 @if (_carried && _covered is { } covered)
                 {
                     @* The last round's known character, left in place for the carried one to slide over. *@
-                    <div class="hilo-covered" aria-hidden="true">@CharacterCard((covered.Character, covered.Value, null))</div>
+                    <div class="hilo-covered"
+                         aria-hidden="true">@CharacterCard((covered.Character, covered.Value, null))</div>
                 }
             </div>
         </div>
@@ -77,21 +79,28 @@
 
             @if (IsOver)
             {
-                <section class="hilo-over" tabindex="-1" aria-labelledby="hilo-over-title" aria-describedby="hilo-over-text" @ref="_runOver">
+                <section class="hilo-over" tabindex="-1" aria-labelledby="hilo-over-title"
+                         aria-describedby="hilo-over-text" @ref="_runOver">
                     <h3 id="hilo-over-title" class="hilo-over-title">Unlucky!</h3>
                     <p id="hilo-over-text">
-                        @(Claim(_round.Answer)). You got <strong>@_score</strong> in a row@(IsNewBest ? ", a new best!" : ".")
+                        @(Claim(_round.Answer)). You got <strong>@_score</strong> in a
+                        row@(IsNewBest ? ", a new best!" : ".")
                     </p>
                     <div class="hilo-over-actions">
-                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareAsync">Share</MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isLoading" OnClick="StartRoundAsync">New run</MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Share" OnClick="ShareAsync">Share
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isLoading"
+                                   OnClick="StartRoundAsync">New run
+                        </MudButton>
                     </div>
                 </section>
             }
 
             @if (_saveFailed)
             {
-                <p class="hilo-error" role="alert">Your best score couldn't be saved yet. Keep playing and we'll try again.</p>
+                <p class="hilo-error" role="alert">Your best score couldn't be saved yet. Keep playing and we'll try
+                    again.</p>
             }
         </div>
     }
@@ -102,6 +111,7 @@
 </div>
 
 @code {
+
     // The flip ends at 630ms (see .hilo-reveal); the rest is time to read the number.
     private static readonly TimeSpan AdvanceDelay = TimeSpan.FromMilliseconds(1200);
 
@@ -132,7 +142,10 @@
     private string PairState => _given is null ? "asking" : IsCorrect ? "" : "over";
 
     // The pressed answer stays lit while the others step back.
-    private string AnswerClass(HiLoAnswer answer) => _given is null ? "" : answer == _given ? "hilo-chosen" : "hilo-waiting";
+    private string AnswerClass(HiLoAnswer answer)
+    {
+        return _given is null ? "" : answer == _given ? "hilo-chosen" : "hilo-waiting";
+    }
 
     private string StatName => _round!.Stat switch
     {
@@ -141,26 +154,32 @@
         HiLoStat.YouTubeSubscribers => "YouTube subscribers",
         HiLoStat.TwitchFollowers => "Twitch followers",
         HiLoStat.KickFollowers => "Kick followers",
-        _ => throw new InvalidOperationException($"Unknown stat {_round.Stat}."),
+        _ => throw new InvalidOperationException($"Unknown stat {_round.Stat}.")
     };
 
-    private string Label(HiLoAnswer answer) => (answer, _round!.Stat) switch
+    private string Label(HiLoAnswer answer)
     {
-        (HiLoAnswer.Higher, HiLoStat.DayArrived) => "Later",
-        (HiLoAnswer.Lower, HiLoStat.DayArrived) => "Earlier",
-        (HiLoAnswer.Equal, HiLoStat.DayArrived) => "Same day",
-        _ => answer.ToString(),
-    };
+        return (answer, _round!.Stat) switch
+        {
+            (HiLoAnswer.Higher, HiLoStat.DayArrived) => "Later",
+            (HiLoAnswer.Lower, HiLoStat.DayArrived) => "Earlier",
+            (HiLoAnswer.Equal, HiLoStat.DayArrived) => "Same day",
+            _ => answer.ToString()
+        };
+    }
 
     // The same direction icons as the guess board's tiles.
-    private string IconFor(HiLoAnswer answer) => (answer, _round!.Stat) switch
+    private string IconFor(HiLoAnswer answer)
     {
-        (HiLoAnswer.Equal, _) => Icons.Material.Filled.DragHandle,
-        (HiLoAnswer.Higher, HiLoStat.DayArrived) => GuessChip.IconFor(ComparisonResult.Later)!,
-        (HiLoAnswer.Lower, HiLoStat.DayArrived) => GuessChip.IconFor(ComparisonResult.Earlier)!,
-        (HiLoAnswer.Higher, _) => GuessChip.IconFor(ComparisonResult.More)!,
-        _ => GuessChip.IconFor(ComparisonResult.Less)!,
-    };
+        return (answer, _round!.Stat) switch
+        {
+            (HiLoAnswer.Equal, _) => Icons.Material.Filled.DragHandle,
+            (HiLoAnswer.Higher, HiLoStat.DayArrived) => GuessChip.IconFor(ComparisonResult.Later)!,
+            (HiLoAnswer.Lower, HiLoStat.DayArrived) => GuessChip.IconFor(ComparisonResult.Earlier)!,
+            (HiLoAnswer.Higher, _) => GuessChip.IconFor(ComparisonResult.More)!,
+            _ => GuessChip.IconFor(ComparisonResult.Less)!
+        };
+    }
 
     // Earlier on the left for days, so each arrow points the way its button sits.
     private HiLoAnswer[] Answers => _round!.Stat == HiLoStat.DayArrived
@@ -168,7 +187,10 @@
         : [HiLoAnswer.Higher, HiLoAnswer.Equal, HiLoAnswer.Lower];
 
     // Stands in for the question the page no longer prints, e.g. "Higher: Tubbo has more YouTube subscribers than Ant".
-    private string AnswerName(HiLoAnswer answer) => $"{Label(answer)}: {Claim(answer)}";
+    private string AnswerName(HiLoAnswer answer)
+    {
+        return $"{Label(answer)}: {Claim(answer)}";
+    }
 
     // The run-over line states the right claim, e.g. "Alondrissa arrived later than Ibai".
     private string Claim(HiLoAnswer answer)
@@ -184,23 +206,27 @@
             (HiLoAnswer.Equal, HiLoStat.QPhoneNumber) => $"has the same QPhone number as {known}",
             (HiLoAnswer.Higher, _) => $"has more {StatName} than {known}",
             (HiLoAnswer.Lower, _) => $"has fewer {StatName} than {known}",
-            _ => $"has as many {StatName} as {known}",
+            _ => $"has as many {StatName} as {known}"
         };
 
         return $"{hidden} {claim}";
     }
 
-    private string FormatValue(int value) => _round!.Stat switch
+    private string FormatValue(int value)
     {
-        HiLoStat.DayArrived => $"Day {value}",
-        HiLoStat.QPhoneNumber => value.ToString(CultureInfo.InvariantCulture),
-        _ => value.ToString("N0", CultureInfo.InvariantCulture),
-    };
+        return _round!.Stat switch
+        {
+            HiLoStat.DayArrived => $"Day {value}",
+            HiLoStat.QPhoneNumber => value.ToString(CultureInfo.InvariantCulture),
+            _ => value.ToString("N0", CultureInfo.InvariantCulture)
+        };
+    }
 
     private RenderFragment<(Character Character, string Value, bool? IsCorrect)> CharacterCard => card =>
         @<div class="hilo-character">
-            <img src="@CharacterUrlHelper.GetPortraitSrc(CharacterUrlHelper.GetPortraitFolder(card.Character.PortraitId))"
-                 alt="" width="320" height="320" decoding="async" />
+            <img
+                src="@CharacterUrlHelper.GetPortraitSrc(CharacterUrlHelper.GetPortraitFolder(card.Character.PortraitId))"
+                alt="" width="320" height="320" decoding="async"/>
             <strong class="hilo-name">@card.Character.Name</strong>
             <span class="hilo-value">
                 @card.Value
@@ -208,7 +234,8 @@
                 {
                     @* Turns over the "?" plate, which stays underneath until the tile covers it. *@
                     <span class="hilo-reveal @(correct ? "success" : "failure")">
-                        <MudIcon Icon="@GuessChip.IconFor(correct ? ComparisonResult.Correct : ComparisonResult.Wrong)" aria-hidden="true" />
+                        <MudIcon Icon="@GuessChip.IconFor(correct ? ComparisonResult.Correct : ComparisonResult.Wrong)"
+                                 aria-hidden="true"/>
                         @FormatValue(_round!.HiddenValue)
                     </span>
                 }
@@ -344,7 +371,10 @@
         await StartRoundAsync();
     }
 
-    private void Skip() => _advance?.Cancel();
+    private void Skip()
+    {
+        _advance?.Cancel();
+    }
 
     private async Task ShareAsync()
     {
@@ -366,4 +396,5 @@
         _advance?.Cancel();
         _advance?.Dispose();
     }
+
 }

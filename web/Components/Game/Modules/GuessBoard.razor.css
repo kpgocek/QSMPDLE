@@ -206,9 +206,17 @@
     text-align: start;
 }
 
-.result-correct .tile-face { background: var(--correct); }
-.result-partial .tile-face { background: var(--partial); }
-.result-direction .tile-face { background: var(--partial); }
+.result-correct .tile-face {
+    background: var(--correct);
+}
+
+.result-partial .tile-face {
+    background: var(--partial);
+}
+
+.result-direction .tile-face {
+    background: var(--partial);
+}
 
 .result-wrong .tile-face {
     background: var(--wrong);
@@ -347,10 +355,21 @@
     margin-top: .0625rem;
 }
 
-.result-correct ::deep .fact-icon { color: var(--correct); }
-.result-partial ::deep .fact-icon { color: var(--partial); }
-.result-wrong ::deep .fact-icon { color: var(--wrong); }
-.result-direction ::deep .fact-icon { color: var(--partial); }
+.result-correct ::deep .fact-icon {
+    color: var(--correct);
+}
+
+.result-partial ::deep .fact-icon {
+    color: var(--partial);
+}
+
+.result-wrong ::deep .fact-icon {
+    color: var(--wrong);
+}
+
+.result-direction ::deep .fact-icon {
+    color: var(--partial);
+}
 
 .empty-row {
     border: .125rem solid var(--line);
@@ -374,12 +393,29 @@
     border: .0625rem solid var(--line);
 }
 
-.fade-1 { opacity: 1; }
-.fade-2 { opacity: .8; }
-.fade-3 { opacity: .6; }
-.fade-4 { opacity: .4; }
-.fade-5 { opacity: .2; }
-.fade-6 { opacity: .1; }
+.fade-1 {
+    opacity: 1;
+}
+
+.fade-2 {
+    opacity: .8;
+}
+
+.fade-3 {
+    opacity: .6;
+}
+
+.fade-4 {
+    opacity: .4;
+}
+
+.fade-5 {
+    opacity: .2;
+}
+
+.fade-6 {
+    opacity: .1;
+}
 
 /* The newest guess turns its clues over one at a time, left to right. */
 .new-row {

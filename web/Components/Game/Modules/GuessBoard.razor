@@ -1,9 +1,6 @@
 @using MudBlazor
-@using QSMPDLE.Web.Components.UX
 @using QSMPDLE.Web.Components.UX.StatDisplay
-@using QSMPDLE.Web.Features.Gameplay.Models
 @using QSMPDLE.Web.Infrastructure.Persistence
-
 @inject ICharacterStore CharacterStore
 
 @if (Guesses is not null)
@@ -24,7 +21,8 @@
                         <MudTooltip Text="@clue.Help">
                             <button type="button" class="header-help">
                                 @HeaderLabel(clue)
-                                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="header-help-icon" aria-hidden="true" />
+                                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="header-help-icon"
+                                         aria-hidden="true"/>
                                 <span class="visually-hidden">(@clue.Help)</span>
                             </button>
                         </MudTooltip>
@@ -51,9 +49,10 @@
                     <button type="button" class="character-toggle" aria-expanded="@(isOpen ? "true" : "false")"
                             aria-controls="guess-detail-@index"
                             @onclick="() => Toggle(rowIndex)" @onkeydown="e => CloseOnEscape(e, rowIndex)">
-                        <img class="head" src="@CharacterUrlHelper.GetHeadSrc(character)" alt="" />
+                        <img class="head" src="@CharacterUrlHelper.GetHeadSrc(character)" alt=""/>
                         <span class="guess-name">@character.Name</span>
-                        <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Size="Size.Small" Class="toggle-icon" aria-hidden="true" />
+                        <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Size="Size.Small" Class="toggle-icon"
+                                 aria-hidden="true"/>
                         <span class="visually-hidden">clue details</span>
                     </button>
                 </div>
@@ -63,16 +62,18 @@
                     var clue = Clues[position];
                     var result = clue.Result(guess);
 
-                    <div class="tile @TileClass(result) @(clue.IsList ? "tile-list" : "")" role="cell" style="--i: @position">
+                    <div class="tile @TileClass(result) @(clue.IsList ? "tile-list" : "")" role="cell"
+                         style="--i: @position">
                         <div class="tile-face" aria-hidden="true">
                             <span class="value-full">@clue.Full(character)</span>
                             <span class="value-short">@clue.Short(character)</span>
                             @if (result is { } shown && GuessChip.IconFor(shown) is { } icon)
                             {
-                                <MudIcon Icon="@icon" Size="Size.Small" Class="tile-icon" />
+                                <MudIcon Icon="@icon" Size="Size.Small" Class="tile-icon"/>
                             }
                         </div>
-                        <span class="visually-hidden">@clue.Full(character) (@(result is { } r ? GuessChip.Describe(r) : "not released"))</span>
+                        <span
+                            class="visually-hidden">@clue.Full(character) (@(result is { } r ? GuessChip.Describe(r) : "not released"))</span>
                     </div>
                 }
             </div>
@@ -90,11 +91,12 @@
                                 <dd>
                                     @if (result is { } shown && GuessChip.IconFor(shown) is { } icon)
                                     {
-                                        <MudIcon Icon="@icon" Size="Size.Small" Class="fact-icon" aria-hidden="true" />
+                                        <MudIcon Icon="@icon" Size="Size.Small" Class="fact-icon" aria-hidden="true"/>
                                     }
                                     <span>
                                         @clue.Full(character)
-                                        <span class="fact-result">@(result is { } r ? GuessChip.Describe(r) : "not released")</span>
+                                        <span
+                                            class="fact-result">@(result is { } r ? GuessChip.Describe(r) : "not released")</span>
                                     </span>
                                 </dd>
                             </div>
@@ -107,13 +109,13 @@
             {
                 <div class="legend-row" role="row">
                     <div role="cell" aria-colspan="@(Clues.Count + 1)">
-                        <FirstGuessLegend Guess="guess" />
+                        <FirstGuessLegend Guess="guess"/>
                     </div>
                 </div>
             }
         }
 
-        @for (int i = Guesses.Count; ShowPlaceholders && i < GameRules.MaxGuesses; i++)
+        @for (var i = Guesses.Count; ShowPlaceholders && i < GameRules.MaxGuesses; i++)
         {
             <div aria-hidden="true" class="empty-row fade-@(i - Guesses.Count + 1)">
                 <div class="character">
@@ -122,7 +124,9 @@
                 </div>
                 @foreach (var _ in Clues)
                 {
-                    <div class="tile"><div class="tile-face placeholder-face"></div></div>
+                    <div class="tile">
+                        <div class="tile-face placeholder-face"></div>
+                    </div>
                 }
             </div>
         }
@@ -131,14 +135,11 @@
 }
 
 @code {
-    [Parameter]
-    public IReadOnlyList<GuessResult> Guesses { get; set; } = null!;
+    [Parameter] public IReadOnlyList<GuessResult> Guesses { get; set; } = null!;
 
-    [Parameter]
-    public bool ShowLegend { get; set; }
+    [Parameter] public bool ShowLegend { get; set; }
 
-    [Parameter]
-    public bool ShowPlaceholders { get; set; } = true;
+    [Parameter] public bool ShowPlaceholders { get; set; } = true;
 
     /// <summary>The clues released by the game's date; the others get no column or placeholder tile.</summary>
     [Parameter]
@@ -147,8 +148,8 @@
     private int? _openIndex;
 
     /// <summary>
-    /// One place for every clue's wording: <c>Full</c> fills wide tiles and the detail strip,
-    /// <c>Short</c> fills narrow tiles. A list clue shows every value, never clamped.
+    ///     One place for every clue's wording: <c>Full</c> fills wide tiles and the detail strip,
+    ///     <c>Short</c> fills narrow tiles. A list clue shows every value, never clamped.
     /// </summary>
     private sealed record Clue(
         string Label,
@@ -177,7 +178,7 @@
         new("Award '26", "Award", "Won a QSMP Award in 2026", ClueGroup.Award2026, guess => guess.Award2026,
             character => YesNo(character.WonAward2026), character => YesNo(character.WonAward2026)),
         new("Affiliations", "Affil.", null, null, guess => guess.Affiliation,
-            character => ListOrNone(character.Affiliations), ShortAffiliations, IsList: true),
+            character => ListOrNone(character.Affiliations), ShortAffiliations, IsList: true)
     ];
 
     private IReadOnlyList<Clue> Clues { get; set; } = [];
@@ -210,7 +211,8 @@
     }
 
     private static RenderFragment HeaderLabel(Clue clue) =>
-        @<text><span class="label-full">@clue.Label</span><span class="label-short" aria-hidden="true">@clue.ShortLabel</span></text>;
+        @<text><span class="label-full">@clue.Label</span><span class="label-short"
+                                                                aria-hidden="true">@clue.ShortLabel</span></text>;
 
     private static string TileClass(ComparisonResult? result) => result switch
     {
@@ -231,7 +233,7 @@
         ["Dutch Faction"] = "Dutch",
         ["Polish Hussars"] = "Hussars",
         ["Schlatt & Co."] = "Schlatt",
-        ["Schlatt & Co"] = "Schlatt",
+        ["Schlatt & Co"] = "Schlatt"
     };
 
     // One per line, so every affiliation stays visible on the narrowest tile.
@@ -257,7 +259,7 @@
     {
         ["He/Him"] = "He",
         ["She/Her"] = "She",
-        ["They/Them"] = "They",
+        ["They/Them"] = "They"
     };
 
     // Every pronoun set: "He/Him, She/Her" becomes "He/She", and "He/They" stays "He/They".
@@ -265,4 +267,5 @@
         character.Pronouns.Count > 0
             ? string.Join("/", character.Pronouns.Select(pronoun => ShortPronounSets.GetValueOrDefault(pronoun, pronoun)))
             : "None";
+
 }

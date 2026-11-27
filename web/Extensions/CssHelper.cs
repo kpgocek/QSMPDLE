@@ -14,9 +14,9 @@ public static class CssHelper
             ComparisonResult.Wrong => Color.Error,
 
             ComparisonResult.Earlier or
-            ComparisonResult.Later or
-            ComparisonResult.More or
-            ComparisonResult.Less
+                ComparisonResult.Later or
+                ComparisonResult.More or
+                ComparisonResult.Less
                 => Color.Primary,
 
             _ => Color.Default

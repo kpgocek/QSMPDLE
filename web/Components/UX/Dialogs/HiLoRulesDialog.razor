@@ -1,7 +1,4 @@
 @using MudBlazor
-@using QSMPDLE.Web.Features.Gameplay.Models
-@using QSMPDLE.Web.Features.Gameplay.Services
-
 @inject IGameplayAvailabilityService Availability
 
 <MudDialog Class="pop-up pt-0">
@@ -9,7 +6,7 @@
         <div class="d-flex align-center justify-space-between w-100">
             <h2 class="mb-0">How to Play</h2>
 
-            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Close" Size="Size.Medium" aria-label="Close" />
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Close" Size="Size.Medium" aria-label="Close"/>
         </div>
     </TitleContent>
     <DialogContent>
@@ -34,17 +31,21 @@
         <p>Only characters with a number to compare come up. Subscriber and follower counts aren't live.</p>
 
         <p>
-            Every right answer scores a point, and the second character becomes the first in the next round. One mistake, or leaving the page, ends the run.
+            Every right answer scores a point, and the second character becomes the first in the next round. One
+            mistake, or leaving the page, ends the run.
             Your best score is kept, and shown on your Profile.
         </p>
     </DialogContent>
 </MudDialog>
 
 @code {
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
 
     private bool HasQPhones => Availability.GetActiveClues(Availability.GetEffectiveDate(null)).Contains(ClueGroup.QPhone);
 
-    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+    private void Close()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
 }

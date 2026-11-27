@@ -1,10 +1,10 @@
 @rendermode InteractiveServer
-@implements IDisposable
 @using MudBlazor
-@using Microsoft.AspNetCore.Components.Routing
 @using QSMPDLE.Web.Components.UX.Dialogs
+@implements IDisposable
 @inject NavigationManager Nav
-@inject QSMPDLE.Web.Features.Gameplay.Services.IDayService DayService
+@inject IDialogService DialogService
+@inject IDayService DayService
 
 <header class="topbar">
     <div class="topbar-container" id="game-top">
@@ -14,12 +14,13 @@
         <div class="mobile-menu">
             <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Size="Size.Large"
                            OnClick="@ToggleMenu" aria-label="Toggle Menu"
-                           aria-expanded="@(isMenuOpen ? "true" : "false")" aria-controls="site-nav" />
+                           aria-expanded="@(isMenuOpen ? "true" : "false")" aria-controls="site-nav"/>
         </div>
 
         <nav id="site-nav" class="links @MenuVisibilityClass" aria-label="Main">
             <div class="links-row">
-                <a href="/" class="@(IsClassic ? "active" : null)" aria-current="@(IsClassic ? "true" : null)">Classic</a>
+                <a href="/" class="@(IsClassic ? "active" : null)"
+                   aria-current="@(IsClassic ? "true" : null)">Classic</a>
 
                 <span class="separator">•</span>
 
@@ -105,30 +106,46 @@
     // Every other page, such as the changelog, shows the Classic links.
     private bool IsClassic => !IsHiLo && !IsProfile;
 
-    private bool IsAt(string path) => new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').Equals(path, StringComparison.OrdinalIgnoreCase);
+    private bool IsAt(string path)
+    {
+        return new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').Equals(path, StringComparison.OrdinalIgnoreCase);
+    }
 
-    private bool isMenuOpen = false;
+    private bool isMenuOpen;
 
     private string MenuVisibilityClass => isMenuOpen ? "show" : "hide";
 
-    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+    }
 
-    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
 
     // The menu outlives enhanced navigation, so it must redraw when the section changes.
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(StateHasChanged);
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
 
     private static readonly DialogOptions WideDialog = new()
     {
         MaxWidth = MaxWidth.Medium,
         FullWidth = true,
-        CloseOnEscapeKey = true,
+        CloseOnEscapeKey = true
     };
 
-    private Task OpenHiLoRules() => DialogService.ShowAsync<HiLoRulesDialog>("How to Play Hi-Lo", WideDialog);
+    private Task OpenHiLoRules()
+    {
+        return DialogService.ShowAsync<HiLoRulesDialog>("How to Play Hi-Lo", WideDialog);
+    }
 
     private void ToggleMenu()
     {
         isMenuOpen = !isMenuOpen;
     }
+
 }

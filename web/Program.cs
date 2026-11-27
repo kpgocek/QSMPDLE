@@ -61,7 +61,7 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseExceptionHandler("/Error", true);
     app.UseHsts();
 }
 
@@ -88,8 +88,7 @@ app.UseStaticFiles(new StaticFileOptions
         {
             context.Context.Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue
             {
-                Public = true,
-                MaxAge = TimeSpan.FromDays(30)
+                Public = true, MaxAge = TimeSpan.FromDays(30)
             };
         }
     }
@@ -115,7 +114,9 @@ static string ResolveConnectionString(IConfiguration configuration)
 {
     var connectionString = configuration.GetConnectionString("qsmpdle");
     if (!string.IsNullOrWhiteSpace(connectionString))
+    {
         return ApplyPoolSettings(new NpgsqlConnectionStringBuilder(connectionString), configuration);
+    }
 
     var host = configuration["PGHOST"];
     if (string.IsNullOrWhiteSpace(host))
@@ -125,14 +126,15 @@ static string ResolveConnectionString(IConfiguration configuration)
             + "In production set the PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD variables.");
     }
 
-    return ApplyPoolSettings(new NpgsqlConnectionStringBuilder
-    {
-        Host = host,
-        Port = int.TryParse(configuration["PGPORT"], out var port) ? port : 5432,
-        Database = configuration["PGDATABASE"],
-        Username = configuration["PGUSER"],
-        Password = configuration["PGPASSWORD"]
-    }, configuration);
+    return ApplyPoolSettings(
+        new NpgsqlConnectionStringBuilder
+        {
+            Host = host,
+            Port = int.TryParse(configuration["PGPORT"], out var port) ? port : 5432,
+            Database = configuration["PGDATABASE"],
+            Username = configuration["PGUSER"],
+            Password = configuration["PGPASSWORD"]
+        }, configuration);
 }
 
 // Cap the pool below Postgres' max_connections (~100 on Railway) so a spike queues briefly
@@ -145,15 +147,17 @@ static string ApplyPoolSettings(NpgsqlConnectionStringBuilder builder, IConfigur
     return builder.ConnectionString;
 }
 
-static bool IsBrowserCacheableAsset(string extension) =>
-    extension.Equals(".webp", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".gif", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".woff2", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".ttf", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".css", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".js", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".br", StringComparison.OrdinalIgnoreCase)
-    || extension.Equals(".gz", StringComparison.OrdinalIgnoreCase);
+static bool IsBrowserCacheableAsset(string extension)
+{
+    return extension.Equals(".webp", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".gif", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".woff2", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".ttf", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".css", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".js", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".br", StringComparison.OrdinalIgnoreCase)
+           || extension.Equals(".gz", StringComparison.OrdinalIgnoreCase);
+}

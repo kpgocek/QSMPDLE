@@ -1,10 +1,10 @@
-namespace QSMPDLE.Web.Features.Gameplay.Helpers;
-
 using QSMPDLE.Web.Features.Gameplay.Models;
 
+namespace QSMPDLE.Web.Features.Gameplay.Helpers;
+
 /// <summary>
-/// Owns every character URL rule: mini heads are found by name, portraits by the GUID folder that
-/// tools/portraits/blur.ps1 fills, and wiki pages by slug.
+///     Owns every character URL rule: mini heads are found by name, portraits by the GUID folder that
+///     tools/portraits/blur.ps1 fills, and wiki pages by slug.
 /// </summary>
 public static class CharacterUrlHelper
 {
@@ -22,7 +22,7 @@ public static class CharacterUrlHelper
     public static string GetHeadSrc(CharacterLookup characterLookup) => GetHeadSrc(characterLookup.Name);
 
     /// <summary>
-    /// Portrait folders are named without dashes, so this is the only valid string form of a portrait ID.
+    ///     Portrait folders are named without dashes, so this is the only valid string form of a portrait ID.
     /// </summary>
     public static string GetPortraitFolder(Guid portraitId) => portraitId.ToString("N");
 

@@ -20,8 +20,7 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
 
         var game = new Game
         {
-            TargetId = character.Id,
-            PortraitUrl = CharacterUrlHelper.GetPortraitFolder(character.PortraitId)
+            TargetId = character.Id, PortraitUrl = CharacterUrlHelper.GetPortraitFolder(character.PortraitId)
         };
 
         return new GameState
@@ -30,7 +29,7 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
             GameId = Guid.NewGuid(),
             SessionCategory = SessionCategory.Practice,
             EntryPoint = EntryPoint.Practice,
-            FirstEntryPoint = EntryPoint.Practice,
+            FirstEntryPoint = EntryPoint.Practice
         };
     }
 
@@ -45,7 +44,7 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
     {
         var character = await CharacterStore.GetCharacterForDayAsync(dayNumber, cancellationToken);
 
-        ArgumentNullException.ThrowIfNull(character, nameof(character));
+        ArgumentNullException.ThrowIfNull(character);
 
         return new Game
         {
@@ -61,6 +60,6 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
         GameId = Guid.NewGuid(),
         SessionCategory = SessionCategory.CanonicalPuzzle,
         EntryPoint = entryPoint,
-        FirstEntryPoint = entryPoint,
+        FirstEntryPoint = entryPoint
     };
 }

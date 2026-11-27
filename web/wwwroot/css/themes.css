@@ -6,32 +6,32 @@
 
 :root,
 [data-theme="classic"] {
-    --background: #010a1e;          /* page background */
-    --raised: #0A2C5E;              /* solid raised surfaces: dialogs, menus, dropdown suggestions, error bar, theme swatches */
+    --background: #010a1e; /* page background */
+    --raised: #0A2C5E; /* solid raised surfaces: dialogs, menus, dropdown suggestions, error bar, theme swatches */
     --text: #FAFBFC;
-    --text-muted: #94A9C2;          /* keep 4.5:1 against --background and --raised */
+    --text-muted: #94A9C2; /* keep 4.5:1 against --background and --raised */
 
-    --primary: #16BAFF;             /* accent: links, buttons, focus */
+    --primary: #16BAFF; /* accent: links, buttons, focus */
     --primary-dark: #094099;
     --secondary: #7cf1c4;
 
     --correct: #2FBB36;
     --partial: #FFA056;
     --wrong: #CC284C;
-    
+
     --warning: #F72C25;
     --alert: #F7B32B;
 
-    --on-accent: var(--background);           /* text on --primary, --secondary, --correct and --partial (partial and direction tiles) */
-    --on-wrong: var(--text);            /* text on --wrong */
+    --on-accent: var(--background); /* text on --primary, --secondary, --correct and --partial (partial and direction tiles) */
+    --on-wrong: var(--text); /* text on --wrong */
 
-    --chart: var(--primary);        /* graph bars; set it in a theme to differ from --primary */
+    --chart: var(--primary); /* graph bars; set it in a theme to differ from --primary */
 }
 
 [data-theme="retro"] {
     --background: #0a0e0d;
     --raised: #192334;
-    
+
     --text: #f3f3e1;
     --text-muted: #b7ac76;
 
@@ -47,7 +47,7 @@
 [data-theme="grayscale"] {
     --background: #000000;
     --raised: #0e0e0e;
-    
+
     --text: #f3f3e1;
     --text-muted: #c9c9bd;
 
@@ -63,10 +63,10 @@
 [data-theme="colmena"] {
     --background: #080302;
     --raised: #130c00;
-    
+
     --text: #fff6bf;
     --text-muted: #d5c15b;
-    
+
     --primary: #ff9900;
     --primary-dark: #b97a02;
     --secondary: #ffee33;
@@ -79,7 +79,7 @@
 [data-theme="ashswag"] {
     --background: #03010c;
     --raised: #16071f;
-    
+
     --text: #f0e5fc;
     --text-muted: #e5b9ff;
 
@@ -95,10 +95,10 @@
 [data-theme="youngmulti"] {
     --background: #040505;
     --raised: #060c0c;
-    
+
     --text: #DCD6D3;
     --text-muted: #B5AEAC;
-    
+
     --primary: #A5D388;
     --primary-dark: #1f380b;
     --secondary: #fff92b;
@@ -115,14 +115,14 @@
 [data-theme="katie"] {
     --background: #0e0006;
     --raised: #15000c;
-    
+
     --text: #fde4d9;
     --text-muted: #bd947f;
-    
+
     --primary: #ef7e55;
     --primary-dark: #931349;
     --secondary: #e6a4fa;
-    
+
     --correct: #14c05f;
     --partial: #ff9450;
     --wrong: #941b00;

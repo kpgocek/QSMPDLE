@@ -4,5 +4,5 @@ public enum MotionPreference
 {
     System,
     Full,
-    Reduced,
+    Reduced
 }

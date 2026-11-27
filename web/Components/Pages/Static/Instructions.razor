@@ -1,13 +1,10 @@
 @page "/how-to-play"
 @using MudBlazor
 @using QSMPDLE.Web.Components.Game.Modules
-@using QSMPDLE.Web.Components.UX
-@using QSMPDLE.Web.Components.UX.StatDisplay
-@using QSMPDLE.Web.Features.Gameplay.Models
-@using QSMPDLE.Web.Features.Gameplay.Services
+@using QSMPDLE.Web.Infrastructure.Persistence
 
 @inject IGameplayAvailabilityService Availability
-@inject QSMPDLE.Web.Infrastructure.Persistence.ICharacterStore CharacterStore
+@inject ICharacterStore CharacterStore
 
 <PageTitle>Instructions - QSMPDLE</PageTitle>
 
@@ -39,38 +36,38 @@
         <div class="example-wrapper">
             @if (ExampleGuess is not null)
             {
-                <GuessBoard Guesses="@([ExampleGuess])" ActiveClues="@ActiveClues" ShowPlaceholders="false" />
+                <GuessBoard Guesses="@([ExampleGuess])" ActiveClues="@ActiveClues" ShowPlaceholders="false"/>
             }
         </div>
 
         <div>
             <p>
                 <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Class="color">
-                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" aria-hidden="true"/>
                     <span class="visually-hidden">Tick</span>
                 </MudChip>
                 means an exact match.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small" Class="color">
-                    <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" aria-hidden="true"/>
                     <span class="visually-hidden">Cross</span>
                 </MudChip>
                 means the attribute does not match at all.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" Class="color">
-                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small" aria-hidden="true" />
-                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small" aria-hidden="true" />
-                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" aria-hidden="true" />
-                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small" aria-hidden="true"/>
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small" aria-hidden="true"/>
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" aria-hidden="true"/>
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" aria-hidden="true"/>
                     <span class="visually-hidden">Arrows</span>
                 </MudChip>
                 means the answer is higher, lower, later or earlier than provided.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small" Class="color">
-                    <MudIcon Icon="@Icons.Material.Filled.Contrast" Size="Size.Small" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.Contrast" Size="Size.Small" aria-hidden="true"/>
                     <span class="visually-hidden">Half circle</span>
                 </MudChip>
                 means the attribute is partially correct (have at least one element of the answer).
@@ -127,7 +124,8 @@
             Joined = ComparisonResult.Later,
             Affiliation = ComparisonResult.Partial,
             QPhone = ActiveClues.Contains(ClueGroup.QPhone) ? ComparisonResult.Wrong : null,
-            Award2026 = ActiveClues.Contains(ClueGroup.Award2026) ? ComparisonResult.Correct : null,
+            Award2026 = ActiveClues.Contains(ClueGroup.Award2026) ? ComparisonResult.Correct : null
         };
     }
+
 }

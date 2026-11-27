@@ -84,9 +84,8 @@
 
     padding: .125rem .4rem;
     border-radius: .25rem;
-    transition:
-        color 160ms ease,
-        background-color 160ms ease;
+    transition: color 160ms ease,
+    background-color 160ms ease;
 }
 
 .links a:hover,
@@ -156,9 +155,8 @@
 
     padding: .125rem .4rem;
     border-radius: .25rem;
-    transition:
-        color 160ms ease,
-        background-color 160ms ease;
+    transition: color 160ms ease,
+    background-color 160ms ease;
 }
 
 .nav-profile-btn:hover,

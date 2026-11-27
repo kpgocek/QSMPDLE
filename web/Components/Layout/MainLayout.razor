@@ -3,20 +3,19 @@
 @using QSMPDLE.Web.Features.Statistics.Models
 @using QSMPDLE.Web.Features.Statistics.Services
 @using QSMPDLE.Web.Themes
-
 @inherits LayoutComponentBase
 
 @inject IGlobalStatsService GlobalStatsService
 @inject ILogger<MainLayout> Logger
 
-<MudThemeProvider Theme="@QsmpdleTheme.Theme" IsDarkMode="true" />
-<InteractiveProviders />
+<MudThemeProvider Theme="@QsmpdleTheme.Theme" IsDarkMode="true"/>
+<InteractiveProviders/>
 
 <div class="page">
 
     <div class="content">
 
-        <NavMenu />
+        <NavMenu/>
 
         <main>
             @Body
@@ -81,4 +80,5 @@
             Logger.LogWarning(exception, "Site totals failed to load");
         }
     }
+
 }

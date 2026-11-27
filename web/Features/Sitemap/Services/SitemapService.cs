@@ -10,8 +10,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Features.Sitemap.Services;
 
 /// <summary>
-/// Lists only archive days a visitor can already open: the schedule runs weeks ahead, and those rows
-/// must not reach crawlers. The cached copy expires at the next UTC midnight, when another day opens.
+///     Lists only archive days a visitor can already open: the schedule runs weeks ahead, and those rows
+///     must not reach crawlers. The cached copy expires at the next UTC midnight, when another day opens.
 /// </summary>
 public sealed class SitemapService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
@@ -26,7 +26,8 @@ public sealed class SitemapService(
     {
         return await cache.GetOrCreateAsync(CacheKey, async entry =>
         {
-            entry.AbsoluteExpiration = new DateTimeOffset(timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1), TimeSpan.Zero);
+            entry.AbsoluteExpiration =
+                new DateTimeOffset(timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1), TimeSpan.Zero);
 
             return await GenerateInternalAsync(cancellationToken);
         }) ?? string.Empty;
@@ -43,11 +44,7 @@ public sealed class SitemapService(
             .AsNoTracking()
             .Where(g => g.Id <= maxArchiveDay)
             .OrderBy(g => g.Id)
-            .Select(g => new
-            {
-                g.Id,
-                g.Date
-            })
+            .Select(g => new { g.Id, g.Date })
             .ToListAsync(cancellationToken);
 
         var latestArchiveDate = archiveGames
@@ -86,13 +83,13 @@ public sealed class SitemapService(
     {
         return
         [
-            new("/", 1.0m, "daily", today),
-            new("/archive", 0.9m, "daily", latestArchiveDate),
-            new("/practice", 0.9m, "weekly"),
-            new("/hi-lo", 0.9m, "weekly"),
-            new("/how-to-play", 0.7m, "monthly"),
-            new("/about", 0.7m, "monthly"),
-            new("/privacy", 0.3m, "yearly")
+            new SitemapEntry("/", 1.0m, "daily", today),
+            new SitemapEntry("/archive", 0.9m, "daily", latestArchiveDate),
+            new SitemapEntry("/practice", 0.9m, "weekly"),
+            new SitemapEntry("/hi-lo", 0.9m, "weekly"),
+            new SitemapEntry("/how-to-play", 0.7m, "monthly"),
+            new SitemapEntry("/about", 0.7m, "monthly"),
+            new SitemapEntry("/privacy", 0.3m, "yearly")
         ];
     }
 

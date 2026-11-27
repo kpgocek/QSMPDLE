@@ -1,14 +1,18 @@
 @using MudBlazor
+@using QSMPDLE.Web.Features.Archive.Models
+@using QSMPDLE.Web.Features.Archive.Services
 @inject NavigationManager NavigationManager
-@inject QSMPDLE.Web.Features.Archive.Services.IArchiveStatusService StatusService
+@inject IArchiveStatusService StatusService
 @inject ILogger<ArchiveNavigator> Logger
 
 <div class="archive-navigator">
     <MudPaper Class="pa-1">
 
         <MudDatePicker PickerVariant="PickerVariant.Static" Orientation="Orientation.Portrait" Color="Color.Default"
-                       ShowToolbar="false" Date="@SelectedDate" DateChanged="OnDateSelected" MinDate="@MinDate" MaxDate="@MaxDate"
-                       AutoClose="true" AdditionalDateClassesFunc="GetDateClasses" PickerOpened="OnPickerOpened" PickerMonthChanged="OnPickerMonthChanged" />
+                       ShowToolbar="false" Date="@SelectedDate" DateChanged="OnDateSelected" MinDate="@MinDate"
+                       MaxDate="@MaxDate"
+                       AutoClose="true" AdditionalDateClassesFunc="GetDateClasses" PickerOpened="OnPickerOpened"
+                       PickerMonthChanged="OnPickerMonthChanged"/>
 
         @if (_loadFailed)
         {
@@ -19,17 +23,13 @@
 </div>
 
 @code {
-    [Parameter]
-    public int CurrentDay { get; set; }
+    [Parameter] public int CurrentDay { get; set; }
 
-    [Parameter]
-    public int MaxDay { get; set; }
+    [Parameter] public int MaxDay { get; set; }
 
-    [Parameter]
-    public DateOnly FirstDay { get; set; }
+    [Parameter] public DateOnly FirstDay { get; set; }
 
-    [Parameter]
-    public EventCallback DateSelected { get; set; }
+    [Parameter] public EventCallback DateSelected { get; set; }
 
     private DateTime? SelectedDate => FirstDay.AddDays(CurrentDay - 1).ToDateTime(TimeOnly.MinValue);
 
@@ -44,13 +44,13 @@
     }
 
     // In-memory cache: archiveDay (1-based) -> DayStatus
-    private readonly Dictionary<int, QSMPDLE.Web.Features.Archive.Models.DayStatus> _dayStatuses = new();
+    private readonly Dictionary<int, DayStatus> _dayStatuses = new();
 
     // Keep track of which months (year*100 + month) we've loaded to avoid duplicate network calls
     private readonly HashSet<int> _loadedMonthKeys = new();
 
     // Track ongoing month-load tasks to prevent duplicate concurrent requests for the same month
-    private readonly Dictionary<int, System.Threading.Tasks.Task> _ongoingLoads = new();
+    private readonly Dictionary<int, Task> _ongoingLoads = new();
 
     private readonly object _loadLock = new();
 
@@ -69,12 +69,14 @@
             NavigationManager.NavigateTo($"/archive/day/{dayNumber}");
             DateSelected.InvokeAsync();
         }
-
     }
 
     private DateOnly? _loadOnFirstRender;
 
-    public Task RefreshDayAsync(int dayNumber) => InvokeAsync(() => LoadStatusesForDayAsync(FirstDay.AddDays(dayNumber - 1)));
+    public Task RefreshDayAsync(int dayNumber)
+    {
+        return InvokeAsync(() => LoadStatusesForDayAsync(FirstDay.AddDays(dayNumber - 1)));
+    }
 
     protected override Task OnInitializedAsync()
     {
@@ -167,31 +169,29 @@
         {
             switch (status)
             {
-                case QSMPDLE.Web.Features.Archive.Models.DayStatus.Won:
+                case DayStatus.Won:
                     return "archive-won";
-                case QSMPDLE.Web.Features.Archive.Models.DayStatus.Lost:
+                case DayStatus.Lost:
                     return "archive-lost";
-                case QSMPDLE.Web.Features.Archive.Models.DayStatus.InProgress:
+                case DayStatus.InProgress:
                     return "archive-inprogress";
-                case QSMPDLE.Web.Features.Archive.Models.DayStatus.NotStarted:
+                case DayStatus.NotStarted:
                 default:
                     return "archive-notstarted";
             }
         }
-        else
-        {
-            // Not yet loaded: show NotStarted as the safe default. Loading of months is triggered separately.
-            return "archive-notstarted";
-        }
+
+        // Not yet loaded: show NotStarted as the safe default. Loading of months is triggered separately.
+        return "archive-notstarted";
     }
 
     // Public method to load statuses for the month containing `date`.
     // Performs a single batched call per month and prevents duplicate concurrent requests.
-    public async System.Threading.Tasks.Task LoadMonthForDateAsync(DateOnly date)
+    public async Task LoadMonthForDateAsync(DateOnly date)
     {
         var monthKey = date.Year * 100 + date.Month;
 
-        System.Threading.Tasks.Task loadTask;
+        Task loadTask;
 
         lock (_loadLock)
         {
@@ -265,4 +265,5 @@
             await InvokeAsync(StateHasChanged);
         }
     }
+
 }

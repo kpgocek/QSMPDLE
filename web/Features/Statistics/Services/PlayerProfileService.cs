@@ -7,8 +7,8 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 namespace QSMPDLE.Web.Features.Statistics.Services;
 
 /// <summary>
-/// Composes the profile dialog from a single read of the player's history. The identity comes from
-/// <see cref="IPlayerStatsStore.GetPlayerIdAsync"/> because LoadAsync would read that history again.
+///     Composes the profile dialog from a single read of the player's history. The identity comes from
+///     <see cref="IPlayerStatsStore.GetPlayerIdAsync" /> because LoadAsync would read that history again.
 /// </summary>
 public sealed class PlayerProfileService(
     IPlayerStatsStore playerStatsStore,
@@ -36,7 +36,7 @@ public sealed class PlayerProfileService(
             PracticeGamesFinished = finishedPracticeGames.Count,
             PracticeGamesWon = finishedPracticeGames.Count(game => game.Outcome == GameOutcome.Won),
             HiLoBestScore = await hiLoScoreStore.GetBestScoreAsync(playerId),
-            CharacterStats = characterStats,
+            CharacterStats = characterStats
         };
     }
 
@@ -45,7 +45,8 @@ public sealed class PlayerProfileService(
         var todayPuzzleId = dayService.GetTodayDayNumber();
 
         // SQL "PuzzleId <> today" is NULL for a missing PuzzleId, so those sessions never counted either.
-        var settledGames = canonicalGames.Where(game => game.PuzzleId is { } puzzleId && puzzleId != todayPuzzleId).ToList();
+        var settledGames = canonicalGames.Where(game => game.PuzzleId is { } puzzleId && puzzleId != todayPuzzleId)
+            .ToList();
 
         // Wrong guesses only (guess != target), grouped by guessed character.
         var mostGuessed = MostFrequent(settledGames.SelectMany(game => game.Guesses
@@ -53,14 +54,15 @@ public sealed class PlayerProfileService(
             .Select(guess => guess.GuessedCharacterId)));
 
         // Won sessions only, grouped by target character.
-        var mostCorrect = MostFrequent(settledGames.Where(game => game.Outcome == GameOutcome.Won).Select(game => game.TargetCharacterId));
+        var mostCorrect = MostFrequent(settledGames.Where(game => game.Outcome == GameOutcome.Won)
+            .Select(game => game.TargetCharacterId));
 
         var stats = new PlayerCharacterStats
         {
             MostGuessedCharacterId = mostGuessed?.CharacterId,
             MostGuessedCount = mostGuessed?.Count ?? 0,
             MostCorrectlyGuessedCharacterId = mostCorrect?.CharacterId,
-            MostCorrectlyGuessedCount = mostCorrect?.Count ?? 0,
+            MostCorrectlyGuessedCount = mostCorrect?.Count ?? 0
         };
 
         var lookups = await characterStore.GetLookupsAsync();
@@ -72,8 +74,9 @@ public sealed class PlayerProfileService(
         {
             MostGuessedCharacterName = mostGuessedLookup?.Name ?? stats.MostGuessedCharacterId?.ToString(),
             MostGuessedPortraitFolder = mostGuessedLookup?.PortraitFolder,
-            MostCorrectlyGuessedCharacterName = mostCorrectLookup?.Name ?? stats.MostCorrectlyGuessedCharacterId?.ToString(),
-            MostCorrectlyGuessedPortraitFolder = mostCorrectLookup?.PortraitFolder,
+            MostCorrectlyGuessedCharacterName =
+            mostCorrectLookup?.Name ?? stats.MostCorrectlyGuessedCharacterId?.ToString(),
+            MostCorrectlyGuessedPortraitFolder = mostCorrectLookup?.PortraitFolder
         };
     }
 

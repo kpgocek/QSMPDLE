@@ -28,7 +28,7 @@
     /* Two-line labels would otherwise push their value below the row's other values. */
     min-height: 2lh;
     opacity: .75;
-    user-select:none;
+    user-select: none;
 }
 
 .comment,
