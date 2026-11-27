@@ -13,6 +13,30 @@
     <meta property="og:image" content="https://qsmpdle.com/graphics/og-image.png" />
     <meta property="og:description" content="Guess the QSMP2 character of the day." />
 
+    @* Runs before anything paints, so the player's settings (PlayerPreferences, saved in Profile) are in place
+       on the first frame. "reduced" covers both the Reduced setting and Follow system on a system that asks for it. *@
+    <script>
+        (() => {
+            const systemReduced = matchMedia("(prefers-reduced-motion: reduce)");
+            let preferences = {};
+
+            window.applyPreferences = value => {
+                preferences = value ?? {};
+                const motion = String(preferences.motion ?? "").toLowerCase();
+                const reduced = motion === "reduced" || (motion !== "full" && systemReduced.matches);
+                document.documentElement.dataset.motion = reduced ? "reduced" : "full";
+            };
+            window.reapplyPreferences = () => applyPreferences(preferences);
+
+            systemReduced.addEventListener("change", reapplyPreferences);
+            try {
+                applyPreferences(JSON.parse(localStorage.getItem("qsmpdle-preferences")));
+            } catch {
+                applyPreferences(null);
+            }
+        })();
+    </script>
+
     <ResourcePreloader />
 
     <link rel="preload" href="fonts/minecrafter.woff2" as="font" type="font/woff2" crossorigin />
@@ -38,6 +62,8 @@
     <ReconnectModal />
 
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    @* Enhanced navigation can rewrite the html element's attributes from the server's copy. *@
+    <script>Blazor.addEventListener("enhancedload", reapplyPreferences);</script>
 
     <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
     <script src="@Assets["js/share.js"]"></script>
