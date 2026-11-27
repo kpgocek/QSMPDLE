@@ -23,6 +23,7 @@ A daily character guessing game based on QSMP2.
 - [x] Daily Mode
 - [x] Practice Mode
 - [x] Archive Mode
+- [x] Hi-Lo Mode
 
 **User Interface:**
 
