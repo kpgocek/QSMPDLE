@@ -21,6 +21,10 @@ public sealed record PlayerPreferences
     [JsonPropertyName("avatar")]
     public int? AvatarCharacterId { get; init; }
 
+    /// <summary>A <see cref="ColourTheme"/> id; null is the default theme.</summary>
+    [JsonPropertyName("theme")]
+    public string? Theme { get; init; }
+
     /// <summary>One line of at most <see cref="MaxNameLength"/> characters, or null when nothing is left.</summary>
     public static string? CleanName(string? name)
     {

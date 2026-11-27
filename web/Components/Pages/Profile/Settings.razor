@@ -18,6 +18,23 @@
 
         @if (_preferences is { } preferences)
         {
+            <h4 id="theme-title">Theme</h4>
+            <MudRadioGroup T="string" Value="ColourTheme.Find(preferences.Theme).Id" ValueChanged="SetThemeAsync"
+                           aria-labelledby="theme-title" Class="setting">
+                @foreach (var theme in ColourTheme.All)
+                {
+                    <MudRadio Value="theme.Id" Color="Color.Primary">
+                        @* Each preview takes its colours from its own theme block. *@
+                        <span class="theme-option" data-theme="@theme.Id">
+                            <span class="swatches" aria-hidden="true">
+                                <i></i><i></i><i></i><i></i>
+                            </span>
+                            @theme.Name
+                        </span>
+                    </MudRadio>
+                }
+            </MudRadioGroup>
+
             <h4 id="motion-title">Motion</h4>
             <MudRadioGroup T="MotionPreference" Value="preferences.Motion" ValueChanged="SetMotionAsync"
                            aria-labelledby="motion-title">
@@ -43,6 +60,8 @@
     }
 
     private Task SetMotionAsync(MotionPreference motion) => SaveAsync(_preferences! with { Motion = motion });
+
+    private Task SetThemeAsync(string theme) => SaveAsync(_preferences! with { Theme = theme });
 
     private async Task SaveAsync(PlayerPreferences preferences)
     {

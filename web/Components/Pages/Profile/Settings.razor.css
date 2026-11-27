@@ -1,3 +1,30 @@
+.theme-option {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.swatches {
+    display: inline-flex;
+    padding: .25rem;
+    border-radius: .375rem;
+    /* --raised, not --background, so the background dot stays visible. */
+    background: var(--raised);
+    box-shadow: inset 0 0 0 .0625rem var(--line);
+    gap: .1875rem;
+}
+
+.swatches i {
+    width: .75rem;
+    height: .75rem;
+    border-radius: 50%;
+}
+
+.swatches i:nth-child(1) { background: var(--primary); }
+.swatches i:nth-child(2) { background: var(--background); }
+.swatches i:nth-child(3) { background: var(--secondary); }
+.swatches i:nth-child(4) { background: var(--correct); }
+
 ::deep .setting {
     margin-bottom: 1.25rem;
 }
