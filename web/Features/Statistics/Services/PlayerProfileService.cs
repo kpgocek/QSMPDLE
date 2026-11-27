@@ -13,6 +13,7 @@ namespace QSMPDLE.Web.Features.Statistics.Services;
 public sealed class PlayerProfileService(
     IPlayerStatsStore playerStatsStore,
     IGameStatsStore gameStatsStore,
+    IHiLoScoreStore hiLoScoreStore,
     ICharacterStore characterStore,
     IDayService dayService) : IPlayerProfileService
 {
@@ -34,6 +35,7 @@ public sealed class PlayerProfileService(
             PracticeGamesStarted = practiceGames.Count,
             PracticeGamesFinished = finishedPracticeGames.Count,
             PracticeGamesWon = finishedPracticeGames.Count(game => game.Outcome == GameOutcome.Won),
+            HiLoBestScore = await hiLoScoreStore.GetBestScoreAsync(playerId),
             CharacterStats = characterStats,
         };
     }

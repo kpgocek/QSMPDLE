@@ -9,5 +9,7 @@ public sealed record PlayerProfile
     public int PracticeGamesFinished { get; init; }
     public int PracticeGamesWon { get; init; }
 
+    public int HiLoBestScore { get; init; }
+
     public PlayerCharacterStats? CharacterStats { get; init; }
 }
