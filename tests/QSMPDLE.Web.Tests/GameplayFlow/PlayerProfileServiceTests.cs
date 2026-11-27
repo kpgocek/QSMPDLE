@@ -13,6 +13,7 @@ public sealed class PlayerProfileServiceTests
 
     private readonly InMemoryGameStatsStore gameStats = new();
     private readonly InMemoryPlayerStatsStore playerStats = new() { Stats = new PlayerStats { Id = PlayerId } };
+    private readonly InMemoryHiLoScoreStore hiLoScores = new();
     private readonly DayService dayService = new(new TestClock(Now));
 
     private int TodayPuzzle => dayService.GetTodayDayNumber();
@@ -174,11 +175,20 @@ public sealed class PlayerProfileServiceTests
         characterStats.MostCorrectlyGuessedCount.Should().Be(2);
     }
 
+    [Fact]
+    public async Task GetProfileAsync_HiLoScore_IsThePlayersBest()
+    {
+        await hiLoScores.RecordScoreAsync(PlayerId, 12);
+        await hiLoScores.RecordScoreAsync(Guid.NewGuid(), 40);
+
+        (await CreateService().GetProfileAsync()).HiLoBestScore.Should().Be(12);
+    }
+
     private PlayerProfileService CreateService()
     {
         var characters = new InMemoryCharacterStore([new Character { Id = 7, Name = "Alpha", PortraitId = Guid.NewGuid() }], 7);
 
-        return new PlayerProfileService(playerStats, gameStats, characters, dayService);
+        return new PlayerProfileService(playerStats, gameStats, hiLoScores, characters, dayService);
     }
 
     private void AddSession(SessionCategory category, bool isWon, int guesses, bool finished, bool isLegacyDuplicate = false)

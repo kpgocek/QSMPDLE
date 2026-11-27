@@ -142,6 +142,11 @@
                               Comment="The lower, the better" />
                 </MudItem>
 
+                <MudItem xs="6" sm="4" Style="display:flex;">
+                    <StatCard Title="Hi-Lo Best" Delay="300" Icon="@Icons.Material.Filled.SwapVert"
+                              Value="@($"{HiLoBestScore}")" />
+                </MudItem>
+
             </MudGrid>
 
             @if (DailyGamesWon > 0)
@@ -183,6 +188,8 @@
     private int PracticeGamesFinished { get; set; }
     private int PracticeGamesWon { get; set; }
 
+    private int HiLoBestScore { get; set; }
+
     private double FinishedPracticeWinRate => PracticeGamesFinished == 0 ? 0 : (PracticeGamesWon * 100) /
 (double)PracticeGamesFinished;
     private double AllPracticeWinRate => PracticeGamesStarted == 0 ? 0 : (PracticeGamesWon * 100) /
@@ -216,6 +223,8 @@
             PracticeGamesStarted = profile.PracticeGamesStarted;
             PracticeGamesFinished = profile.PracticeGamesFinished;
             PracticeGamesWon = profile.PracticeGamesWon;
+
+            HiLoBestScore = profile.HiLoBestScore;
 
             playerCharacterStats = profile.CharacterStats;
         }
