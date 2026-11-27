@@ -22,6 +22,17 @@ public sealed class LocalStoragePreferencesStoreTests
     }
 
     [Fact]
+    public async Task SaveAsync_Theme_StoresTheIdThePageScriptSetsOnTheRoot()
+    {
+        var browser = new FakeBrowser();
+        var store = new LocalStoragePreferencesStore(browser.LocalStorage);
+
+        await store.SaveAsync(new PlayerPreferences { Theme = "navy" });
+
+        browser.Items[Key].Should().Contain("\"theme\":\"navy\"");
+    }
+
+    [Fact]
     public async Task GetAsync_NothingSaved_FollowsTheSystem()
     {
         var store = new LocalStoragePreferencesStore(new FakeBrowser().LocalStorage);

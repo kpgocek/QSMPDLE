@@ -20,11 +20,31 @@
             const systemReduced = matchMedia("(prefers-reduced-motion: reduce)");
             let preferences = {};
 
+            // MudBlazor wants r, g, b numbers for some tints, which CSS can't take out of a colour.
+            // Before the stylesheets load there is nothing to read, so the call after them fills these in.
+            const setRgb = (target, source) => {
+                const probe = document.createElement("i");
+                probe.style.color = `var(${source})`;
+                document.head.append(probe);
+                const channels = getComputedStyle(probe).color.match(/^rgba?\(([\d.]+), ([\d.]+), ([\d.]+)/);
+                probe.remove();
+                if (channels && getComputedStyle(document.documentElement).getPropertyValue(source))
+                    document.documentElement.style.setProperty(target, channels.slice(1).join(", "));
+            };
+
             window.applyPreferences = value => {
                 preferences = value ?? {};
                 const motion = String(preferences.motion ?? "").toLowerCase();
                 const reduced = motion === "reduced" || (motion !== "full" && systemReduced.matches);
                 document.documentElement.dataset.motion = reduced ? "reduced" : "full";
+                document.documentElement.dataset.theme = preferences.theme || "navy";
+                setRgb("--mud-palette-primary-rgb", "--primary");
+                setRgb("--mud-palette-info-rgb", "--primary");
+                setRgb("--mud-palette-secondary-rgb", "--secondary");
+                setRgb("--mud-palette-success-rgb", "--correct");
+                setRgb("--mud-palette-warning-rgb", "--partial");
+                setRgb("--mud-palette-error-rgb", "--wrong");
+                setRgb("--mud-palette-text-primary-rgb", "--text");
             };
             window.reapplyPreferences = () => applyPreferences(preferences);
 
@@ -46,8 +66,11 @@
     <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap-reboot.min.css"]" />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap-utilities.min.css"]" />
+    <link rel="stylesheet" href="@Assets["css/themes.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["QSMPDLE.Web.styles.css"]" />
+    @* Waits for the stylesheets above, so the theme's colours can be read. *@
+    <script>reapplyPreferences();</script>
 
     <ImportMap />
 

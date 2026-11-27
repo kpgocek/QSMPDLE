@@ -15,4 +15,12 @@ public sealed class PlayerPreferencesTests
     {
         PlayerPreferences.CleanName(typed).Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("a-theme-that-was-removed")]
+    public void Find_NoKnownTheme_IsTheDefault(string? id)
+    {
+        ColourTheme.Find(id).Should().Be(ColourTheme.Default);
+    }
 }
