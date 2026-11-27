@@ -116,6 +116,17 @@
     background-color: var(--primary);
 }
 
+/* Small enough to sit on the link's baseline without changing the row's height. */
+.nav-new {
+    padding: .0625rem .3rem;
+    border-radius: .25rem;
+    background: var(--secondary);
+    color: var(--black);
+    font-size: .625em;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
 .show,
 ::deep .show,
 .hide,

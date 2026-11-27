@@ -101,4 +101,16 @@ public sealed class ShareTextTests
 
         text.Should().Contain("Krzysztof: 1/6");
     }
+
+    [Fact]
+    public void BuildHiLoResult_PinsTheScoreTextWithoutCharacters()
+    {
+        var text = ShareText.BuildHiLoResult(14);
+
+        text.Should().Be(
+            "QSMPDLE Hi-Lo" + Crlf + Crlf
+            + "I got 14 in a row." + Crlf
+            + "Can you beat it?" + Crlf + Crlf
+            + "https://qsmpdle.com/hi-lo");
+    }
 }

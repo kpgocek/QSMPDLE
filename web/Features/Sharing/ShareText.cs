@@ -47,6 +47,19 @@ https://qsmpdle.com
 """;
     }
 
+    public static string BuildHiLoResult(int score)
+    {
+        return
+    $"""
+QSMPDLE Hi-Lo
+
+I got {score} in a row.
+Can you beat it?
+
+https://qsmpdle.com/hi-lo
+""";
+    }
+
     /// <summary>True when the native share sheet handled the text, including a user cancel; false when the browser has none.</summary>
     public static async Task<bool> ShareAsync(IJSRuntime js, string text) =>
         await js.InvokeAsync<bool>("qsmpdleShare.share", text);

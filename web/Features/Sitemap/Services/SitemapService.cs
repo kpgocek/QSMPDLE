@@ -89,6 +89,7 @@ public sealed class SitemapService(
             new("/", 1.0m, "daily", today),
             new("/archive", 0.9m, "daily", latestArchiveDate),
             new("/practice", 0.9m, "weekly"),
+            new("/hi-lo", 0.9m, "weekly"),
             new("/how-to-play", 0.7m, "monthly"),
             new("/about", 0.7m, "monthly"),
             new("/privacy", 0.3m, "yearly")

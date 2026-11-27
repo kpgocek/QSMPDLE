@@ -1,0 +1,369 @@
+@page "/hi-lo"
+@rendermode InteractiveServer
+
+@using System.Globalization
+@using MudBlazor
+@using QSMPDLE.Web.Components.UX.StatDisplay
+@using QSMPDLE.Web.Features.HiLo.Models
+@using QSMPDLE.Web.Features.HiLo.Services
+@using QSMPDLE.Web.Features.Sharing
+
+@implements IDisposable
+
+@inject IHiLoService HiLoService
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject ILogger<HiLo> Logger
+
+<PageTitle>Hi-Lo - QSMPDLE</PageTitle>
+
+<h2>Hi-Lo</h2>
+
+<div class="hilo gameplay">
+    @if (_loadFailed)
+    {
+        <div class="hilo-error" role="alert">
+            <p>We couldn't load the game. Check your connection and try again.</p>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@_isLoading" OnClick="StartRoundAsync">Try again</MudButton>
+        </div>
+    }
+    else if (_round is null)
+    {
+        <div class="hilo-loading">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100%" Height="100%" />
+        </div>
+    }
+    else
+    {
+        <p class="hilo-score">
+            Score <strong class="@(_score > 0 ? "hilo-scored" : "")" @key="_score">@_score</strong>
+            · Best <strong>@_best</strong>
+            @if (IsNewBest)
+            {
+                <span class="hilo-new-best">New best</span>
+            }
+        </p>
+
+        @* New elements each round, so the stat highlight and the carry-over slide play again. *@
+        <div class="hilo-round" @key="_round">
+            @* Takes focus when a new run starts, so the next thing read is what this round compares. *@
+            <h3 class="hilo-stat" tabindex="-1" @ref="_statHeading">@StatName</h3>
+
+            @* A tap on the pair skips the pause after a right answer. *@
+            <div class="hilo-pair @(_carried ? "carried" : "") @PairState" @onclick="Skip">
+                @CharacterCard((_round.Known, FormatValue(_round.KnownValue), null))
+                @CharacterCard((_round.Hidden, "?", _given is null ? null : IsCorrect))
+                @if (_carried && _covered is { } covered)
+                {
+                    @* The last round's known character, left in place for the carried one to slide over. *@
+                    <div class="hilo-covered" aria-hidden="true">@CharacterCard((covered.Character, covered.Value, null))</div>
+                }
+            </div>
+        </div>
+
+        <div class="hilo-ask">
+            @* After a miss the buttons stay until the red tile has turned, so they don't give the result away. *@
+            <div class="hilo-buttons @(IsOver ? "hilo-leaving" : "")" inert="@IsOver">
+                @foreach (var answer in Answers)
+                {
+                    @* aria-disabled rather than Disabled while the answer shows, so the pressed button keeps focus. *@
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@IconFor(answer)"
+                               Class="@AnswerClass(answer)" aria-disabled="@(_given is not null)"
+                               aria-label="@AnswerName(answer)" OnClick="() => AnswerAsync(answer)">
+                        @Label(answer)
+                    </MudButton>
+                }
+            </div>
+
+            @if (IsOver)
+            {
+                <section class="hilo-over" tabindex="-1" aria-labelledby="hilo-over-title" aria-describedby="hilo-over-text" @ref="_runOver">
+                    <h3 id="hilo-over-title" class="hilo-over-title">Unlucky!</h3>
+                    <p id="hilo-over-text">
+                        @(Claim(_round.Answer)). You got <strong>@_score</strong> in a row@(IsNewBest ? ", a new best!" : ".")
+                    </p>
+                    <div class="hilo-over-actions">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareAsync">Share</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isLoading" OnClick="StartRoundAsync">New run</MudButton>
+                    </div>
+                </section>
+            }
+
+            @if (_saveFailed)
+            {
+                <p class="hilo-error" role="alert">Your best score couldn't be saved yet. Keep playing and we'll try again.</p>
+            }
+        </div>
+    }
+
+    <p class="hilo-rules">Higher, lower or equal? Every right answer scores a point; one mistake ends the run.</p>
+
+    <p class="visually-hidden" role="status">@_announcement</p>
+</div>
+
+@code {
+    // The flip ends at 630ms (see .hilo-reveal); the rest is time to read the number.
+    private static readonly TimeSpan AdvanceDelay = TimeSpan.FromMilliseconds(1200);
+
+    private HiLoRound? _round;
+    private HiLoAnswer? _given;
+    private int _score;
+    private int? _best;
+    private int _bestBeforeRun;
+    private bool _carried;
+    private (Character Character, string Value)? _covered;
+    private bool _isLoading;
+    private bool _loadFailed;
+    private bool _saveFailed;
+    private bool _focusStat;
+    private bool _focusRunOver;
+    private bool _disposed;
+    private string _announcement = "";
+    private CancellationTokenSource? _advance;
+    private ElementReference _statHeading;
+    private ElementReference _runOver;
+
+    private bool IsCorrect => _given == _round?.Answer;
+
+    private bool IsNewBest => _score > _bestBeforeRun;
+
+    private bool IsOver => _given is not null && !IsCorrect;
+
+    private string PairState => _given is null ? "asking" : IsCorrect ? "" : "over";
+
+    // The pressed answer stays lit while the others step back.
+    private string AnswerClass(HiLoAnswer answer) => _given is null ? "" : answer == _given ? "hilo-chosen" : "hilo-waiting";
+
+    private string StatName => _round!.Stat switch
+    {
+        HiLoStat.DayArrived => "Day arrived",
+        HiLoStat.QPhoneNumber => "QPhone number",
+        HiLoStat.YouTubeSubscribers => "YouTube subscribers",
+        HiLoStat.TwitchFollowers => "Twitch followers",
+        HiLoStat.KickFollowers => "Kick followers",
+        _ => throw new InvalidOperationException($"Unknown stat {_round.Stat}."),
+    };
+
+    private string Label(HiLoAnswer answer) => (answer, _round!.Stat) switch
+    {
+        (HiLoAnswer.Higher, HiLoStat.DayArrived) => "Later",
+        (HiLoAnswer.Lower, HiLoStat.DayArrived) => "Earlier",
+        (HiLoAnswer.Equal, HiLoStat.DayArrived) => "Same day",
+        _ => answer.ToString(),
+    };
+
+    // The same direction icons as the guess board's tiles.
+    private string IconFor(HiLoAnswer answer) => (answer, _round!.Stat) switch
+    {
+        (HiLoAnswer.Equal, _) => Icons.Material.Filled.DragHandle,
+        (HiLoAnswer.Higher, HiLoStat.DayArrived) => GuessChip.IconFor(ComparisonResult.Later)!,
+        (HiLoAnswer.Lower, HiLoStat.DayArrived) => GuessChip.IconFor(ComparisonResult.Earlier)!,
+        (HiLoAnswer.Higher, _) => GuessChip.IconFor(ComparisonResult.More)!,
+        _ => GuessChip.IconFor(ComparisonResult.Less)!,
+    };
+
+    // Earlier on the left for days, so each arrow points the way its button sits.
+    private HiLoAnswer[] Answers => _round!.Stat == HiLoStat.DayArrived
+        ? [HiLoAnswer.Lower, HiLoAnswer.Equal, HiLoAnswer.Higher]
+        : [HiLoAnswer.Higher, HiLoAnswer.Equal, HiLoAnswer.Lower];
+
+    // Stands in for the question the page no longer prints, e.g. "Higher: Tubbo has more YouTube subscribers than Ant".
+    private string AnswerName(HiLoAnswer answer) => $"{Label(answer)}: {Claim(answer)}";
+
+    // The run-over line states the right claim, e.g. "Alondrissa arrived later than Ibai".
+    private string Claim(HiLoAnswer answer)
+    {
+        var (hidden, known) = (_round!.Hidden.Name, _round.Known.Name);
+        var claim = (answer, _round.Stat) switch
+        {
+            (HiLoAnswer.Higher, HiLoStat.DayArrived) => $"arrived later than {known}",
+            (HiLoAnswer.Lower, HiLoStat.DayArrived) => $"arrived earlier than {known}",
+            (HiLoAnswer.Equal, HiLoStat.DayArrived) => $"arrived the same day as {known}",
+            (HiLoAnswer.Higher, HiLoStat.QPhoneNumber) => $"has a higher QPhone number than {known}",
+            (HiLoAnswer.Lower, HiLoStat.QPhoneNumber) => $"has a lower QPhone number than {known}",
+            (HiLoAnswer.Equal, HiLoStat.QPhoneNumber) => $"has the same QPhone number as {known}",
+            (HiLoAnswer.Higher, _) => $"has more {StatName} than {known}",
+            (HiLoAnswer.Lower, _) => $"has fewer {StatName} than {known}",
+            _ => $"has as many {StatName} as {known}",
+        };
+
+        return $"{hidden} {claim}";
+    }
+
+    private string FormatValue(int value) => _round!.Stat switch
+    {
+        HiLoStat.DayArrived => $"Day {value}",
+        HiLoStat.QPhoneNumber => value.ToString(CultureInfo.InvariantCulture),
+        _ => value.ToString("N0", CultureInfo.InvariantCulture),
+    };
+
+    private RenderFragment<(Character Character, string Value, bool? IsCorrect)> CharacterCard => card =>
+        @<div class="hilo-character">
+            <img src="@CharacterUrlHelper.GetPortraitSrc(CharacterUrlHelper.GetPortraitFolder(card.Character.PortraitId))"
+                 alt="" width="320" height="320" decoding="async" />
+            <strong class="hilo-name">@card.Character.Name</strong>
+            <span class="hilo-value">
+                @card.Value
+                @if (card.IsCorrect is { } correct)
+                {
+                    @* Turns over the "?" plate, which stays underneath until the tile covers it. *@
+                    <span class="hilo-reveal @(correct ? "success" : "failure")">
+                        <MudIcon Icon="@GuessChip.IconFor(correct ? ComparisonResult.Correct : ComparisonResult.Wrong)" aria-hidden="true" />
+                        @FormatValue(_round!.HiddenValue)
+                    </span>
+                }
+            </span>
+        </div>;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await StartRoundAsync();
+            StateHasChanged();
+        }
+        else if (_focusRunOver)
+        {
+            _focusRunOver = false;
+            await _runOver.FocusAsync();
+        }
+        else if (_focusStat)
+        {
+            _focusStat = false;
+            await _statHeading.FocusAsync();
+        }
+    }
+
+    private async Task StartRoundAsync()
+    {
+        // A late second click on New run must not skip the round it started.
+        if (_isLoading || (_round is not null && _given is null))
+            return;
+
+        _isLoading = true;
+        try
+        {
+            _best ??= await HiLoService.GetBestScoreAsync();
+            var carry = _round is not null && IsCorrect;
+            var round = await HiLoService.CreateRoundAsync(carry ? _round : null);
+
+            if (!carry)
+            {
+                // Only a new run after a miss moves focus: after a right answer it stays on the button that was pressed.
+                _focusStat = _round is not null;
+                _score = 0;
+                _bestBeforeRun = _best ?? 0;
+            }
+
+            _carried = carry && _round is { } previous && round.Known.Id == previous.Hidden.Id;
+            _covered = _carried ? (_round!.Known, FormatValue(_round.KnownValue)) : null;
+            _round = round;
+            _given = null;
+            _announcement = carry ? $"Next, {StatName}: {round.Known.Name} has {FormatValue(round.KnownValue)}. What about {round.Hidden.Name}?" : "";
+            _loadFailed = false;
+        }
+        catch (Exception exception)
+        {
+            // Without this the exception tears down the circuit and the player loses the run.
+            Logger.LogError(exception, "Hi-Lo round failed to load");
+            _loadFailed = true;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task AnswerAsync(HiLoAnswer answer)
+    {
+        if (_round is null)
+            return;
+
+        // Pressing an answer while the last one shows moves on, like a tap on the pair.
+        if (_given is not null)
+        {
+            Skip();
+            return;
+        }
+
+        _given = answer;
+
+        if (IsCorrect)
+        {
+            _score++;
+            _announcement = $"Correct! {_round.Hidden.Name}: {FormatValue(_round.HiddenValue)}. Score {_score}.";
+        }
+        else
+        {
+            _announcement = "";
+            _focusRunOver = true;
+        }
+
+        await SaveBestAsync();
+
+        if (IsCorrect)
+            await AdvanceAsync();
+    }
+
+    private async Task SaveBestAsync()
+    {
+        // Any answer, right or wrong, retries a best score that failed to save.
+        if (_score <= _best && !_saveFailed)
+            return;
+
+        _best = Math.Max(_score, _best ?? 0);
+        try
+        {
+            await HiLoService.RecordScoreAsync(_best.Value);
+            _saveFailed = false;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Hi-Lo best score failed to save");
+            _saveFailed = true;
+        }
+    }
+
+    private async Task AdvanceAsync()
+    {
+        _advance = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(AdvanceDelay, _advance.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Skipped, or the page went away; only the second ends here.
+        }
+
+        if (_disposed)
+            return;
+
+        _advance.Dispose();
+        _advance = null;
+        await StartRoundAsync();
+    }
+
+    private void Skip() => _advance?.Cancel();
+
+    private async Task ShareAsync()
+    {
+        var text = ShareText.BuildHiLoResult(_score);
+
+        // Browsers without a native share sheet get the text on the clipboard instead.
+        if (await ShareText.ShareAsync(JS, text))
+            return;
+
+        if (await ShareText.CopyAsync(JS, text))
+            Snackbar.Add("Copied to clipboard", Severity.Success);
+        else
+            Snackbar.Add("Couldn't copy — try again", Severity.Error);
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _advance?.Cancel();
+        _advance?.Dispose();
+    }
+}

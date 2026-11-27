@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using QSMPDLE.Web.Components.UX.Dialogs
 @inject NavigationManager Nav
+@inject IDialogService DialogService
 @inject QSMPDLE.Web.Features.Gameplay.Services.IDayService DayService
 
 <header class="topbar">
@@ -23,12 +24,27 @@
 
                 <span class="separator">•</span>
 
+                <NavLink href="/hi-lo">
+                    Hi-Lo <span class="nav-new">New</span>
+                </NavLink>
+
+                <span class="separator">•</span>
+
                 <NavLink href="/profile">
                     Profile
                 </NavLink>
             </div>
 
-            @if (IsProfile)
+            @if (IsHiLo)
+            {
+                <div class="links-row links-section">
+                    @* A dialog, because leaving the page would end the run. *@
+                    <button type="button" class="nav-profile-btn" @onclick="OpenHiLoRules">
+                        How to Play
+                    </button>
+                </div>
+            }
+            else if (IsProfile)
             {
                 <div class="links-row links-section">
                     <NavLink href="/profile" Match="NavLinkMatch.All">
@@ -83,10 +99,12 @@
 @code {
     private string ArchiveLink => DayService.GetYesterdayArchiveLink();
 
+    private bool IsHiLo => IsAt("/hi-lo");
+
     private bool IsProfile => IsAt("/profile") || new Uri(Nav.Uri).AbsolutePath.StartsWith("/profile/", StringComparison.OrdinalIgnoreCase);
 
     // Every other page, such as the changelog, shows the Classic links.
-    private bool IsClassic => !IsProfile;
+    private bool IsClassic => !IsHiLo && !IsProfile;
 
     private bool IsAt(string path) => new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').Equals(path, StringComparison.OrdinalIgnoreCase);
 
@@ -100,6 +118,15 @@
 
     // The menu outlives enhanced navigation, so it must redraw when the section changes.
     private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(StateHasChanged);
+
+    private static readonly DialogOptions WideDialog = new()
+    {
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        CloseOnEscapeKey = true,
+    };
+
+    private Task OpenHiLoRules() => DialogService.ShowAsync<HiLoRulesDialog>("How to Play Hi-Lo", WideDialog);
 
     private void ToggleMenu()
     {
