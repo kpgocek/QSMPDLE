@@ -57,20 +57,6 @@ public static class QsmpdleTheme
         }
     };
 
-    // Declared after Theme: static fields initialize in textual order.
-    public static readonly string[] ChartPalette =
-    [
-        Theme.PaletteDark.Primary.ToString(),
-        Theme.PaletteDark.Secondary.ToString(),
-        Theme.PaletteDark.Success.ToString(),
-        Theme.PaletteDark.Warning.ToString(),
-        Theme.PaletteDark.PrimaryLighten,
-        Theme.PaletteDark.SuccessLighten,
-        Theme.PaletteDark.WarningLighten,
-        Theme.PaletteDark.SecondaryLighten,
-        Theme.PaletteDark.PrimaryDarken,
-        Theme.PaletteDark.SuccessDarken,
-        Theme.PaletteDark.WarningDarken,
-        Theme.PaletteDark.SecondaryDarken
-    ];
+    // CSS variables, so the graphs follow the player's colour theme (wwwroot/css/themes.css).
+    public static readonly string[] ChartPalette = ["var(--chart)"];
 }

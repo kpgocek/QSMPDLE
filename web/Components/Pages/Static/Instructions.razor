@@ -46,28 +46,32 @@
         <div>
             <p>
                 <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Class="color">
-                    <strong>Green</strong>
-                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="guess-chip-icon" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" aria-hidden="true" />
+                    <span class="visually-hidden">Tick</span>
                 </MudChip>
                 means an exact match.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small" Class="color">
-                    <strong>Red</strong>
-                    <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" Class="guess-chip-icon" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" aria-hidden="true" />
+                    <span class="visually-hidden">Cross</span>
                 </MudChip>
                 means the attribute does not match at all.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" Class="color">
-                    <strong>Sky Blue</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" aria-hidden="true" />
+                    <span class="visually-hidden">Arrows</span>
                 </MudChip>
-                with an arrow indicates a value that's higher, lower, later or earlier than provided.
+                means the answer is higher, lower, later or earlier than provided.
             </p>
             <p>
                 <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small" Class="color">
-                    <strong>Yellow</strong>
-                    <MudIcon Icon="@Icons.Material.Filled.Contrast" Size="Size.Small" Class="guess-chip-icon" aria-hidden="true" />
+                    <MudIcon Icon="@Icons.Material.Filled.Contrast" Size="Size.Small" aria-hidden="true" />
+                    <span class="visually-hidden">Half circle</span>
                 </MudChip>
                 means the attribute is partially correct (have at least one element of the answer).
             </p>

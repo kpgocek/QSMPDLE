@@ -112,7 +112,7 @@
 
 .links-section a.active,
 .links-section ::deep a.active {
-    color: var(--black);
+    color: var(--on-accent);
     background-color: var(--primary);
 }
 

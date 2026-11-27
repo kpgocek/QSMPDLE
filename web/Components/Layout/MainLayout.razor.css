@@ -34,8 +34,8 @@ main {
 }
 
 #blazor-error-ui {
-    background: var(--primary-black);
-    color: var(--white);
+    background: var(--raised);
+    color: var(--text);
     border-top: .125rem solid var(--wrong);
     bottom: 0;
     box-sizing: border-box;
@@ -72,7 +72,7 @@ main {
 .footer-logo {
     font-family: "Crafter", sans-serif;
     font-size: 1.5rem;
-    color: var(--white);
+    color: var(--text);
 }
 
 .footer-links {

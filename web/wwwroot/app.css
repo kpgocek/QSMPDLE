@@ -48,7 +48,7 @@ body {
 
     background:
         radial-gradient(circle at 50% 0, var(--surface-strong), transparent 28rem),
-        linear-gradient(to bottom, var(--background) 0%, var(--black) 100%);
+        var(--background);
     color: var(--text);
 }
 
@@ -157,47 +157,62 @@ h4.mud-typography {
     position: relative;
 }
 
-/* colors.css */
+/* colors.css: the base colours come from the theme (css/themes.css); these are mixed from them. */
 :root {
-    --white: #FAFBFC;
-    --black: #010a1e;
+    --shadow: color-mix(in srgb, var(--background) 20%, transparent);
+    --ghost: color-mix(in srgb, var(--text) 30%, transparent);
+    --tint: color-mix(in srgb, var(--primary) 50%, transparent);
 
-    --white-hsl: 210, 25%, 98%;
-    --black-hsl: 30, 9%, 4%;
-    --primary-hsl: 198, 100%, 54%;
+    --surface: color-mix(in srgb, var(--primary) 10%, transparent);
+    --surface-strong: color-mix(in srgb, var(--primary) 12%, transparent);
+    --surface-muted: color-mix(in srgb, var(--text) 6%, transparent);
+    --panel: color-mix(in srgb, var(--primary) 18%, transparent);
+    --panel-strong: color-mix(in srgb, var(--primary) 28%, transparent);
+    --panel-edge: color-mix(in srgb, var(--primary) 62%, transparent);
+    --line: color-mix(in srgb, var(--text) 16%, transparent);
+    --line-strong: color-mix(in srgb, var(--primary) 42%, transparent);
+    --soft-shadow: 0 0.75rem 2rem color-mix(in srgb, var(--background) 18%, transparent);
+    --focus-ring: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 28%, transparent);
+}
 
-    --primary: #16BAFF;
-    --primary-dark: #094099;
-    --primary-black: #0A2C5E;
-
-    --secondary: #7cf1c4;
-
-    --correct: #2FBB36;
-    --partial: #FFA056;
-    --wrong: #CC284C;
-
-    --warning: #F72C25;
-    --alert: #F7B32B;
-
-    --background: var(--black);
-    --text: var(--white);
-    /* Solid, not translucent: stays above 4.5:1 on every surface from --black to --primary-black. */
-    --text-muted: #94A9C2;
-
-    --shadow: hsla(var(--black-hsl), 0.2);
-    --ghost: hsla(var(--white-hsl), 0.3);
-    --tint: hsla(var(--primary-hsl), 0.5);
-
-    --surface: hsla(var(--primary-hsl), 0.10);
-    --surface-strong: hsla(var(--primary-hsl), 0.12);
-    --surface-muted: hsla(var(--white-hsl), 0.06);
-    --panel: hsla(var(--primary-hsl), 0.18);
-    --panel-strong: hsla(var(--primary-hsl), 0.28);
-    --panel-edge: hsla(var(--primary-hsl), 0.62);
-    --line: hsla(var(--white-hsl), 0.16);
-    --line-strong: hsla(var(--primary-hsl), 0.42);
-    --soft-shadow: 0 0.75rem 2rem hsla(var(--black-hsl), 0.18);
-    --focus-ring: 0 0 0 0.2rem hsla(var(--primary-hsl), 0.28);
+/* MudThemeProvider writes QsmpdleTheme's navy palette on :root; the attribute set by App.razor's script
+   outranks it, so MudBlazor follows the chosen theme. Its "-rgb" colours are set by that script. */
+:root[data-theme] {
+    --mud-palette-primary: var(--primary);
+    --mud-palette-primary-text: var(--on-accent);
+    --mud-palette-primary-darken: color-mix(in srgb, var(--primary), black 15%);
+    --mud-palette-primary-lighten: color-mix(in srgb, var(--primary), white 15%);
+    --mud-palette-primary-hover: color-mix(in srgb, var(--primary) 6%, transparent);
+    --mud-palette-info: var(--primary);
+    --mud-palette-info-text: var(--on-accent);
+    --mud-palette-info-darken: color-mix(in srgb, var(--primary), black 15%);
+    --mud-palette-info-lighten: color-mix(in srgb, var(--primary), white 15%);
+    --mud-palette-info-hover: color-mix(in srgb, var(--primary) 6%, transparent);
+    --mud-palette-secondary: var(--secondary);
+    --mud-palette-secondary-text: var(--on-accent);
+    --mud-palette-secondary-darken: color-mix(in srgb, var(--secondary), black 15%);
+    --mud-palette-secondary-lighten: color-mix(in srgb, var(--secondary), white 15%);
+    --mud-palette-secondary-hover: color-mix(in srgb, var(--secondary) 6%, transparent);
+    --mud-palette-success: var(--correct);
+    --mud-palette-success-text: var(--on-accent);
+    --mud-palette-success-darken: color-mix(in srgb, var(--correct), black 15%);
+    --mud-palette-success-hover: color-mix(in srgb, var(--correct) 6%, transparent);
+    --mud-palette-warning: var(--partial);
+    --mud-palette-warning-text: var(--on-accent);
+    --mud-palette-warning-darken: color-mix(in srgb, var(--partial), black 15%);
+    --mud-palette-warning-hover: color-mix(in srgb, var(--partial) 6%, transparent);
+    --mud-palette-error: var(--wrong);
+    --mud-palette-error-text: var(--on-wrong);
+    --mud-palette-error-darken: color-mix(in srgb, var(--wrong), black 15%);
+    --mud-palette-error-hover: color-mix(in srgb, var(--wrong) 6%, transparent);
+    --mud-palette-background: var(--background);
+    --mud-palette-surface: var(--raised);
+    --mud-palette-appbar-background: var(--raised);
+    --mud-palette-drawer-background: var(--background);
+    --mud-palette-text-primary: var(--text);
+    --mud-palette-text-secondary: var(--text-muted);
+    --mud-palette-action-default: var(--text);
+    --mud-palette-lines-default: var(--line);
 }
 
 /* animations.css */
@@ -307,11 +322,11 @@ h4.mud-typography {
 
     max-width: 53.125rem;
     margin: 0 auto;
-    background: linear-gradient(180deg, var(--panel), hsla(var(--primary-hsl), 0.09));
+    background: linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--primary) 9%, transparent));
     backdrop-filter: blur(1rem);
-    color: var(--white);
+    color: var(--text);
     border: .125rem solid var(--panel-edge);
-    box-shadow: inset 0 0 0 .0625rem var(--black);
+    box-shadow: inset 0 0 0 .0625rem var(--background);
 }
 
 .info {
@@ -327,7 +342,7 @@ h4.mud-typography {
 .pop-up {
     border-radius: 0;
     background:
-        radial-gradient(circle at 50% 0, var(--surface-strong), transparent 64rem), var(--black);
+        radial-gradient(circle at 50% 0, var(--surface-strong), transparent 64rem), var(--background);
 }
 
 /* GuessChip */
@@ -344,16 +359,22 @@ h4.mud-typography {
 
     border: 0.125rem solid var(--panel-edge);
 
-    box-shadow: inset 0 0 0 .0625rem var(--black), var(--soft-shadow);
+    box-shadow: inset 0 0 0 .0625rem var(--background), var(--soft-shadow);
 
     border-radius: 0;
     overflow: hidden;
     animation: soft-pulse 4s ease-in-out infinite;
 }
 
+/* Rises into place once the game has loaded. The skeleton before it stays put, so the
+   portrait rises only once. */
+.portrait-frame:has(.portrait-image) {
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1), soft-pulse 4s ease-in-out infinite;
+}
+
 /* The mystery is over, so the frame stops breathing and holds its full edge. */
 .portrait-frame.solved {
-    animation: none;
+    animation: reveal-row 300ms cubic-bezier(.2, .8, .2, 1);
 }
 .portrait-frame::after {
     content: "";
