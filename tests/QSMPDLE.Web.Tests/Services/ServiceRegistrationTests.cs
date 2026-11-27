@@ -6,6 +6,7 @@ using MudBlazor.Services;
 using QSMPDLE.Web.Diagnostics;
 using QSMPDLE.Web.Features.Archive;
 using QSMPDLE.Web.Features.Gameplay;
+using QSMPDLE.Web.Features.HiLo;
 using QSMPDLE.Web.Features.Personalization;
 using QSMPDLE.Web.Features.Sitemap;
 using QSMPDLE.Web.Features.Statistics;
@@ -34,6 +35,7 @@ public sealed class ServiceRegistrationTests
         builder.Services.AddArchive();
         builder.Services.AddSitemap();
         builder.Services.AddPersonalization();
+        builder.Services.AddHiLo();
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
         WebApplication? app = null;

@@ -7,6 +7,7 @@ using QSMPDLE.Web.Components;
 using QSMPDLE.Web.Diagnostics;
 using QSMPDLE.Web.Features.Archive;
 using QSMPDLE.Web.Features.Gameplay;
+using QSMPDLE.Web.Features.HiLo;
 using QSMPDLE.Web.Features.Personalization;
 using QSMPDLE.Web.Features.Sitemap;
 using QSMPDLE.Web.Features.Statistics;
@@ -41,6 +42,7 @@ builder.Services.AddStatistics();
 builder.Services.AddArchive();
 builder.Services.AddSitemap();
 builder.Services.AddPersonalization();
+builder.Services.AddHiLo();
 
 builder.Services
     .AddRazorComponents()
