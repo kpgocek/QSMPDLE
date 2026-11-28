@@ -23,7 +23,7 @@
     <meta property="og:type" content="website"/>
 </HeadContent>
 
-@if (!_isValidDay)
+@if (!isValidDay)
 {
     <WebPage>
         <h2>Archive Day Not Found</h2>
@@ -35,7 +35,7 @@
 }
 else
 {
-    @if (!_isGameLoaded)
+    @if (!isGameLoaded)
     {
         <h2>
             <MudSkeleton SkeletonType="SkeletonType.Text" Width="22rem" Height="2.375rem"/>
@@ -52,7 +52,7 @@ else
 
             <h2 class="header-text">ARCHIVE<span class="separator">|</span>DAY #@DayNumber.ToString("00")</h2>
 
-            <button @onclick="NavigateToNext" aria-label="Next day" class="@(DayNumber < _maxDay ? "" : "hidden")">
+            <button @onclick="NavigateToNext" aria-label="Next day" class="@(DayNumber < maxDay ? "" : "hidden")">
                 <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Medium"/>
             </button>
         </div>
@@ -61,10 +61,10 @@ else
             <MudText Typo="Typo.body2" Class="archive-date">@ArchiveDate.ToLongDateString()</MudText>
         </MudButton>
 
-        <div class="@(_showCalendar ? "" : "collapsed") mt-3">
-            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@_maxDay" FirstDay="@_firstDay"
+        <div class="@(showCalendar ? "" : "collapsed") mt-3">
+            <ArchiveNavigator CurrentDay="@DayNumber" MaxDay="@maxDay" FirstDay="@firstDay"
                               DateSelected="ToggleCalendar"
-                              @ref="_navigator"/>
+                              @ref="navigator"/>
         </div>
     }
 
@@ -78,16 +78,16 @@ else
     // Only while prerendering.
     [CascadingParameter] private HttpContext? HttpContext { get; set; }
 
-    private bool _isValidDay = true;
-    private bool _isGameLoaded;
-    private bool _showCalendar;
-    private int _maxDay;
-    private DateOnly _firstDay;
-    private bool _isInitialized;
-    private ArchiveNavigator? _navigator;
+    private bool isValidDay = true;
+    private bool isGameLoaded;
+    private bool showCalendar;
+    private int maxDay;
+    private DateOnly firstDay;
+    private bool isInitialized;
+    private ArchiveNavigator? navigator;
 
     // Null until Gameplay reports its loaded state, so the load notification never triggers a status query.
-    private int? _lastGuessCount;
+    private int? lastGuessCount;
 
     private DateOnly ArchiveDate => DayService.GetArchiveDate(DayNumber);
 
@@ -95,12 +95,12 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        _firstDay = DayService.GetFirstDay();
-        _maxDay = DayService.GetMaxArchiveDay();
+        firstDay = DayService.GetFirstDay();
+        maxDay = DayService.GetMaxArchiveDay();
 
         // Validate day number is within valid range.
-        _isValidDay = DayNumber >= 1 && DayNumber <= _maxDay;
-        if (!_isValidDay && HttpContext is { Response.HasStarted: false } context)
+        isValidDay = DayNumber >= 1 && DayNumber <= maxDay;
+        if (!isValidDay && HttpContext is { Response.HasStarted: false } context)
         {
             // Set only as the response starts: an earlier 404 makes Blazor drop this page and its message.
             context.Response.OnStarting(() =>
@@ -110,37 +110,37 @@ else
             });
         }
 
-        _isGameLoaded = false;
-        _showCalendar = false;
-        _isInitialized = false;
-        _lastGuessCount = null;
+        isGameLoaded = false;
+        showCalendar = false;
+        isInitialized = false;
+        lastGuessCount = null;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || !_isValidDay || _isInitialized)
+        if (!firstRender || !isValidDay || isInitialized)
             return;
 
-        _isInitialized = true;
-        _isGameLoaded = true;
+        isInitialized = true;
+        isGameLoaded = true;
         StateHasChanged();
     }
 
     private async Task OnGameStateChange(GameState gameState)
     {
         var guessCount = gameState.GuessesMade.Count;
-        var isNewGuess = guessCount > _lastGuessCount;
-        _lastGuessCount = guessCount;
+        var isNewGuess = guessCount > lastGuessCount;
+        lastGuessCount = guessCount;
 
-        if (isNewGuess && _navigator is not null)
+        if (isNewGuess && navigator is not null)
         {
-            await _navigator.RefreshDayAsync(DayNumber);
+            await navigator.RefreshDayAsync(DayNumber);
         }
     }
 
     private async Task OnGameLoaded()
     {
-        _isGameLoaded = true;
+        isGameLoaded = true;
         await InvokeAsync(StateHasChanged);
     }
 
@@ -154,7 +154,7 @@ else
 
     private void NavigateToNext()
     {
-        if (DayNumber < _maxDay)
+        if (DayNumber < maxDay)
         {
             NavigationManager.NavigateTo($"/archive/day/{DayNumber + 1}");
         }
@@ -162,7 +162,7 @@ else
 
     private void ToggleCalendar()
     {
-        _showCalendar = !_showCalendar;
+        showCalendar = !showCalendar;
     }
 
 }

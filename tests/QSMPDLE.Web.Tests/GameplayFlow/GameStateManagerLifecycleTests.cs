@@ -1,4 +1,5 @@
 using FluentAssertions;
+using QSMPDLE.Web.Extensions;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Models;
@@ -14,7 +15,7 @@ public sealed class GameStateManagerLifecycleTests
 
         var result = await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
-        result.Should().Be(Extensions.LoadGameResult.CreatedNew);
+        result.Should().Be(LoadGameResult.CreatedNew);
         setup.Manager.GameState.EntryPoint.Should().Be(EntryPoint.Practice);
         setup.Manager.GameState.PlayerId.Should().Be(setup.PlayerId);
         setup.Manager.GameState.Game.TargetId.Should().Be(setup.Target.Id);
@@ -33,7 +34,7 @@ public sealed class GameStateManagerLifecycleTests
 
         var result = await setup.Manager.StartGameAsync(EntryPoint.Daily);
 
-        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        result.Should().Be(LoadGameResult.LoadedExisting);
         setup.Manager.GameState.GameId.Should().Be(restored.GameId);
         setup.Manager.GameState.PlayerId.Should().Be(setup.PlayerId);
         setup.GameStateStore.State!.PlayerId.Should().Be(setup.PlayerId);
@@ -51,7 +52,7 @@ public sealed class GameStateManagerLifecycleTests
 
         var result = await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
-        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        result.Should().Be(LoadGameResult.LoadedExisting);
         setup.Manager.GameState.IsFinished.Should().BeTrue();
         setup.Manager.GameState.IsWon.Should().BeTrue();
         setup.Manager.GameState.GuessesMade.Should().HaveCount(1);
@@ -74,11 +75,11 @@ public sealed class GameStateManagerLifecycleTests
     [Fact]
     public async Task ArchiveGameLoadsCorrectTargetAndState()
     {
-        var setup = CreateSetup(archiveDayNumber: 7);
+        var setup = CreateSetup(7);
 
         var result = await setup.Manager.StartGameAsync(EntryPoint.Archive, 7);
 
-        result.Should().Be(Extensions.LoadGameResult.CreatedNew);
+        result.Should().Be(LoadGameResult.CreatedNew);
         setup.Manager.GameState.EntryPoint.Should().Be(EntryPoint.Archive);
         setup.Manager.GameState.Game.PuzzleId.Should().Be(7);
         setup.Manager.GameState.Game.TargetId.Should().Be(setup.Target.Id);
@@ -89,9 +90,9 @@ public sealed class GameStateManagerLifecycleTests
     {
         var setup = CreateSetup();
 
-        var result = await setup.Manager.StartGameAsync(EntryPoint.Archive, null);
+        var result = await setup.Manager.StartGameAsync(EntryPoint.Archive);
 
-        result.Should().Be(Extensions.LoadGameResult.Failed);
+        result.Should().Be(LoadGameResult.Failed);
         setup.GameStateStore.State.Should().BeNull();
     }
 
@@ -106,7 +107,7 @@ public sealed class GameStateManagerLifecycleTests
         await setup.Manager.MakeGuessAsync(setup.Guess.Id);
         var result = await setup.Manager.StartGameAsync(EntryPoint.Archive, puzzleId);
 
-        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        result.Should().Be(LoadGameResult.LoadedExisting);
         setup.Manager.GameState.GameId.Should().Be(gameId);
         setup.Manager.GameState.Game.PuzzleId.Should().Be(puzzleId);
         setup.Manager.GameState.GuessesMade.Should().ContainSingle();
@@ -145,7 +146,7 @@ public sealed class GameStateManagerLifecycleTests
     [Fact]
     public async Task FirstCanonicalGuessAdoptsTheSessionClaimedByAnotherClient()
     {
-        var setup = CreateSetup(archiveDayNumber: 7);
+        var setup = CreateSetup(7);
         await setup.Manager.StartGameAsync(EntryPoint.Archive, 7);
         var otherGameId = Guid.NewGuid();
         setup.GameStatsStore.Sessions[otherGameId] = new GameSession
@@ -155,7 +156,7 @@ public sealed class GameStateManagerLifecycleTests
             PuzzleId = 7,
             SessionCategory = SessionCategory.CanonicalPuzzle,
             FirstEntryPoint = EntryPoint.Daily,
-            TargetCharacterId = setup.Target.Id,
+            TargetCharacterId = setup.Target.Id
         };
 
         var result = await setup.Manager.MakeGuessAsync(setup.Guess.Id);
@@ -186,7 +187,7 @@ public sealed class GameStateManagerLifecycleTests
     [Fact]
     public async Task FirstGame_PlayerWithEarlierGuesses_IsNeverFirstAndIsRememberedAsVeteran()
     {
-        var setup = CreateSetup(archiveDayNumber: 7);
+        var setup = CreateSetup(7);
         var earlier = CreateState(Guid.NewGuid(), EntryPoint.Archive, setup.Target.Id, setup.PlayerId);
         earlier.GuessesMade.Add(CreateGuess(setup.Guess.Id, setup.Guess.Name, false));
         setup.GameStateStore.SetStateForKey("canonical-7", earlier);
@@ -202,7 +203,8 @@ public sealed class GameStateManagerLifecycleTests
     public async Task FirstGame_UnguessedGameElsewhere_DoesNotCountAsPlayed()
     {
         var setup = CreateSetup();
-        setup.GameStateStore.SetStateForKey("canonical-7", CreateState(Guid.NewGuid(), EntryPoint.Archive, setup.Target.Id, setup.PlayerId));
+        setup.GameStateStore.SetStateForKey("canonical-7",
+            CreateState(Guid.NewGuid(), EntryPoint.Archive, setup.Target.Id, setup.PlayerId));
 
         await setup.Manager.StartGameAsync(EntryPoint.Practice);
 
@@ -212,36 +214,57 @@ public sealed class GameStateManagerLifecycleTests
 
     private static Setup CreateSetup(int? archiveDayNumber = null)
     {
-        var target = TestCharacters.Create(1, "Target", joinDay: 10, languages: 2, pronouns: ["Any"], affiliations: ["Guild"], species: ["Human"]);
-        var guess = TestCharacters.Create(2, "Guess", joinDay: 20, languages: 4, pronouns: ["He/Him"], affiliations: ["Other"], species: ["Unknown"]);
+        var target = TestCharacters.Create(1, "Target", 10, 2, ["Any"], ["Guild"], ["Human"]);
+        var guess = TestCharacters.Create(2, "Guess", 20, 4, ["He/Him"], ["Other"], ["Unknown"]);
         var characters = new[] { target, guess };
-        var characterStore = new InMemoryCharacterStore(characters, target.Id, archiveDayNumber is null ? null : new Dictionary<int, int> { [archiveDayNumber.Value] = target.Id });
-        var playerStatsStore = new InMemoryPlayerStatsStore { Stats = new PlayerStats { Id = Guid.Parse("11111111-1111-1111-1111-111111111111") } };
+        var characterStore = new InMemoryCharacterStore(characters, target.Id,
+            archiveDayNumber is null ? null : new Dictionary<int, int> { [archiveDayNumber.Value] = target.Id });
+        var playerStatsStore = new InMemoryPlayerStatsStore
+        {
+            Stats = new PlayerStats { Id = Guid.Parse("11111111-1111-1111-1111-111111111111") }
+        };
         var gameStateStore = new InMemoryGameStateStore();
         var gameStatsStore = new InMemoryGameStatsStore();
         var playerId = playerStatsStore.Stats.Id;
         var dayService = new DayService();
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, playerStatsStore, characterStore, new CharacterComparer(characterStore), gameStatsStore);
-        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, characterStore, target, guess, playerId);
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService,
+            playerStatsStore, characterStore, new CharacterComparer(characterStore), gameStatsStore);
+        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, characterStore, target, guess,
+            playerId);
     }
 
     private static GameState CreateState(Guid gameId, EntryPoint entryPoint, int targetId, Guid playerId) => new()
     {
         GameId = gameId,
-        Game = new Game { TargetId = targetId, PortraitUrl = "https://example.com/portrait.png", PuzzleId = entryPoint == EntryPoint.Practice ? null : 1 },
-        PlayerId = playerId,
+        Game = new Game
+        {
+            TargetId = targetId,
+            PortraitUrl = "https://example.com/portrait.png",
+            PuzzleId = entryPoint == EntryPoint.Practice ? null : 1
+        },
+        PlayerId = playerId
     };
 
     private static GuessResult CreateGuess(int characterId, string name, bool isCorrect) => new()
     {
-        Character = new CharacterLookup(characterId, name, name.ToLowerInvariant(), [], $"https://example.com/{characterId}.png"),
+        Character =
+            new CharacterLookup(characterId, name, name.ToLowerInvariant(), [],
+                $"https://example.com/{characterId}.png"),
         IsCorrect = isCorrect,
         Pronouns = ComparisonResult.Correct,
         Languages = ComparisonResult.Correct,
         Joined = ComparisonResult.Correct,
         Affiliation = ComparisonResult.Correct,
-        Species = ComparisonResult.Correct,
+        Species = ComparisonResult.Correct
     };
 
-    private sealed record Setup(GameStateManager Manager, InMemoryGameStateStore GameStateStore, InMemoryPlayerStatsStore PlayerStatsStore, InMemoryGameStatsStore GameStatsStore, InMemoryCharacterStore CharacterStore, Character Target, Character Guess, Guid PlayerId);
+    private sealed record Setup(
+        GameStateManager Manager,
+        InMemoryGameStateStore GameStateStore,
+        InMemoryPlayerStatsStore PlayerStatsStore,
+        InMemoryGameStatsStore GameStatsStore,
+        InMemoryCharacterStore CharacterStore,
+        Character Target,
+        Character Guess,
+        Guid PlayerId);
 }

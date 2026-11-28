@@ -13,25 +13,25 @@ public sealed class ArchiveStatusService(
     IDayService dayService,
     IArchiveGameStateSource gameStateSource) : IArchiveStatusService
 {
-    private readonly IDayService _dayService = dayService ?? throw new ArgumentNullException(nameof(dayService));
+    private readonly IDayService dayService = dayService ?? throw new ArgumentNullException(nameof(dayService));
 
-    private readonly IArchiveGameStateSource _gameStateSource =
+    private readonly IArchiveGameStateSource gameStateSource =
         gameStateSource ?? throw new ArgumentNullException(nameof(gameStateSource));
 
-    private readonly IGameStatsStore _gameStatsStore =
+    private readonly IGameStatsStore gameStatsStore =
         gameStatsStore ?? throw new ArgumentNullException(nameof(gameStatsStore));
 
-    private readonly IPlayerStatsStore _playerStatsStore =
+    private readonly IPlayerStatsStore playerStatsStore =
         playerStatsStore ?? throw new ArgumentNullException(nameof(playerStatsStore));
 
     public async Task<Dictionary<int, DayStatus>> GetStatusesAsync(DateOnly start, DateOnly end,
         CancellationToken cancellationToken = default)
     {
-        var playerId = await _playerStatsStore.GetPlayerIdAsync();
+        var playerId = await playerStatsStore.GetPlayerIdAsync();
 
         // Convert the date range into puzzle numbers using DayService's first-day semantics.
-        var startNumber = _dayService.GetArchiveDayNumber(start);
-        var endNumber = _dayService.GetArchiveDayNumber(end);
+        var startNumber = dayService.GetArchiveDayNumber(start);
+        var endNumber = dayService.GetArchiveDayNumber(end);
 
         // No known player id, or no archive days in range -> all NotStarted
         if (playerId == Guid.Empty || endNumber < 1)
@@ -46,12 +46,12 @@ public sealed class ArchiveStatusService(
         // One canonical session represents the puzzle regardless of whether it was opened
         // through Daily or Archive.
         var sessions =
-            await _gameStatsStore.GetPlayerCanonicalGamesByPuzzleRangeAsync(playerId, startNumber, endNumber);
+            await gameStatsStore.GetPlayerCanonicalGamesByPuzzleRangeAsync(playerId, startNumber, endNumber);
 
         var map = new Dictionary<int, DayStatus>();
 
         // Listing keys once replaces up to four storage reads per calendar day, most of them empty.
-        var storedDays = await _gameStateSource.GetStoredDayNumbersAsync(cancellationToken);
+        var storedDays = await gameStateSource.GetStoredDayNumbersAsync(cancellationToken);
 
         bool MayHaveLocalState(int archiveDay)
         {
@@ -59,7 +59,7 @@ public sealed class ArchiveStatusService(
         }
 
         // Build index by archive day number -> sessions using PuzzleId directly.
-        var firstDayNumber = _dayService.GetFirstDay().DayNumber;
+        var firstDayNumber = dayService.GetFirstDay().DayNumber;
         var byDay = sessions
             .Where(s => s.PuzzleId.HasValue)
             .GroupBy(s => firstDayNumber + s.PuzzleId!.Value - 1)
@@ -106,7 +106,7 @@ public sealed class ArchiveStatusService(
 
     private async Task<DayStatus>
         GetLocalStorageStatusAsync(int archiveDayNumber, CancellationToken cancellationToken) =>
-        GetStatusFromState(await _gameStateSource.LoadAsync(archiveDayNumber, cancellationToken));
+        GetStatusFromState(await gameStateSource.LoadAsync(archiveDayNumber, cancellationToken));
 
     private static DayStatus GetStatusFromState(GameState? state)
     {

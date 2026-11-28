@@ -15,7 +15,7 @@
 
         <p class="setting-note">Saved in this browser only.</p>
 
-        @if (_preferences is { } preferences)
+        @if (this.preferences is { } preferences)
         {
             <h4 id="theme-title">Theme</h4>
             <MudRadioGroup T="string" Value="ColourTheme.Find(preferences.Theme).Id" ValueChanged="SetThemeAsync"
@@ -46,7 +46,7 @@
 </WebPage>
 
 @code {
-    private PlayerPreferences? _preferences;
+    private PlayerPreferences? preferences;
 
     // After the first render: preferences live in local storage, which prerendering can't reach.
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -54,26 +54,26 @@
         if (!firstRender)
             return;
 
-        _preferences = await PreferencesService.GetAsync();
+        preferences = await PreferencesService.GetAsync();
         StateHasChanged();
     }
 
     private Task SetMotionAsync(MotionPreference motion)
     {
-        return SaveAsync(_preferences! with { Motion = motion });
+        return SaveAsync(preferences! with { Motion = motion });
     }
 
     private Task SetThemeAsync(string theme)
     {
-        return SaveAsync(_preferences! with { Theme = theme });
+        return SaveAsync(preferences! with { Theme = theme });
     }
 
     private async Task SaveAsync(PlayerPreferences preferences)
     {
-        _preferences = preferences;
+        this.preferences = preferences;
         try
         {
-            _preferences = await PreferencesService.SaveAsync(preferences);
+            this.preferences = await PreferencesService.SaveAsync(preferences);
         }
         catch (Exception exception)
         {

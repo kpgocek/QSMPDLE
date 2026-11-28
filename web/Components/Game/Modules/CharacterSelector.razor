@@ -4,13 +4,13 @@
 <div class="selection-area">
     <div class="input-field">
         @* readonly, not disabled, while a guess is in flight: disabling blurs the input and closes the phone keyboard. *@
-        <input type="text" @bind="SearchText" @bind:event="oninput" @onkeydown="HandleKeyDown"
+        <input type="text" @bind="searchText" @bind:event="oninput" @onkeydown="HandleKeyDown"
                placeholder="Type in character's name" disabled="@IsGuessed" readonly="@IsBusy"
                aria-busy="@(IsBusy ? "true" : "false")"
                aria-label="Guess a character" autocomplete="off" spellcheck="false"
                role="combobox" aria-autocomplete="list" aria-controls="character-suggestions"
                aria-expanded="@(HasSuggestions ? "true" : "false")"
-               aria-activedescendant="@(HasSuggestions ? $"character-suggestion-{ActiveSuggestionIndex}" : null)"/>
+               aria-activedescendant="@(HasSuggestions ? $"character-suggestion-{activeSuggestionIndex}" : null)"/>
     </div>
 
     @if (HasSuggestions)
@@ -19,8 +19,8 @@
             @foreach (var item in Suggestions.Select((m, i) => new { Character = m, Index = i }))
             {
                 <button type="button" id="character-suggestion-@item.Index" role="option" tabindex="-1"
-                        aria-selected="@(item.Index == ActiveSuggestionIndex ? "true" : "false")"
-                        class="suggestion @(item.Index == ActiveSuggestionIndex ? "active" : "")"
+                        aria-selected="@(item.Index == activeSuggestionIndex ? "true" : "false")"
+                        class="suggestion @(item.Index == activeSuggestionIndex ? "active" : "")"
                         @onclick="() => SelectAndGuess(item.Character)">
                     <img src="@CharacterUrlHelper.GetHeadSrc(item.Character)" alt="" loading="lazy" decoding="async"/>
                     <div class="names">
@@ -52,22 +52,24 @@
     [Parameter] public IReadOnlyCollection<int> GuessedIds { get; set; } = [];
 
     /// <summary>The game's date; only characters released by then are offered.</summary>
-    [Parameter][EditorRequired]
+    [Parameter]
+    [EditorRequired]
     public DateOnly AvailableOn { get; set; }
 
     /// <summary>Always offered: a release date moved past a played day must not make that day unwinnable.</summary>
-    [Parameter][EditorRequired]
+    [Parameter]
+    [EditorRequired]
     public int AnswerId { get; set; }
 
-    private (DateOnly, int)? _loadedFor;
+    private (DateOnly, int)? loadedFor;
 
-    private string SearchText = "";
+    private string searchText = "";
 
-    private int ActiveSuggestionIndex;
+    private int activeSuggestionIndex;
 
-    private bool IsDismissed;
+    private bool isDismissed;
 
-    private bool IsListOpen => !IsGuessed && !IsBusy && !IsDismissed && !string.IsNullOrWhiteSpace(SearchText);
+    private bool IsListOpen => !IsGuessed && !IsBusy && !isDismissed && !string.IsNullOrWhiteSpace(searchText);
 
     private bool HasSuggestions => IsListOpen && Suggestions.Any();
 
@@ -75,18 +77,18 @@
 
     private bool HasGuessedEveryMatch => Matches.Any();
 
-    private IReadOnlyList<CharacterLookup> Characters = [];
+    private IReadOnlyList<CharacterLookup> characters = [];
 
     protected override async Task OnParametersSetAsync()
     {
         // A circuit can outlive midnight or switch games, so the list follows the game's date.
-        if (_loadedFor == (AvailableOn, AnswerId))
+        if (loadedFor == (AvailableOn, AnswerId))
             return;
 
-        _loadedFor = (AvailableOn, AnswerId);
-        Characters = await CharacterStore.GetLookupsAvailableOnAsync(AvailableOn);
-        if (Characters.All(character => character.Id != AnswerId) && await CharacterStore.GetLookupAsync(AnswerId) is { } answer)
-            Characters = [.. Characters, answer];
+        loadedFor = (AvailableOn, AnswerId);
+        characters = await CharacterStore.GetLookupsAvailableOnAsync(AvailableOn);
+        if (characters.All(character => character.Id != AnswerId) && await CharacterStore.GetLookupAsync(AnswerId) is { } answer)
+            characters = [.. characters, answer];
     }
 
     private async Task SelectAndGuess(CharacterLookup? character)
@@ -94,7 +96,7 @@
         if (character is null || IsBusy)
             return;
 
-        SearchText = "";
+        searchText = "";
         Value = character;
 
         await ValueChanged.InvokeAsync(character);
@@ -107,13 +109,13 @@
         if (e.Key == "Escape")
         {
             if (IsListOpen)
-                IsDismissed = true;
+                isDismissed = true;
             else
-                SearchText = "";
+                searchText = "";
             return;
         }
 
-        IsDismissed = false;
+        isDismissed = false;
         var suggestions = HasSuggestions ? Suggestions.ToList() : [];
 
         if (suggestions.Count == 0)
@@ -122,29 +124,29 @@
         switch (e.Key)
         {
             case "ArrowDown":
-                ActiveSuggestionIndex = Math.Min(ActiveSuggestionIndex + 1, suggestions.Count - 1);
+                activeSuggestionIndex = Math.Min(activeSuggestionIndex + 1, suggestions.Count - 1);
                 break;
 
             case "ArrowUp":
-                ActiveSuggestionIndex = Math.Max(ActiveSuggestionIndex - 1, 0);
+                activeSuggestionIndex = Math.Max(activeSuggestionIndex - 1, 0);
                 break;
 
             case "Enter":
-                await SelectAndGuess(suggestions[ActiveSuggestionIndex]);
+                await SelectAndGuess(suggestions[activeSuggestionIndex]);
                 break;
 
             default:
-                ActiveSuggestionIndex = 0;
+                activeSuggestionIndex = 0;
                 break;
         }
     }
 
     private IEnumerable<CharacterLookup> Matches =>
-        string.IsNullOrWhiteSpace(SearchText)
+        string.IsNullOrWhiteSpace(searchText)
             ? []
-            : Characters
+            : characters
                 .Where(p =>
-                    p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+                    p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
 
     private IEnumerable<CharacterLookup> Suggestions =>
         Matches.Where(p => !GuessedIds.Contains(p.Id)).Take(5);

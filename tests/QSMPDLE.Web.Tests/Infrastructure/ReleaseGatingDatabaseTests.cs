@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Infrastructure.Persistence;
@@ -32,9 +33,11 @@ public sealed class ReleaseGatingDatabaseTests : IAsyncLifetime
         await using var database = new ApplicationDbContext(options);
         await database.GetService<IMigrator>().MigrateAsync(MigrationBeforeAvailableFrom);
         var rows = string.Join(", ", Enumerable.Range(1, 12).Append(UnreleasedId).Append(61)
-            .Select(id => $"({id}, 'Character {id}', ARRAY[]::text[], ARRAY[]::text[], 1, ARRAY[]::text[], ARRAY['Human'], '{Guid.NewGuid()}', 'Character_{id}')"));
+            .Select(id =>
+                $"({id}, 'Character {id}', ARRAY[]::text[], ARRAY[]::text[], 1, ARRAY[]::text[], ARRAY['Human'], '{Guid.NewGuid()}', 'Character_{id}')"));
         // Every value is generated above, so the raw SQL carries no outside input.
-        var insert = $"""INSERT INTO "Characters" (id, name, aliases, pronouns, language_count, affiliations, species, portrait_id, wiki_slug) VALUES {rows};""";
+        var insert =
+            $"""INSERT INTO "Characters" (id, name, aliases, pronouns, language_count, affiliations, species, portrait_id, wiki_slug) VALUES {rows};""";
         await database.Database.ExecuteSqlRawAsync(insert);
         await database.Database.MigrateAsync();
     }
@@ -47,8 +50,10 @@ public sealed class ReleaseGatingDatabaseTests : IAsyncLifetime
         await using var database = new ApplicationDbContext(options);
         var characters = await database.Characters.AsNoTracking().ToListAsync();
 
-        characters.Where(character => character.Id < 60).Should().OnlyContain(character => character.AvailableFrom == null);
-        characters.Where(character => character.Id >= 60).Should().OnlyContain(character => character.AvailableFrom == Release);
+        characters.Where(character => character.Id < 60).Should()
+            .OnlyContain(character => character.AvailableFrom == null);
+        characters.Where(character => character.Id >= 60).Should()
+            .OnlyContain(character => character.AvailableFrom == Release);
     }
 
     [Fact]
@@ -69,8 +74,10 @@ public sealed class ReleaseGatingDatabaseTests : IAsyncLifetime
         releaseDay.Id.Should().Be(UnreleasedId, "a row on or after the release date is authoritative");
 
         await using var database = new ApplicationDbContext(options);
-        (await database.DailyGames.AsNoTracking().SingleAsync(game => game.Id == day)).CharacterId.Should().Be(served.Id);
-        (await database.DailyGames.AsNoTracking().SingleAsync(game => game.Id == day + 1)).CharacterId.Should().Be(UnreleasedId);
+        (await database.DailyGames.AsNoTracking().SingleAsync(game => game.Id == day)).CharacterId.Should()
+            .Be(served.Id);
+        (await database.DailyGames.AsNoTracking().SingleAsync(game => game.Id == day + 1)).CharacterId.Should()
+            .Be(UnreleasedId);
     }
 
     [Fact]
@@ -85,7 +92,8 @@ public sealed class ReleaseGatingDatabaseTests : IAsyncLifetime
 
         served.Id.Should().Be(UnreleasedId, "players already played that day");
         await using var database = new ApplicationDbContext(options);
-        (await database.DailyGames.AsNoTracking().SingleAsync(game => game.Id == played)).CharacterId.Should().Be(UnreleasedId);
+        (await database.DailyGames.AsNoTracking().SingleAsync(game => game.Id == played)).CharacterId.Should()
+            .Be(UnreleasedId);
     }
 
     [Fact]
@@ -98,7 +106,9 @@ public sealed class ReleaseGatingDatabaseTests : IAsyncLifetime
         var lastDay = dayService.GetArchiveDayNumber(Release.AddDays(-1));
 
         for (var day = firstDay; day <= lastDay; day++)
+        {
             (await store.GetCharacterForDayAsync(day)).Id.Should().BeLessThan(60, $"day {day} is before the release");
+        }
     }
 
     [Fact]
@@ -122,7 +132,7 @@ public sealed class ReleaseGatingDatabaseTests : IAsyncLifetime
     {
         var clock = new TestClock(new DateTimeOffset(2026, 11, 30, 23, 59, 0, TimeSpan.Zero));
         var dayService = new DayService(clock);
-        var availability = new GameplayAvailabilityService(dayService, Microsoft.Extensions.Options.Options.Create(new GameplayOptions()));
+        var availability = new GameplayAvailabilityService(dayService, Options.Create(new GameplayOptions()));
         var store = CreateStore(clock, dayService);
         var archiveDay = dayService.GetTodayDayNumber();
 
@@ -134,20 +144,24 @@ public sealed class ReleaseGatingDatabaseTests : IAsyncLifetime
         before.Select(lookup => lookup.Id).Should().NotContain(UnreleasedId);
         today.Select(lookup => lookup.Id).Should().Contain(UnreleasedId);
         archive.Select(lookup => lookup.Id).Should().NotContain(UnreleasedId);
-        (await store.GetLookupsAsync()).Select(lookup => lookup.Id).Should().Contain(UnreleasedId, "recorded ids still resolve to names");
+        (await store.GetLookupsAsync()).Select(lookup => lookup.Id).Should()
+            .Contain(UnreleasedId, "recorded ids still resolve to names");
     }
 
     private CachedDatabaseCharacterStore CreateStore(TimeProvider clock, IDayService dayService) =>
-        new(new TestDbContextFactory(options), new MemoryCache(new MemoryCacheOptions()), dayService, clock, NullLogger<CachedDatabaseCharacterStore>.Instance);
+        new(new TestDbContextFactory(options), new MemoryCache(new MemoryCacheOptions()), dayService, clock,
+            NullLogger<CachedDatabaseCharacterStore>.Instance);
 
     private async Task ScheduleAsync(IDayService dayService, params (int Day, int CharacterId)[] rows)
     {
         await using var database = new ApplicationDbContext(options);
-        database.DailyGames.AddRange(rows.Select(row => new DailyGame { Id = row.Day, Date = dayService.GetArchiveDate(row.Day), CharacterId = row.CharacterId }));
+        database.DailyGames.AddRange(rows.Select(row =>
+            new DailyGame { Id = row.Day, Date = dayService.GetArchiveDate(row.Day), CharacterId = row.CharacterId }));
         await database.SaveChangesAsync();
     }
 
-    private sealed class TestDbContextFactory(DbContextOptions<ApplicationDbContext> options) : IDbContextFactory<ApplicationDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<ApplicationDbContext> options)
+        : IDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext() => new(options);
     }

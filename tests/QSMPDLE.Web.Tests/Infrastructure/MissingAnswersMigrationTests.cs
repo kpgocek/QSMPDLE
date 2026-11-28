@@ -32,20 +32,21 @@ public sealed class MissingAnswersMigrationTests : IAsyncLifetime
         // Puzzle 1 is scheduled with character 1. Session ids: 1 open, 2 won, 3 won without that guess,
         // 4 an unscheduled puzzle, 5 practice, 6 an answer that is already known.
         await database.Database.ExecuteSqlAsync($"""
-            INSERT INTO "Characters" (id, name, aliases, pronouns, language_count, affiliations, species, portrait_id, wiki_slug)
-            SELECT id, 'Character ' || id, ARRAY[]::text[], ARRAY[]::text[], 1, ARRAY[]::text[], ARRAY['Human'], gen_random_uuid(), '' FROM generate_series(1, 2) id;
-            INSERT INTO "DailyGames" (id, date, character_id) VALUES (1, DATE '2026-06-15', 1);
-            INSERT INTO "GameStats" ("Id", "GameId", "PlayerId", "PuzzleId", "SessionCategory", "FirstEntryPoint", "TargetCharacterId", "StartedOnUtc", "FinishedOnUtc", "IsWon")
-            SELECT row.id, gen_random_uuid(), gen_random_uuid(), row.puzzle, row.category, 0, row.target, now(), CASE WHEN row.finished THEN now() END, row.won
-            FROM (VALUES (1, 1, 0, 0, false, false), (2, 1, 0, 0, true, true), (3, 1, 0, 0, true, true), (4, 9, 0, 0, false, false), (5, NULL, 1, 0, false, false), (6, 1, 0, 2, false, false))
-                AS row (id, puzzle, category, target, finished, won);
-            INSERT INTO "GameGuess" ("GameId", "GameSessionId", "GuessOrder", "GuessedCharacterId")
-            SELECT "GameId", "Id", 0, CASE WHEN "Id" = 2 THEN 1 ELSE 2 END FROM "GameStats" WHERE "Id" IN (2, 3);
-            """);
+                                                 INSERT INTO "Characters" (id, name, aliases, pronouns, language_count, affiliations, species, portrait_id, wiki_slug)
+                                                 SELECT id, 'Character ' || id, ARRAY[]::text[], ARRAY[]::text[], 1, ARRAY[]::text[], ARRAY['Human'], gen_random_uuid(), '' FROM generate_series(1, 2) id;
+                                                 INSERT INTO "DailyGames" (id, date, character_id) VALUES (1, DATE '2026-06-15', 1);
+                                                 INSERT INTO "GameStats" ("Id", "GameId", "PlayerId", "PuzzleId", "SessionCategory", "FirstEntryPoint", "TargetCharacterId", "StartedOnUtc", "FinishedOnUtc", "IsWon")
+                                                 SELECT row.id, gen_random_uuid(), gen_random_uuid(), row.puzzle, row.category, 0, row.target, now(), CASE WHEN row.finished THEN now() END, row.won
+                                                 FROM (VALUES (1, 1, 0, 0, false, false), (2, 1, 0, 0, true, true), (3, 1, 0, 0, true, true), (4, 9, 0, 0, false, false), (5, NULL, 1, 0, false, false), (6, 1, 0, 2, false, false))
+                                                     AS row (id, puzzle, category, target, finished, won);
+                                                 INSERT INTO "GameGuess" ("GameId", "GameSessionId", "GuessOrder", "GuessedCharacterId")
+                                                 SELECT "GameId", "Id", 0, CASE WHEN "Id" = 2 THEN 1 ELSE 2 END FROM "GameStats" WHERE "Id" IN (2, 3);
+                                                 """);
 
         await database.Database.MigrateAsync();
 
-        var answers = await database.GameStats.AsNoTracking().OrderBy(session => session.Id).Select(session => session.TargetCharacterId).ToListAsync();
+        var answers = await database.GameStats.AsNoTracking().OrderBy(session => session.Id)
+            .Select(session => session.TargetCharacterId).ToListAsync();
         answers.Should().Equal(1, 1, 0, 0, 0, 2);
     }
 }

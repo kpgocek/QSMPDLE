@@ -29,10 +29,10 @@ public sealed class CharacterColumnsMigrationTests : IAsyncLifetime
         await using var database = new ApplicationDbContext(options);
         await database.GetService<IMigrator>().MigrateAsync(MigrationBeforeTextArrays);
         await database.Database.ExecuteSqlRawAsync($"""
-            INSERT INTO "Characters" (name, aliases, pronouns, languages, affiliations, species, icon_url, page_url)
-            VALUES ('YoungMulti', '["Michał Rychlik"]', '["He/Him"]', 1, '["The Federation","Polish Hussars"]', '["Human"]', '{PortraitFolder}', '{WikiUrl}'),
-                   ('Wuant', '', '[]', 1, '[]', '["Unknown"]', '558b8e22624a4a1c82aca2136f8f723d', 'https://qsmp.fandom.com/wiki/Wuant');
-            """);
+                                                    INSERT INTO "Characters" (name, aliases, pronouns, languages, affiliations, species, icon_url, page_url)
+                                                    VALUES ('YoungMulti', '["Michał Rychlik"]', '["He/Him"]', 1, '["The Federation","Polish Hussars"]', '["Human"]', '{PortraitFolder}', '{WikiUrl}'),
+                                                           ('Wuant', '', '[]', 1, '[]', '["Unknown"]', '558b8e22624a4a1c82aca2136f8f723d', 'https://qsmp.fandom.com/wiki/Wuant');
+                                                    """);
         await database.Database.MigrateAsync();
     }
 
@@ -85,11 +85,13 @@ public sealed class CharacterColumnsMigrationTests : IAsyncLifetime
     {
         await using var database = new ApplicationDbContext(options);
         await database.GetService<IMigrator>().MigrateAsync(MigrationBeforePhoneNumber);
-        await database.Database.ExecuteSqlRawAsync("""UPDATE "Characters" SET phone_numbers = ARRAY[768, 317] WHERE name = 'YoungMulti';""");
+        await database.Database.ExecuteSqlRawAsync(
+            """UPDATE "Characters" SET phone_numbers = ARRAY[768, 317] WHERE name = 'YoungMulti';""");
 
         await database.Database.MigrateAsync();
 
-        var phoneNumbers = await database.Characters.AsNoTracking().ToDictionaryAsync(ch => ch.Name, ch => ch.PhoneNumber);
+        var phoneNumbers =
+            await database.Characters.AsNoTracking().ToDictionaryAsync(ch => ch.Name, ch => ch.PhoneNumber);
         phoneNumbers["YoungMulti"].Should().Be(768);
         phoneNumbers["Wuant"].Should().BeNull();
     }

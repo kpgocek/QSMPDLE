@@ -3,7 +3,7 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
-public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterComparer
+public class CharacterComparer(ICharacterStore characterStore) : ICharacterComparer
 {
     public async Task<GuessResult> CompareAsync(
         int targetId,
@@ -11,11 +11,11 @@ public class CharacterComparer(ICharacterStore CharacterStore) : ICharacterCompa
         IReadOnlySet<ClueGroup> activeClues,
         CancellationToken cancellationToken = default)
     {
-        var target = await CharacterStore.GetCharacterAsync(targetId, cancellationToken) ??
+        var target = await characterStore.GetCharacterAsync(targetId, cancellationToken) ??
                      throw new ArgumentException("Guessed Id is not connected to character.", nameof(targetId));
-        var guessed = await CharacterStore.GetCharacterAsync(guessedId, cancellationToken) ??
+        var guessed = await characterStore.GetCharacterAsync(guessedId, cancellationToken) ??
                       throw new ArgumentException("Guessed Id is not connected to character.", nameof(guessedId));
-        var guessedLookup = await CharacterStore.GetLookupAsync(guessedId, cancellationToken) ??
+        var guessedLookup = await characterStore.GetLookupAsync(guessedId, cancellationToken) ??
                             throw new ArgumentException("Guessed Id is not connected to character.", nameof(guessedId));
 
         return new GuessResult

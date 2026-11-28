@@ -5,17 +5,17 @@
 @inject IGameStateManager GameStateManager
 @inject ILogger<Gameplay> Logger
 
-<p class="visually-hidden" role="status">@_announcement</p>
+<p class="visually-hidden" role="status">@announcement</p>
 
 <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="w-100 gameplay">
-    @if (_loadFailed)
+    @if (loadFailed)
     {
         <div class="game-error" role="alert">
             <p>We couldn't load the game. Check your connection and try again.</p>
             <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="RetryLoadAsync">Try again</MudButton>
         </div>
     }
-    else if (!IsGameLoaded)
+    else if (!isGameLoaded)
     {
         @* Placeholders match the size and order of what replaces them, so nothing jumps on load. *@
         <MudPaper Class="portrait-frame" Elevation="0">
@@ -41,17 +41,17 @@
             var result = GameStateManager.GameState.IsWon ? ComparisonResult.Correct : ComparisonResult.Wrong;
             <div class="answer-reveal @(GameStateManager.GameState.IsWon ? "success" : "failure")">
                 <MudIcon Icon="@GuessChip.IconFor(result)" Class="answer-icon" aria-hidden="true"/>
-                <h3 tabindex="-1" @ref="_answerHeading">@TargetName</h3>
+                <h3 tabindex="-1" @ref="answerHeading">@targetName</h3>
             </div>
         }
         else
         {
-            <CharacterSelector @bind-Value="GuessedCharacter" OnGuessConfirmed="Guess"
-                               IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" IsBusy="@_isGuessing"
+            <CharacterSelector @bind-Value="guessedCharacter" OnGuessConfirmed="Guess"
+                               IsGuessed="@(GameStateManager.GameState?.IsFinished ?? false)" IsBusy="@isGuessing"
                                GuessedIds="@GuessedIds" AvailableOn="@GameStateManager.EffectiveDate"
                                AnswerId="@(GameStateManager.GameState?.Game.TargetId ?? 0)"/>
 
-            @if (_guessFailed)
+            @if (guessFailed)
             {
                 <p class="guess-error" role="alert">That guess didn't go through. Refresh the page if your board looks
                     wrong.</p>
@@ -67,7 +67,7 @@
             @* Filled only once the game ends, when it becomes the view's one primary action. *@
             <MudButton Variant="@(GameStateManager.GameState?.IsFinished ?? false ? Variant.Filled : Variant.Outlined)"
                        Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
-                       Disabled="@_isGuessing" OnClick="NewPractice">
+                       Disabled="@isGuessing" OnClick="NewPractice">
                 New Character
             </MudButton>
         }
@@ -81,7 +81,7 @@
 </MudStack>
 
 @* Waits for the guess to finish so the victory dialog loads statistics that include this game. *@
-@if (ShowsGame && !_isGuessing && !(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsFinished ?? false))
+@if (ShowsGame && !isGuessing && !(GameStateManager.GameState?.SeenPopup ?? false) && (GameStateManager.GameState?.IsFinished ?? false))
 {
     <GameResultDialog GameState="@GameStateManager.GameState" OnClose="ClosePopups"/>
 }
@@ -95,18 +95,18 @@
 
     [Parameter] public EventCallback GameLoaded { get; set; }
 
-    private CharacterLookup? GuessedCharacter;
-    private bool IsGameLoaded;
-    private bool _isGuessing;
-    private bool _loadFailed;
-    private bool _guessFailed;
-    private string _announcement = string.Empty;
-    private string TargetName = string.Empty;
-    private ElementReference _answerHeading;
-    private bool _focusAnswer;
+    private CharacterLookup? guessedCharacter;
+    private bool isGameLoaded;
+    private bool isGuessing;
+    private bool loadFailed;
+    private bool guessFailed;
+    private string announcement = string.Empty;
+    private string targetName = string.Empty;
+    private ElementReference answerHeading;
+    private bool focusAnswer;
 
     // Until this game has loaded, the circuit's state is still the previous game's.
-    private bool ShowsGame => IsGameLoaded && !_loadFailed;
+    private bool ShowsGame => isGameLoaded && !loadFailed;
 
     private IReadOnlyCollection<int> GuessedIds =>
         GameStateManager.GameState?.GuessesMade.Select(guess => guess.Character.Id).ToHashSet() ?? [];
@@ -117,23 +117,23 @@
         {
             await StartNewGameAsync();
         }
-        else if (_focusAnswer)
+        else if (focusAnswer)
         {
-            _focusAnswer = false;
-            await _answerHeading.FocusAsync();
+            focusAnswer = false;
+            await answerHeading.FocusAsync();
         }
     }
 
     public async Task Guess(CharacterLookup? _ = null)
     {
-        if (_isGuessing || GameStateManager.GameState is null || GameStateManager.GameState.IsFinished || GuessedCharacter is
+        if (isGuessing || GameStateManager.GameState is null || GameStateManager.GameState.IsFinished || guessedCharacter is
                 null)
             return;
 
-        _isGuessing = true;
-        _guessFailed = false;
-        var guessedCharacterId = GuessedCharacter.Id;
-        GuessedCharacter = null;
+        isGuessing = true;
+        guessFailed = false;
+        var guessedCharacterId = guessedCharacter.Id;
+        guessedCharacter = null;
 
         try
         {
@@ -142,10 +142,10 @@
             // A competing canonical session can replace state without accepting this guess.
             if (GameStateManager.GameState.IsFinished)
             {
-                TargetName = await GameStateManager.GetTargetName();
+                targetName = await GameStateManager.GetTargetName();
             }
 
-            _announcement = result is null ? string.Empty : Describe(result);
+            announcement = result is null ? string.Empty : Describe(result);
 
             await GameStateChanged.InvokeAsync(GameStateManager.GameState);
         }
@@ -153,11 +153,11 @@
         {
             // Without this the exception tears down the circuit and the player loses the page.
             Logger.LogError(exception, "Guess failed in the gameplay component");
-            _guessFailed = true;
+            guessFailed = true;
         }
         finally
         {
-            _isGuessing = false;
+            isGuessing = false;
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -178,14 +178,14 @@
         var left = GameRules.MaxGuesses - (GameStateManager.GameState?.GuessesMade.Count ?? 0);
         var outcome = left > 0
             ? $"{left} {(left == 1 ? "guess" : "guesses")} left."
-            : $"No guesses left. The answer was {TargetName}.";
+            : $"No guesses left. The answer was {targetName}.";
 
         return $"{name}: {clues} {outcome}";
     }
 
     private async Task RetryLoadAsync()
     {
-        _loadFailed = false;
+        loadFailed = false;
         await StartNewGameAsync();
     }
 
@@ -204,7 +204,7 @@
 
         if (loadingResult == LoadGameResult.Failed)
         {
-            _loadFailed = true;
+            loadFailed = true;
             await InvokeAsync(StateHasChanged);
             return;
         }
@@ -214,10 +214,10 @@
 
         if (GameStateManager.GameState.IsFinished)
         {
-            TargetName = await GameStateManager.GetTargetName();
+            targetName = await GameStateManager.GetTargetName();
         }
 
-        IsGameLoaded = true;
+        isGameLoaded = true;
         await GameLoaded.InvokeAsync();
 
         await InvokeAsync(StateHasChanged);
@@ -232,13 +232,13 @@
         catch (Exception exception)
         {
             Logger.LogError(exception, "New practice game failed to start");
-            _loadFailed = true;
+            loadFailed = true;
             return;
         }
 
-        TargetName = string.Empty;
-        _announcement = $"New character. {GameRules.MaxGuesses} guesses left.";
-        _guessFailed = false;
+        targetName = string.Empty;
+        announcement = $"New character. {GameRules.MaxGuesses} guesses left.";
+        guessFailed = false;
         await GameStateChanged.InvokeAsync(GameStateManager.GameState);
     }
 
@@ -250,7 +250,7 @@
         await GameStateManager.MarkPopupAsSeenAsync();
 
         // The guess input is gone once the game ends, so focus would otherwise drop to the top of the page.
-        _focusAnswer = true;
+        focusAnswer = true;
     }
 
 }

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using QSMPDLE.Web.Extensions;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Statistics.Models;
@@ -18,8 +19,8 @@ public sealed class GameStateManagerArchiveReplayTests
     public async Task ArchiveReplay_UsesCharacterComparerResults()
     {
         // Arrange - create store/service/fakes like existing tests
-        var target = TestCharacters.Create(1, "Target", joinDay: 10, languages: 2, pronouns: AnyPronouns, affiliations: GuildAffiliations, species: HumanSpecies);
-        var guessOne = TestCharacters.Create(2, "GuessOne", joinDay: 20, languages: 4, pronouns: HeHimPronouns, affiliations: OtherAffiliations, species: UnknownSpecies);
+        var target = TestCharacters.Create(1, "Target", 10, 2, AnyPronouns, GuildAffiliations, HumanSpecies);
+        var guessOne = TestCharacters.Create(2, "GuessOne", 20, 4, HeHimPronouns, OtherAffiliations, UnknownSpecies);
         var characters = new[] { target, guessOne };
         var characterStore = new InMemoryCharacterStore(characters, target.Id);
 
@@ -29,7 +30,8 @@ public sealed class GameStateManagerArchiveReplayTests
         var dayService = new DayService();
         var comparer = new CharacterComparer(characterStore);
 
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, playerStatsStore, characterStore, comparer, gameStatsStore);
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService,
+            playerStatsStore, characterStore, comparer, gameStatsStore);
 
         // Create a completed daily session in the stats store
         var completed = new GameSession
@@ -53,7 +55,7 @@ public sealed class GameStateManagerArchiveReplayTests
         var result = await manager.StartGameAsync(EntryPoint.Archive, 5);
 
         // Assert
-        result.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        result.Should().Be(LoadGameResult.LoadedExisting);
         manager.GameState.Should().NotBeNull();
         manager.GameState.GuessesMade.Should().HaveCount(1);
 

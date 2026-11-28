@@ -8,6 +8,8 @@ namespace QSMPDLE.Web.Tests.GameplayFlow;
 
 public sealed class PlayerStatsProjectionTests
 {
+    private static readonly DateTimeOffset FirstDay = new(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);
+
     [Fact]
     public void DerivesCanonicalStatisticsFromPersistedSessionsAndGuesses()
     {
@@ -15,11 +17,27 @@ public sealed class PlayerStatsProjectionTests
         var firstDay = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);
         var games = new[]
         {
-            CreateGame(1, EntryPoint.Daily, firstDay, isWon: true, guesses: 1),
-            CreateGame(2, EntryPoint.Daily, firstDay.AddDays(1), isWon: false, guesses: 2),
-            CreateGame(3, EntryPoint.Archive, firstDay.AddDays(6), isWon: true, guesses: 3),
-            new GameSession { GameId = Guid.NewGuid(), SessionCategory = SessionCategory.Practice, StartedOnUtc = firstDay, FinishedOnUtc = firstDay, IsWon = true },
-            new GameSession { GameId = Guid.NewGuid(), PuzzleId = 4, SessionCategory = SessionCategory.CanonicalPuzzle, IsLegacyDuplicate = true, StartedOnUtc = firstDay, FinishedOnUtc = firstDay, IsWon = true },
+            CreateGame(1, EntryPoint.Daily, firstDay, true, 1),
+            CreateGame(2, EntryPoint.Daily, firstDay.AddDays(1), false, 2),
+            CreateGame(3, EntryPoint.Archive, firstDay.AddDays(6), true, 3),
+            new GameSession
+            {
+                GameId = Guid.NewGuid(),
+                SessionCategory = SessionCategory.Practice,
+                StartedOnUtc = firstDay,
+                FinishedOnUtc = firstDay,
+                IsWon = true
+            },
+            new GameSession
+            {
+                GameId = Guid.NewGuid(),
+                PuzzleId = 4,
+                SessionCategory = SessionCategory.CanonicalPuzzle,
+                IsLegacyDuplicate = true,
+                StartedOnUtc = firstDay,
+                FinishedOnUtc = firstDay,
+                IsWon = true
+            }
         };
 
         var stats = PlayerStatsProjection.Create(new PlayerStats { Id = playerId }, games, new DayService());
@@ -32,17 +50,15 @@ public sealed class PlayerStatsProjectionTests
         stats.MaxStreak.Should().Be(1);
     }
 
-    private static readonly DateTimeOffset FirstDay = new(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);
-
     [Fact]
     public void Streak_ArchiveReplayOfMissedDay_DoesNotBridgeTheGap()
     {
         var games = new[]
         {
-            CreateGame(1, EntryPoint.Daily, FirstDay, isWon: true, guesses: 1),
-            CreateGame(2, EntryPoint.Daily, FirstDay.AddDays(1), isWon: true, guesses: 1),
-            CreateGame(3, EntryPoint.Archive, FirstDay.AddDays(5), isWon: true, guesses: 1),
-            CreateGame(4, EntryPoint.Daily, FirstDay.AddDays(3), isWon: true, guesses: 1),
+            CreateGame(1, EntryPoint.Daily, FirstDay, true, 1),
+            CreateGame(2, EntryPoint.Daily, FirstDay.AddDays(1), true, 1),
+            CreateGame(3, EntryPoint.Archive, FirstDay.AddDays(5), true, 1),
+            CreateGame(4, EntryPoint.Daily, FirstDay.AddDays(3), true, 1)
         };
 
         var stats = PlayerStatsProjection.Create(new PlayerStats(), games, OnPuzzleDay(4));
@@ -57,9 +73,23 @@ public sealed class PlayerStatsProjectionTests
         // Practice sessions default to a Daily entry point, so only their category keeps them out.
         var games = new[]
         {
-            CreateGame(1, EntryPoint.Daily, FirstDay, isWon: true, guesses: 1),
-            new GameSession { GameId = Guid.NewGuid(), SessionCategory = SessionCategory.Practice, StartedOnUtc = FirstDay.AddDays(1), FinishedOnUtc = FirstDay.AddDays(1), IsWon = true },
-            new GameSession { GameId = Guid.NewGuid(), SessionCategory = SessionCategory.Practice, StartedOnUtc = FirstDay.AddDays(2), FinishedOnUtc = FirstDay.AddDays(2), IsWon = true },
+            CreateGame(1, EntryPoint.Daily, FirstDay, true, 1),
+            new GameSession
+            {
+                GameId = Guid.NewGuid(),
+                SessionCategory = SessionCategory.Practice,
+                StartedOnUtc = FirstDay.AddDays(1),
+                FinishedOnUtc = FirstDay.AddDays(1),
+                IsWon = true
+            },
+            new GameSession
+            {
+                GameId = Guid.NewGuid(),
+                SessionCategory = SessionCategory.Practice,
+                StartedOnUtc = FirstDay.AddDays(2),
+                FinishedOnUtc = FirstDay.AddDays(2),
+                IsWon = true
+            }
         };
 
         var stats = PlayerStatsProjection.Create(new PlayerStats(), games, OnPuzzleDay(2));
@@ -72,13 +102,12 @@ public sealed class PlayerStatsProjectionTests
     public void Streak_DailyFinishedAfterItsDay_DoesNotCount()
     {
         // Opened on Daily and first guessed on the day, but finished the next day (e.g. from the archive).
-        var late = CreateGame(2, EntryPoint.Daily, FirstDay.AddDays(1), isWon: true, guesses: 1);
+        var late = CreateGame(2, EntryPoint.Daily, FirstDay.AddDays(1), true, 1);
         late.FinishedOnUtc = FirstDay.AddDays(2);
         var games = new[]
         {
-            CreateGame(1, EntryPoint.Daily, FirstDay, isWon: true, guesses: 1),
-            late,
-            CreateGame(3, EntryPoint.Daily, FirstDay.AddDays(2), isWon: true, guesses: 1),
+            CreateGame(1, EntryPoint.Daily, FirstDay, true, 1), late,
+            CreateGame(3, EntryPoint.Daily, FirstDay.AddDays(2), true, 1)
         };
 
         var stats = PlayerStatsProjection.Create(new PlayerStats(), games, OnPuzzleDay(3));
@@ -95,7 +124,8 @@ public sealed class PlayerStatsProjectionTests
     public void Streak_DaysSkippedAfterLastWin_ResetOnceYesterdayIsMissed(int today, int expectedCurrent)
     {
         // Won puzzles 1-3 on their days; today's puzzle may still be played, a missed yesterday ends the run.
-        var games = Enumerable.Range(1, 3).Select(day => CreateGame(day, EntryPoint.Daily, FirstDay.AddDays(day - 1), isWon: true, guesses: 1)).ToArray();
+        var games = Enumerable.Range(1, 3)
+            .Select(day => CreateGame(day, EntryPoint.Daily, FirstDay.AddDays(day - 1), true, 1)).ToArray();
 
         var stats = PlayerStatsProjection.Create(new PlayerStats(), games, OnPuzzleDay(today));
 
@@ -106,14 +136,15 @@ public sealed class PlayerStatsProjectionTests
     [Fact]
     public void Create_GamesDecidedByTheirGuesses_CountWithoutASavedFinish()
     {
-        var lost = CreateGame(1, EntryPoint.Archive, FirstDay, isWon: false, guesses: 6);
-        var won = CreateGame(2, EntryPoint.Archive, FirstDay, isWon: false, guesses: 1);
-        var open = CreateGame(3, EntryPoint.Archive, FirstDay, isWon: false, guesses: 5);
+        var lost = CreateGame(1, EntryPoint.Archive, FirstDay, false, 6);
+        var won = CreateGame(2, EntryPoint.Archive, FirstDay, false, 1);
+        var open = CreateGame(3, EntryPoint.Archive, FirstDay, false, 5);
         foreach (var game in new[] { lost, won, open })
         {
             game.TargetCharacterId = 100;
             game.FinishedOnUtc = null;
         }
+
         won.AddGuess(100);
 
         var stats = PlayerStatsProjection.Create(new PlayerStats(), [lost, won, open], OnPuzzleDay(30));
@@ -124,7 +155,8 @@ public sealed class PlayerStatsProjectionTests
 
     private static DayService OnPuzzleDay(int puzzleId) => new(new TestClock(FirstDay.AddDays(puzzleId - 1)));
 
-    private static GameSession CreateGame(int puzzleId, EntryPoint entryPoint, DateTimeOffset startedOnUtc, bool isWon, int guesses)
+    private static GameSession CreateGame(int puzzleId, EntryPoint entryPoint, DateTimeOffset startedOnUtc, bool isWon,
+        int guesses)
     {
         var game = new GameSession
         {
@@ -134,11 +166,13 @@ public sealed class PlayerStatsProjectionTests
             FirstEntryPoint = entryPoint,
             StartedOnUtc = startedOnUtc,
             FinishedOnUtc = startedOnUtc.AddMinutes(3),
-            IsWon = isWon,
+            IsWon = isWon
         };
 
         for (var index = 0; index < guesses; index++)
+        {
             game.AddGuess(index + 1);
+        }
 
         return game;
     }

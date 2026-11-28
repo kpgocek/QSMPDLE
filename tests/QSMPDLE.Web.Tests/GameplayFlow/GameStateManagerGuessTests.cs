@@ -116,7 +116,8 @@ public sealed class GameStateManagerGuessTests
 
         await setup.Manager.MakeGuessAsync(setup.GuessOne.Id);
 
-        setup.GameStateStore.State!.GuessesMade.Should().ContainSingle(guess => guess.Character.Id == setup.GuessOne.Id);
+        setup.GameStateStore.State!.GuessesMade.Should()
+            .ContainSingle(guess => guess.Character.Id == setup.GuessOne.Id);
     }
 
     [Fact]
@@ -129,7 +130,8 @@ public sealed class GameStateManagerGuessTests
         await setup.Manager.MakeGuessAsync(setup.GuessTwo.Id);
         await setup.Manager.MakeGuessAsync(setup.GuessThree.Id);
 
-        setup.GameStateStore.State!.GuessesMade.Select(guess => guess.Character.Id).Should().Equal(setup.ExpectedGuessOrder);
+        setup.GameStateStore.State!.GuessesMade.Select(guess => guess.Character.Id).Should()
+            .Equal(setup.ExpectedGuessOrder);
     }
 
     [Fact]
@@ -158,23 +160,31 @@ public sealed class GameStateManagerGuessTests
 
     private static Setup CreateSetup()
     {
-        var target = TestCharacters.Create(1, "Target", joinDay: 10, languages: 2, pronouns: ["Any"], affiliations: ["Guild"], species: ["Human"]);
-        var guessOne = TestCharacters.Create(2, "GuessOne", joinDay: 20, languages: 4, pronouns: ["He/Him"], affiliations: ["Other"], species: ["Unknown"]);
-        var guessTwo = TestCharacters.Create(3, "GuessTwo", joinDay: 30, languages: 3, pronouns: ["She/Her"], affiliations: ["Third"], species: ["Non-Human"]);
-        var guessThree = TestCharacters.Create(4, "GuessThree", joinDay: 40, languages: 1, pronouns: ["They/Them"], affiliations: ["Fourth"], species: ["Human"]);
-        var guessFour = TestCharacters.Create(5, "GuessFour", joinDay: 50, languages: 2, pronouns: ["Any"], affiliations: ["Fifth"], species: ["Human"]);
-        var guessFive = TestCharacters.Create(6, "GuessFive", joinDay: 60, languages: 3, pronouns: ["He/Him"], affiliations: ["Sixth"], species: ["Human"]);
-        var guessSix = TestCharacters.Create(7, "GuessSix", joinDay: 70, languages: 4, pronouns: ["She/Her"], affiliations: ["Seventh"], species: ["Human"]);
-        var scenarioGuess = TestCharacters.Create(8, "ScenarioGuess", joinDay: 20, languages: 4, pronouns: ["He/Him"], affiliations: ["Guild"], species: ["Unknown"]);
-        var characters = new[] { target, guessOne, guessTwo, guessThree, guessFour, guessFive, guessSix, scenarioGuess };
+        var target = TestCharacters.Create(1, "Target", 10, 2, ["Any"], ["Guild"], ["Human"]);
+        var guessOne = TestCharacters.Create(2, "GuessOne", 20, 4, ["He/Him"], ["Other"], ["Unknown"]);
+        var guessTwo = TestCharacters.Create(3, "GuessTwo", 30, 3, ["She/Her"], ["Third"], ["Non-Human"]);
+        var guessThree = TestCharacters.Create(4, "GuessThree", 40, 1, ["They/Them"], ["Fourth"], ["Human"]);
+        var guessFour = TestCharacters.Create(5, "GuessFour", 50, 2, ["Any"], ["Fifth"], ["Human"]);
+        var guessFive = TestCharacters.Create(6, "GuessFive", 60, 3, ["He/Him"], ["Sixth"], ["Human"]);
+        var guessSix = TestCharacters.Create(7, "GuessSix", 70, 4, ["She/Her"], ["Seventh"], ["Human"]);
+        var scenarioGuess = TestCharacters.Create(8, "ScenarioGuess", 20, 4, ["He/Him"], ["Guild"], ["Unknown"]);
+        var characters = new[]
+        {
+            target, guessOne, guessTwo, guessThree, guessFour, guessFive, guessSix, scenarioGuess
+        };
         var characterStore = new InMemoryCharacterStore(characters, target.Id);
-        var playerStatsStore = new InMemoryPlayerStatsStore { Stats = new PlayerStats { Id = Guid.Parse("11111111-1111-1111-1111-111111111111") } };
+        var playerStatsStore = new InMemoryPlayerStatsStore
+        {
+            Stats = new PlayerStats { Id = Guid.Parse("11111111-1111-1111-1111-111111111111") }
+        };
         var gameStateStore = new InMemoryGameStateStore();
         var gameStatsStore = new InMemoryGameStatsStore();
         var dayService = new DayService();
-        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService, new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), gameStatsStore);
+        var manager = new GameStateManager(gameStateStore, new GameService(characterStore, dayService), dayService,
+            new InMemoryPlayerStatsStore(), characterStore, new CharacterComparer(characterStore), gameStatsStore);
 
-        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, target, guessOne, guessTwo, guessThree, guessFour, guessFive, guessSix, scenarioGuess, [guessOne.Id, guessTwo.Id, guessThree.Id]);
+        return new Setup(manager, gameStateStore, playerStatsStore, gameStatsStore, target, guessOne, guessTwo,
+            guessThree, guessFour, guessFive, guessSix, scenarioGuess, [guessOne.Id, guessTwo.Id, guessThree.Id]);
     }
 
     private sealed record Setup(
@@ -192,7 +202,9 @@ public sealed class GameStateManagerGuessTests
         Character ScenarioGuess,
         IReadOnlyList<int> ExpectedGuessOrder)
     {
-        public IReadOnlyList<Character> LosingGuesses => [GuessOne, GuessTwo, GuessThree, GuessFour, GuessFive, GuessSix];
+        public IReadOnlyList<Character> LosingGuesses =>
+            [GuessOne, GuessTwo, GuessThree, GuessFour, GuessFive, GuessSix];
+
         public Character CorrectGuess => Target;
     }
 }

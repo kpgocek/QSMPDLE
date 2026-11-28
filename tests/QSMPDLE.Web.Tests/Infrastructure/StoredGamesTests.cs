@@ -16,7 +16,10 @@ public sealed class StoredGamesTests
     public async Task GetStoredDayNumbersAsync_ManyPlayedDays_ListsEveryDay()
     {
         for (var day = 1; day <= PlayedDays; day++)
+        {
             browser.Items[$"qsmpdle-canonical-{day}"] = "null";
+        }
+
         browser.Items["qsmpdle-first-game"] = "null";
         browser.Items["qsmpdle-canonical-old"] = "null";
         browser.Items["other-5000"] = "null";
@@ -40,7 +43,7 @@ public sealed class StoredGamesTests
         {
             GameId = Guid.NewGuid(),
             Game = new Game { TargetId = 1, PortraitUrl = "" },
-            GuessesMade = [new GuessResult { Character = new CharacterLookup(1, "One", null, [], "") }],
+            GuessesMade = [new GuessResult { Character = new CharacterLookup(1, "One", null, [], "") }]
         });
         await store.Init("canonical-1");
 

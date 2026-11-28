@@ -43,14 +43,13 @@ public sealed class SitemapServiceDatabaseTests : IAsyncLifetime
         {
             database.DailyGames.AddRange(Enumerable.Range(1, 20).Select(day => new DailyGame
             {
-                Id = day,
-                Date = dayService.GetArchiveDate(day),
-                CharacterId = 1,
+                Id = day, Date = dayService.GetArchiveDate(day), CharacterId = 1
             }));
             await database.SaveChangesAsync();
         }
 
-        var service = new SitemapService(new TestDbContextFactory(options), new MemoryCache(new MemoryCacheOptions()), dayService, clock);
+        var service = new SitemapService(new TestDbContextFactory(options), new MemoryCache(new MemoryCacheOptions()),
+            dayService, clock);
 
         // Act
         var urls = XDocument.Parse(await service.GenerateAsync()).Root!.Elements(Ns + "url")
@@ -63,7 +62,8 @@ public sealed class SitemapServiceDatabaseTests : IAsyncLifetime
         urls["https://qsmpdle.com/archive"].Should().Be("2026-06-23");
     }
 
-    private sealed class TestDbContextFactory(DbContextOptions<ApplicationDbContext> options) : IDbContextFactory<ApplicationDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<ApplicationDbContext> options)
+        : IDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext() => new(options);
     }

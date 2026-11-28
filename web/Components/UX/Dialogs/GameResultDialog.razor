@@ -3,7 +3,7 @@
 @using QSMPDLE.Web.Features.Sharing
 @using QSMPDLE.Web.Features.Statistics.Models
 @using QSMPDLE.Web.Infrastructure.LocalStorage
-@inject IJSRuntime JS
+@inject IJSRuntime Js
 @inject ISnackbar Snackbar
 @inject IPlayerStatsStore PlayerStatsStore
 @inject IPreferencesService PreferencesService
@@ -55,7 +55,7 @@
             </p>
         }
 
-        @if (Stats is not null)
+        @if (stats is not null)
         {
             <div class="stats-popup">
 
@@ -64,22 +64,22 @@
                 <div class="stats-grid">
 
                     <div class="stat">
-                        <span class="value">@Stats.GamesPlayed</span>
+                        <span class="value">@stats.GamesPlayed</span>
                         <span class="label">Played</span>
                     </div>
 
                     <div class="stat">
-                        <span class="value">@Math.Round(Stats.WinRate)</span>
+                        <span class="value">@Math.Round(stats.WinRate)</span>
                         <span class="label">Win %</span>
                     </div>
 
                     <div class="stat">
-                        <span class="value">@Stats.CurrentStreak</span>
+                        <span class="value">@stats.CurrentStreak</span>
                         <span class="label">Current Streak</span>
                     </div>
 
                     <div class="stat">
-                        <span class="value">@Stats.MaxStreak</span>
+                        <span class="value">@stats.MaxStreak</span>
                         <span class="label">Max Streak</span>
                     </div>
 
@@ -97,7 +97,7 @@
                             <div class="distribution-bar-container">
                                 <div class="distribution-bar @(i == TodayBarIndex ? "today" : "")"
                                      style="width:@GetBarWidth(i)%">
-                                    @Stats.GuessDistribution[i]
+                                    @stats.GuessDistribution[i]
                                 </div>
                             </div>
                         </div>
@@ -152,7 +152,7 @@
     [Parameter] public GameState GameState { get; set; } = null!;
 
     [Parameter] public EventCallback OnClose { get; set; }
-    private PlayerStats? Stats;
+    private PlayerStats? stats;
 
     private bool IsWon => GameState.IsWon;
     private int? DayNumber => GameState.Game.PuzzleId;
@@ -165,11 +165,11 @@
     private ElementReference modal;
 
     // Loaded up front: the share links below are plain hrefs, built while rendering.
-    private string? _playerName;
+    private string? playerName;
 
     protected override async Task OnInitializedAsync()
     {
-        _playerName = await PreferencesService.GetDisplayNameAsync();
+        playerName = await PreferencesService.GetDisplayNameAsync();
 
         // Only canonical wins show statistics; practice games don't count towards them.
         if (!IsWon || GameState.SessionCategory != GameModeSessionCategory)
@@ -177,7 +177,7 @@
 
         try
         {
-            Stats = await PlayerStatsStore.LoadAsync();
+            stats = await PlayerStatsStore.LoadAsync();
         }
         catch (Exception exception)
         {
@@ -215,16 +215,16 @@
 
     private double GetBarWidth(int index)
     {
-        ArgumentNullException.ThrowIfNull(Stats);
+        ArgumentNullException.ThrowIfNull(stats);
 
-        var max = Stats.GuessDistribution.Max();
+        var max = stats.GuessDistribution.Max();
 
         if (max == 0)
             return 8;
 
         return Math.Max(
             8,
-            Stats.GuessDistribution[index] * 100.0 / max);
+            stats.GuessDistribution[index] * 100.0 / max);
     }
 
     private string BuildShareText()
@@ -232,8 +232,8 @@
         ArgumentNullException.ThrowIfNull(DayNumber);
 
         return IsWon
-            ? ShareText.BuildDailyResult(DayNumber.Value, Guesses, _playerName)
-            : ShareText.BuildDailyChallenge(DayNumber.Value, _playerName);
+            ? ShareText.BuildDailyResult(DayNumber.Value, Guesses, playerName)
+            : ShareText.BuildDailyChallenge(DayNumber.Value, playerName);
     }
 
     private async Task Share()
@@ -241,7 +241,7 @@
         var text = BuildShareText();
 
         // Browsers without a native share sheet get the text on the clipboard instead.
-        if (!await ShareText.ShareAsync(JS, text))
+        if (!await ShareText.ShareAsync(Js, text))
             await CopyWithFeedbackAsync(text);
     }
 
@@ -252,7 +252,7 @@
 
     private async Task CopyWithFeedbackAsync(string text)
     {
-        if (await ShareText.CopyAsync(JS, text))
+        if (await ShareText.CopyAsync(Js, text))
             Snackbar.Add("Copied to clipboard", Severity.Success);
         else
             Snackbar.Add("Couldn't copy — try again", Severity.Error);

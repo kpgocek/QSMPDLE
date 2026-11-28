@@ -41,7 +41,7 @@
                 continue;
             }
 
-            var isOpen = _openIndex == index;
+            var isOpen = openIndex == index;
             var rowIndex = index;
 
             <div class="guess-row @(isOpen ? "open" : "") @(index == Guesses.Count - 1 ? "new-row" : "")" role="row">
@@ -145,7 +145,7 @@
     [Parameter]
     public IReadOnlySet<ClueGroup> ActiveClues { get; set; } = new HashSet<ClueGroup>();
 
-    private int? _openIndex;
+    private int? openIndex;
 
     /// <summary>
     ///     One place for every clue's wording: <c>Full</c> fills wide tiles and the detail strip,
@@ -200,13 +200,13 @@
         return CharactersById.GetValueOrDefault(id);
     }
 
-    private void Toggle(int index) => _openIndex = _openIndex == index ? null : index;
+    private void Toggle(int index) => openIndex = openIndex == index ? null : index;
 
     private void CloseOnEscape(KeyboardEventArgs e, int index)
     {
-        if (e.Key == "Escape" && _openIndex == index)
+        if (e.Key == "Escape" && openIndex == index)
         {
-            _openIndex = null;
+            openIndex = null;
         }
     }
 

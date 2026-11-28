@@ -18,10 +18,13 @@ public sealed class GameStateManagerRestoreTests
 
     private readonly InMemoryGameStateStore gameStateStore = new();
     private readonly InMemoryGameStatsStore gameStatsStore = new();
-    private readonly InMemoryPlayerStatsStore playerStatsStore = new() { Stats = new PlayerStats { Id = PlayerId } };
     private readonly GameStateManager manager;
+    private readonly InMemoryPlayerStatsStore playerStatsStore = new() { Stats = new PlayerStats { Id = PlayerId } };
 
-    public GameStateManagerRestoreTests() => manager = CreateManager([.. Enumerable.Range(1, 5).Select(id => CreateCharacter(id))]);
+    public GameStateManagerRestoreTests()
+    {
+        manager = CreateManager([.. Enumerable.Range(1, 5).Select(id => CreateCharacter(id))]);
+    }
 
     [Fact]
     public async Task StoredSession_GuessOfARemovedCharacter_LoadsTheOtherGuesses()
@@ -50,7 +53,10 @@ public sealed class GameStateManagerRestoreTests
     public async Task SavedGame_OfAnotherPlayerId_IsRecordedAsAGameOfItsOwn()
     {
         var saved = Save(AnswerId, Guid.NewGuid());
-        saved.GuessesMade.Add(new GuessResult { Character = new CharacterLookup(GuessId, "Character 4", null, [], "") });
+        saved.GuessesMade.Add(new GuessResult
+        {
+            Character = new CharacterLookup(GuessId, "Character 4", null, [], "")
+        });
 
         await manager.StartGameAsync(EntryPoint.Archive, PuzzleId);
         await manager.MakeGuessAsync(3);
@@ -91,16 +97,22 @@ public sealed class GameStateManagerRestoreTests
         var current = manager.GameState.GameId;
         playerStatsStore.Stats.Id = Guid.Empty;
 
-        await FluentActions.Awaiting(() => manager.StartNewPracticeGameAsync()).Should().ThrowAsync<InvalidOperationException>();
+        await FluentActions.Awaiting(() => manager.StartNewPracticeGameAsync()).Should()
+            .ThrowAsync<InvalidOperationException>();
 
         manager.GameState.GameId.Should().Be(current);
     }
 
     private GameSession AddSession(int target, params int[] guessedCharacterIds)
     {
-        var session = new GameSession { GameId = Guid.NewGuid(), PlayerId = PlayerId, PuzzleId = PuzzleId, TargetCharacterId = target };
+        var session = new GameSession
+        {
+            GameId = Guid.NewGuid(), PlayerId = PlayerId, PuzzleId = PuzzleId, TargetCharacterId = target
+        };
         foreach (var characterId in guessedCharacterIds)
+        {
             session.AddGuess(characterId);
+        }
 
         return gameStatsStore.Sessions[session.GameId] = session;
     }
@@ -109,12 +121,13 @@ public sealed class GameStateManagerRestoreTests
     {
         GameId = Guid.NewGuid(),
         PlayerId = playerId,
-        Game = new Game { PuzzleId = PuzzleId, TargetId = target, PortraitUrl = "" },
+        Game = new Game { PuzzleId = PuzzleId, TargetId = target, PortraitUrl = "" }
     };
 
     private GameStateManager CreateManager(Character[] characters)
     {
-        var characterStore = new InMemoryCharacterStore(characters, 1, new Dictionary<int, int> { [PuzzleId] = AnswerId });
+        var characterStore =
+            new InMemoryCharacterStore(characters, 1, new Dictionary<int, int> { [PuzzleId] = AnswerId });
         var dayService = new DayService(new TestClock(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero)));
         return new GameStateManager(
             gameStateStore,
@@ -136,6 +149,6 @@ public sealed class GameStateManagerRestoreTests
         LanguageCount = 1,
         Species = ["Human"],
         JoinDayNumber = id,
-        AvailableFrom = availableFrom,
+        AvailableFrom = availableFrom
     };
 }

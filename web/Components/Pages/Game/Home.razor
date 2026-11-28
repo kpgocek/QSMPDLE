@@ -5,7 +5,7 @@
 
 <PageTitle>Daily Game - QSMPDLE</PageTitle>
 
-@if (!IsGameLoaded)
+@if (!isGameLoaded)
 {
     <h2>
         <MudSkeleton SkeletonType="SkeletonType.Text" Width="min(25rem, calc(100vw - 2rem))" Height="2.375rem"/>
@@ -13,23 +13,23 @@
 }
 else
 {
-    <h2>DAILY CHARACTER<span class="separator">|</span>#@DailyNumber.ToString("00")</h2>
+    <h2>DAILY CHARACTER<span class="separator">|</span>#@dailyNumber.ToString("00")</h2>
 }
 
 <Gameplay EntryPoint="EntryPoint.Daily" GameStateChanged="OnGameStateChange" GameLoaded="OnGameLoaded"/>
 
 @code {
-    private int DailyNumber;
-    private bool IsGameLoaded;
+    private int dailyNumber;
+    private bool isGameLoaded;
 
     private async Task OnGameStateChange(GameState gameState)
     {
-        DailyNumber = gameState.Game.PuzzleId ?? 0;
+        dailyNumber = gameState.Game.PuzzleId ?? 0;
     }
 
     private async Task OnGameLoaded()
     {
-        IsGameLoaded = true;
+        isGameLoaded = true;
     }
 
 }

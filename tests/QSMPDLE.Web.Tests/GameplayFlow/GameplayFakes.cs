@@ -8,10 +8,11 @@ namespace QSMPDLE.Web.Tests.GameplayFlow;
 
 internal sealed class InMemoryGameStateStore : IGameStateStore
 {
+    private readonly Dictionary<string, GameState> statesByKey = [];
     public string? Key { get; private set; }
     public GameState? State { get; set; }
-    private readonly Dictionary<string, GameState> _statesByKey = [];
     public List<GameState> SavedStates { get; } = [];
+    public Guid? FirstGameId { get; set; }
 
     public Task Init(string key)
     {
@@ -21,7 +22,6 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
 
 
     public Task<GameState?> GetAsync() => Task.FromResult(State is null ? null : Clone(State));
-    public Guid? FirstGameId { get; set; }
 
     public Task<Guid?> GetFirstGameIdAsync() => Task.FromResult(FirstGameId);
 
@@ -32,20 +32,23 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
     }
 
     public Task<bool> HasGuessedInOtherGameAsync() =>
-        Task.FromResult(_statesByKey.Any(entry => entry.Key != Key && entry.Value.GuessesMade.Count > 0));
-
-    public void SetStateForKey(string key, GameState state) => _statesByKey[key] = Clone(state);
-    public bool HasStateForKey(string key) => _statesByKey.ContainsKey(key);
-    public GameState GetStateForKey(string key) => _statesByKey[key];
+        Task.FromResult(statesByKey.Any(entry => entry.Key != Key && entry.Value.GuessesMade.Count > 0));
 
     public Task SaveAsync(GameState state)
     {
         State = Clone(state);
         if (Key is not null)
-            _statesByKey[Key] = Clone(state);
+        {
+            statesByKey[Key] = Clone(state);
+        }
+
         SavedStates.Add(Clone(state));
         return Task.CompletedTask;
     }
+
+    public void SetStateForKey(string key, GameState state) => statesByKey[key] = Clone(state);
+    public bool HasStateForKey(string key) => statesByKey.ContainsKey(key);
+    public GameState GetStateForKey(string key) => statesByKey[key];
 
     private static GameState Clone(GameState state) => new()
     {
@@ -53,9 +56,7 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
         PlayerId = state.PlayerId,
         Game = new Game
         {
-            PuzzleId = state.Game.PuzzleId,
-            TargetId = state.Game.TargetId,
-            PortraitUrl = state.Game.PortraitUrl,
+            PuzzleId = state.Game.PuzzleId, TargetId = state.Game.TargetId, PortraitUrl = state.Game.PortraitUrl
         },
         SessionCategory = state.SessionCategory,
         EntryPoint = state.EntryPoint,
@@ -63,7 +64,7 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
         IsWon = state.IsWon,
         IsLost = state.IsLost,
         SeenPopup = state.SeenPopup,
-        GuessesMade = state.GuessesMade.ConvertAll(Clone),
+        GuessesMade = state.GuessesMade.ConvertAll(Clone)
     };
 
     private static GuessResult Clone(GuessResult guess) => new()
@@ -74,7 +75,7 @@ internal sealed class InMemoryGameStateStore : IGameStateStore
         Languages = guess.Languages,
         Joined = guess.Joined,
         Affiliation = guess.Affiliation,
-        Species = guess.Species,
+        Species = guess.Species
     };
 }
 
@@ -99,7 +100,7 @@ internal sealed class InMemoryPlayerStatsStore : IPlayerStatsStore
         GamesWon = stats.GamesWon,
         CurrentStreak = stats.CurrentStreak,
         MaxStreak = stats.MaxStreak,
-        GuessDistribution = stats.GuessDistribution.ToArray(),
+        GuessDistribution = stats.GuessDistribution.ToArray()
     };
 }
 
@@ -113,10 +114,12 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
 
     /// <summary>Left incomplete to simulate a slow database.</summary>
     public Task Recording { get; set; } = Task.CompletedTask;
+
     public Task Loading { get; set; } = Task.CompletedTask;
 
     // Stands in for the row lock and identity lookup of the database store; the recording rules are the session's own.
-    public async Task<GameSession> RecordGuessAsync(GameSession game, IReadOnlyList<int> guessedCharacterIds, DateTimeOffset recordedOnUtc)
+    public async Task<GameSession> RecordGuessAsync(GameSession game, IReadOnlyList<int> guessedCharacterIds,
+        DateTimeOffset recordedOnUtc)
     {
         await Recording;
 
@@ -127,11 +130,16 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
         }
 
         var existing = game.SessionCategory == SessionCategory.CanonicalPuzzle
-            ? Sessions.Values.FirstOrDefault(session => session.PlayerId == game.PlayerId && session.SessionCategory == SessionCategory.CanonicalPuzzle && !session.IsLegacyDuplicate && session.PuzzleId == game.PuzzleId)
+            ? Sessions.Values.FirstOrDefault(session =>
+                session.PlayerId == game.PlayerId && session.SessionCategory == SessionCategory.CanonicalPuzzle &&
+                !session.IsLegacyDuplicate && session.PuzzleId == game.PuzzleId)
             : Sessions.GetValueOrDefault(game.GameId);
         var session = existing ?? (Sessions[game.GameId] = game);
         if (session.GameId == game.GameId)
+        {
             session.RecordGuesses(guessedCharacterIds, recordedOnUtc);
+        }
+
         return Clone(session);
     }
 
@@ -140,17 +148,22 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
         await Loading;
 
         return Sessions.Values.FirstOrDefault(session =>
-            session.PlayerId == playerId && session.SessionCategory == SessionCategory.CanonicalPuzzle && !session.IsLegacyDuplicate && session.PuzzleId == puzzleId);
+            session.PlayerId == playerId && session.SessionCategory == SessionCategory.CanonicalPuzzle &&
+            !session.IsLegacyDuplicate && session.PuzzleId == puzzleId);
     }
 
     public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId, SessionCategory? category = null)
     {
         PlayerGamesLoadCount++;
-        return Task.FromResult<IEnumerable<GameSession>>(Sessions.Values.Where(session => session.PlayerId == playerId && (category is null || session.SessionCategory == category)).ToList());
+        return Task.FromResult<IEnumerable<GameSession>>(Sessions.Values.Where(session =>
+            session.PlayerId == playerId && (category is null || session.SessionCategory == category)).ToList());
     }
 
-    public Task<List<GameSession>> GetPlayerCanonicalGamesByPuzzleRangeAsync(Guid playerId, int startPuzzleId, int endPuzzleId) => Task.FromResult(Sessions.Values
-        .Where(session => session.PlayerId == playerId && session.SessionCategory == SessionCategory.CanonicalPuzzle && !session.IsLegacyDuplicate && session.PuzzleId >= startPuzzleId && session.PuzzleId <= endPuzzleId)
+    public Task<List<GameSession>> GetPlayerCanonicalGamesByPuzzleRangeAsync(Guid playerId, int startPuzzleId,
+        int endPuzzleId) => Task.FromResult(Sessions.Values
+        .Where(session => session.PlayerId == playerId && session.SessionCategory == SessionCategory.CanonicalPuzzle &&
+                          !session.IsLegacyDuplicate && session.PuzzleId >= startPuzzleId &&
+                          session.PuzzleId <= endPuzzleId)
         .Select(Clone).ToList());
 
 
@@ -172,80 +185,87 @@ internal sealed class InMemoryGameStatsStore : IGameStatsStore
             GameId = guess.GameId,
             GuessOrder = guess.GuessOrder,
             GuessedCharacterId = guess.GuessedCharacterId,
-            GuessedOnUtc = guess.GuessedOnUtc,
-        }).ToList(),
+            GuessedOnUtc = guess.GuessedOnUtc
+        }).ToList()
     };
 }
 
 internal sealed class InMemoryCharacterStore : ICharacterStore
 {
-    private readonly Dictionary<int, Character> _characters = [];
-    private readonly Dictionary<int, CharacterLookup> _lookups = [];
-    private readonly Dictionary<int, int> _dailyTargets = [];
-    private readonly int _randomCharacterId;
+    private readonly Dictionary<int, Character> characters = [];
+    private readonly Dictionary<int, int> dailyTargets = [];
+    private readonly Dictionary<int, CharacterLookup> lookups = [];
+    private readonly int randomCharacterId;
 
-    public InMemoryCharacterStore(IEnumerable<Character> characters, int randomCharacterId, IDictionary<int, int>? dailyTargets = null)
+    public InMemoryCharacterStore(IEnumerable<Character> characters, int randomCharacterId,
+        IDictionary<int, int>? dailyTargets = null)
     {
         foreach (var character in characters)
         {
-            _characters[character.Id] = character;
-            _lookups[character.Id] = new CharacterLookup(character.Id, character.Name, character.MinecraftUsername, character.Aliases, CharacterUrlHelper.GetPortraitFolder(character.PortraitId));
+            this.characters[character.Id] = character;
+            lookups[character.Id] = new CharacterLookup(character.Id, character.Name, character.MinecraftUsername,
+                character.Aliases, CharacterUrlHelper.GetPortraitFolder(character.PortraitId));
         }
 
-        _randomCharacterId = randomCharacterId;
+        this.randomCharacterId = randomCharacterId;
         if (dailyTargets is not null)
         {
             foreach (var entry in dailyTargets)
             {
-                _dailyTargets[entry.Key] = entry.Value;
+                this.dailyTargets[entry.Key] = entry.Value;
             }
         }
     }
 
     public Task<IReadOnlyList<Character>> GetCharactersAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Character>>(_characters.Values.ToList());
+        => Task.FromResult<IReadOnlyList<Character>>(characters.Values.ToList());
 
     public Task<Character?> GetCharacterAsync(int id, CancellationToken cancellationToken = default)
-        => Task.FromResult(_characters.TryGetValue(id, out var character) ? character : null);
+        => Task.FromResult(characters.TryGetValue(id, out var character) ? character : null);
 
     public Task<IReadOnlyList<CharacterLookup>> GetLookupsAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<CharacterLookup>>(_lookups.Values.OrderBy(character => character.Name).ToList());
+        => Task.FromResult<IReadOnlyList<CharacterLookup>>(lookups.Values.OrderBy(character => character.Name)
+            .ToList());
 
-    public Task<IReadOnlyList<CharacterLookup>> GetLookupsAvailableOnAsync(DateOnly date, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<CharacterLookup>>(_lookups.Values.Where(lookup => _characters[lookup.Id].IsAvailableOn(date)).OrderBy(character => character.Name).ToList());
+    public Task<IReadOnlyList<CharacterLookup>> GetLookupsAvailableOnAsync(DateOnly date,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<CharacterLookup>>(lookups.Values
+            .Where(lookup => characters[lookup.Id].IsAvailableOn(date)).OrderBy(character => character.Name).ToList());
 
     public Task<CharacterLookup?> GetLookupAsync(int id, CancellationToken cancellationToken = default)
-        => Task.FromResult(_lookups.TryGetValue(id, out var lookup) ? lookup : null);
+        => Task.FromResult(lookups.TryGetValue(id, out var lookup) ? lookup : null);
 
     public Task<Character> GetCharacterForDayAsync(int dayNumber, CancellationToken cancellationToken = default)
     {
-        if (_dailyTargets.TryGetValue(dayNumber, out var characterId) && _characters.TryGetValue(characterId, out var character))
+        if (dailyTargets.TryGetValue(dayNumber, out var characterId) &&
+            characters.TryGetValue(characterId, out var character))
         {
             return Task.FromResult(character);
         }
 
-        return Task.FromResult(_characters[_randomCharacterId]);
+        return Task.FromResult(characters[randomCharacterId]);
     }
 
     public Task<Character> GetRandomCharacterAsync(DateOnly availableOn, CancellationToken cancellationToken = default)
     {
-        var configured = _characters[_randomCharacterId];
+        var configured = characters[randomCharacterId];
         return Task.FromResult(configured.IsAvailableOn(availableOn)
             ? configured
-            : _characters.Values.Where(character => character.IsAvailableOn(availableOn)).OrderBy(character => character.Id).First());
+            : characters.Values.Where(character => character.IsAvailableOn(availableOn))
+                .OrderBy(character => character.Id).First());
     }
 }
 
 internal sealed class InMemoryHiLoScoreStore : IHiLoScoreStore
 {
-    private readonly Dictionary<Guid, int> _scores = [];
+    private readonly Dictionary<Guid, int> scores = [];
 
     public Task<int> GetBestScoreAsync(Guid playerId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_scores.GetValueOrDefault(playerId));
+        Task.FromResult(scores.GetValueOrDefault(playerId));
 
     public Task RecordScoreAsync(Guid playerId, int score, CancellationToken cancellationToken = default)
     {
-        _scores[playerId] = Math.Max(score, _scores.GetValueOrDefault(playerId));
+        scores[playerId] = Math.Max(score, scores.GetValueOrDefault(playerId));
         return Task.CompletedTask;
     }
 }
@@ -255,15 +275,15 @@ internal static class TestSessions
     /// <summary>Arranges a stored guess directly, whatever state the session is in.</summary>
     public static void AddGuess(this GameSession session, int guessedCharacterId) => session.Guesses.Add(new GameGuess
     {
-        GameId = session.GameId,
-        GuessOrder = session.Guesses.Count,
-        GuessedCharacterId = guessedCharacterId,
+        GameId = session.GameId, GuessOrder = session.Guesses.Count, GuessedCharacterId = guessedCharacterId
     });
 }
 
 internal static class TestCharacters
 {
-    public static Character Create(int id, string name, int joinDay, int languages, string[] pronouns, string[] affiliations, string[] species) => new()
+    public static Character
+        Create(int id, string name, int joinDay, int languages, string[] pronouns, string[] affiliations,
+            string[] species) => new()
     {
         Id = id,
         Name = name,
@@ -274,7 +294,7 @@ internal static class TestCharacters
         LanguageCount = languages,
         Affiliations = affiliations.ToList(),
         Species = species.ToList(),
-        JoinDayNumber = joinDay,
+        JoinDayNumber = joinDay
     };
 }
 

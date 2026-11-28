@@ -30,16 +30,12 @@ public sealed class CharacterUrlHelperTests
     }
 
     [Fact]
-    public void GetPortraitSrc_Folder_PointsAtUnblurredHead()
-    {
-        CharacterUrlHelper.GetPortraitSrc(Folder).Should().Be($"/graphics/guessing/{Folder}/Head.webp");
-    }
+    public void GetPortraitSrc_Folder_PointsAtUnblurredHead() => CharacterUrlHelper.GetPortraitSrc(Folder).Should()
+        .Be($"/graphics/guessing/{Folder}/Head.webp");
 
     [Fact]
-    public void GetHeadSrc_Character_UsesName()
-    {
-        CharacterUrlHelper.GetHeadSrc(new Character { Name = "FitMC" }).Should().Be("/graphics/mini-heads/FitMC.webp");
-    }
+    public void GetHeadSrc_Character_UsesName() => CharacterUrlHelper.GetHeadSrc(new Character { Name = "FitMC" })
+        .Should().Be("/graphics/mini-heads/FitMC.webp");
 
     [Fact]
     public void GetWikiUrl_Character_PrefixesSlug()

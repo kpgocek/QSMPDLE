@@ -5,11 +5,11 @@ using QSMPDLE.Web.Features.Statistics.Models;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
-public sealed class DatabaseGameStatsStore(IDbContextFactory<ApplicationDbContext> DbContextFactory) : IGameStatsStore
+public sealed class DatabaseGameStatsStore(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IGameStatsStore
 {
     public async Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId, SessionCategory? category = null)
     {
-        await using var database = await DbContextFactory.CreateDbContextAsync();
+        await using var database = await dbContextFactory.CreateDbContextAsync();
 
         return await database.GameStats
             .AsNoTracking()
@@ -23,7 +23,7 @@ public sealed class DatabaseGameStatsStore(IDbContextFactory<ApplicationDbContex
     public async Task<List<GameSession>> GetPlayerCanonicalGamesByPuzzleRangeAsync(Guid playerId, int startPuzzleId,
         int endPuzzleId)
     {
-        await using var database = await DbContextFactory.CreateDbContextAsync();
+        await using var database = await dbContextFactory.CreateDbContextAsync();
 
         return await database.GameStats
             .AsNoTracking()
@@ -39,7 +39,7 @@ public sealed class DatabaseGameStatsStore(IDbContextFactory<ApplicationDbContex
 
     public async Task<GameSession?> GetActiveCanonicalSessionAsync(Guid playerId, int puzzleId)
     {
-        await using var database = await DbContextFactory.CreateDbContextAsync();
+        await using var database = await dbContextFactory.CreateDbContextAsync();
 
         return await CanonicalSessions(database, playerId, puzzleId).SingleOrDefaultAsync();
     }
@@ -52,7 +52,7 @@ public sealed class DatabaseGameStatsStore(IDbContextFactory<ApplicationDbContex
             throw new InvalidOperationException("Cannot save game stats without a valid player id.");
         }
 
-        await using var database = await DbContextFactory.CreateDbContextAsync();
+        await using var database = await dbContextFactory.CreateDbContextAsync();
         await using var transaction = await database.Database.BeginTransactionAsync();
 
         var session = await LockAsync(database, game);

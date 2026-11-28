@@ -13,21 +13,21 @@
 <PageTitle>Profile - QSMPDLE</PageTitle>
 
 <div class="identity">
-    @if (_avatar is not null)
+    @if (avatar is not null)
     {
-        <img src="@CharacterUrlHelper.GetHeadSrc(_avatar)" alt="" width="64" height="64"/>
+        <img src="@CharacterUrlHelper.GetHeadSrc(avatar)" alt="" width="64" height="64"/>
     }
-    <h2>@(_preferences?.DisplayName ?? "Profile")</h2>
-    @if (_preferences is not null)
+    <h2>@(this.preferences?.DisplayName ?? "Profile")</h2>
+    @if (this.preferences is not null)
     {
-        <MudIconButton Icon="@(_editing ? Icons.Material.Filled.Check : Icons.Material.Filled.Edit)"
-                       OnClick="@(() => _editing = !_editing)" Size="Size.Medium"
-                       aria-label="@(_editing ? "Done editing" : "Edit profile")"
-                       aria-expanded="@(_editing ? "true" : "false")" aria-controls="profile-details"/>
+        <MudIconButton Icon="@(editing ? Icons.Material.Filled.Check : Icons.Material.Filled.Edit)"
+                       OnClick="@(() => editing = !editing)" Size="Size.Medium"
+                       aria-label="@(editing ? "Done editing" : "Edit profile")"
+                       aria-expanded="@(editing ? "true" : "false")" aria-controls="profile-details"/>
     }
 </div>
 
-@if (_editing && _preferences is { } preferences)
+@if (editing && this.preferences is { } preferences)
 {
     <WebPage>
         <section id="profile-details" aria-label="Edit profile">
@@ -38,10 +38,10 @@
                           MaxLength="PlayerPreferences.MaxNameLength" Variant="Variant.Outlined"
                           HelperText="Used in share text instead of &quot;I&quot;" Class="setting"/>
 
-            <MudAutocomplete T="CharacterLookup" Label="Avatar" Value="_avatar" ValueChanged="SetAvatarAsync"
+            <MudAutocomplete T="CharacterLookup" Label="Avatar" Value="avatar" ValueChanged="SetAvatarAsync"
                              SearchFunc="SearchAvatarsAsync" ToStringFunc="@(character => character?.Name)"
                              Clearable="true" MaxItems="null" Variant="Variant.Outlined" Class="setting"
-                             Disabled="@(_characters.Count == 0)">
+                             Disabled="@(characters.Count == 0)">
                 <ItemTemplate Context="character">
                     <span class="avatar-option">
                         <img src="@CharacterUrlHelper.GetHeadSrc(character)" alt="" width="24" height="24"
@@ -55,10 +55,10 @@
 }
 
 @code {
-    private PlayerPreferences? _preferences;
-    private IReadOnlyList<CharacterLookup> _characters = [];
-    private CharacterLookup? _avatar;
-    private bool _editing;
+    private PlayerPreferences? preferences;
+    private IReadOnlyList<CharacterLookup> characters = [];
+    private CharacterLookup? avatar;
+    private bool editing;
 
     // After the first render: preferences live in local storage, which prerendering can't reach.
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -66,12 +66,12 @@
         if (!firstRender)
             return;
 
-        _preferences = await PreferencesService.GetAsync();
+        preferences = await PreferencesService.GetAsync();
         try
         {
             // Only released characters can be picked, so the avatar never gives one away early.
-            _characters = await CharacterStore.GetLookupsAvailableOnAsync(DateOnly.FromDateTime(TimeProvider.GetUtcNow().UtcDateTime));
-            _avatar = _characters.FirstOrDefault(character => character.Id == _preferences.AvatarCharacterId);
+            characters = await CharacterStore.GetLookupsAvailableOnAsync(DateOnly.FromDateTime(TimeProvider.GetUtcNow().UtcDateTime));
+            avatar = characters.FirstOrDefault(character => character.Id == preferences.AvatarCharacterId);
         }
         catch (Exception exception)
         {
@@ -84,28 +84,28 @@
 
     private Task SetNameAsync(string? name)
     {
-        return SaveAsync(_preferences! with { DisplayName = name });
+        return SaveAsync(preferences! with { DisplayName = name });
     }
 
     private async Task SetAvatarAsync(CharacterLookup? character)
     {
-        _avatar = character;
-        await SaveAsync(_preferences! with { AvatarCharacterId = character?.Id });
+        avatar = character;
+        await SaveAsync(preferences! with { AvatarCharacterId = character?.Id });
     }
 
     private Task<IEnumerable<CharacterLookup>> SearchAvatarsAsync(string? text, CancellationToken cancellationToken)
     {
         return Task.FromResult(string.IsNullOrWhiteSpace(text)
-            ? _characters
-            : _characters.Where(character => character.Name.Contains(text.Trim(), StringComparison.OrdinalIgnoreCase)));
+            ? characters
+            : characters.Where(character => character.Name.Contains(text.Trim(), StringComparison.OrdinalIgnoreCase)));
     }
 
     private async Task SaveAsync(PlayerPreferences preferences)
     {
-        _preferences = preferences;
+        this.preferences = preferences;
         try
         {
-            _preferences = await PreferencesService.SaveAsync(preferences);
+            this.preferences = await PreferencesService.SaveAsync(preferences);
         }
         catch (Exception exception)
         {

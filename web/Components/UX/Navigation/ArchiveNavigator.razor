@@ -14,7 +14,7 @@
                        AutoClose="true" AdditionalDateClassesFunc="GetDateClasses" PickerOpened="OnPickerOpened"
                        PickerMonthChanged="OnPickerMonthChanged"/>
 
-        @if (_loadFailed)
+        @if (loadFailed)
         {
             <p class="mb-2 text-center" role="status">We couldn't load your results for this month.</p>
         }
@@ -44,17 +44,17 @@
     }
 
     // In-memory cache: archiveDay (1-based) -> DayStatus
-    private readonly Dictionary<int, DayStatus> _dayStatuses = new();
+    private readonly Dictionary<int, DayStatus> dayStatuses = new();
 
     // Keep track of which months (year*100 + month) we've loaded to avoid duplicate network calls
-    private readonly HashSet<int> _loadedMonthKeys = new();
+    private readonly HashSet<int> loadedMonthKeys = new();
 
     // Track ongoing month-load tasks to prevent duplicate concurrent requests for the same month
-    private readonly Dictionary<int, Task> _ongoingLoads = new();
+    private readonly Dictionary<int, Task> ongoingLoads = new();
 
-    private readonly object _loadLock = new();
+    private readonly object loadLock = new();
 
-    private bool _loadFailed;
+    private bool loadFailed;
 
     private void OnDateSelected(DateTime? date)
     {
@@ -71,7 +71,7 @@
         }
     }
 
-    private DateOnly? _loadOnFirstRender;
+    private DateOnly? loadOnFirstRender;
 
     public Task RefreshDayAsync(int dayNumber)
     {
@@ -81,7 +81,7 @@
     protected override Task OnInitializedAsync()
     {
         var selected = SelectedDate ?? DateTime.UtcNow;
-        _loadOnFirstRender = DateOnly.FromDateTime(selected);
+        loadOnFirstRender = DateOnly.FromDateTime(selected);
 
         return Task.CompletedTask;
     }
@@ -91,17 +91,17 @@
         if (!firstRender)
             return;
 
-        if (_loadOnFirstRender.HasValue)
+        if (loadOnFirstRender.HasValue)
         {
-            await LoadMonthForDateAsync(_loadOnFirstRender.Value);
-            _loadOnFirstRender = null;
+            await LoadMonthForDateAsync(loadOnFirstRender.Value);
+            loadOnFirstRender = null;
             await InvokeAsync(StateHasChanged);
         }
     }
 
     private async Task OnPickerOpened()
     {
-        if (_loadOnFirstRender.HasValue)
+        if (loadOnFirstRender.HasValue)
             return;
 
         // When picker opens, ensure the visible month (fallback to selected date) is loaded.
@@ -132,7 +132,7 @@
                 var archiveDay = day.DayNumber - FirstDay.DayNumber + 1;
                 if (archiveDay >= 1 && archiveDay <= MaxDay)
                 {
-                    _dayStatuses[archiveDay] = kv.Value;
+                    dayStatuses[archiveDay] = kv.Value;
                 }
             }
         }
@@ -143,7 +143,7 @@
         catch (Exception exception)
         {
             Logger.LogWarning(exception, "Archive day status failed to load");
-            _loadFailed = true;
+            loadFailed = true;
         }
 
         await InvokeAsync(StateHasChanged);
@@ -165,7 +165,7 @@
         }
 
         // Prefer explicit statuses from the cache. If not present, treat as NotStarted per plan.
-        if (_dayStatuses.TryGetValue(archiveDay, out var status))
+        if (dayStatuses.TryGetValue(archiveDay, out var status))
         {
             switch (status)
             {
@@ -193,19 +193,19 @@
 
         Task loadTask;
 
-        lock (_loadLock)
+        lock (loadLock)
         {
-            if (_loadedMonthKeys.Contains(monthKey))
+            if (loadedMonthKeys.Contains(monthKey))
                 return;
 
-            if (_ongoingLoads.TryGetValue(monthKey, out var existing))
+            if (ongoingLoads.TryGetValue(monthKey, out var existing))
             {
                 loadTask = existing;
             }
             else
             {
                 loadTask = LoadMonthAsync(date, monthKey);
-                _ongoingLoads[monthKey] = loadTask;
+                ongoingLoads[monthKey] = loadTask;
             }
         }
 
@@ -215,9 +215,9 @@
         }
         finally
         {
-            lock (_loadLock)
+            lock (loadLock)
             {
-                _ongoingLoads.Remove(monthKey);
+                ongoingLoads.Remove(monthKey);
             }
         }
     }
@@ -239,16 +239,16 @@
                 var archiveDay = day.DayNumber - FirstDay.DayNumber + 1;
                 if (archiveDay >= 1 && archiveDay <= MaxDay)
                 {
-                    _dayStatuses[archiveDay] = kv.Value;
+                    dayStatuses[archiveDay] = kv.Value;
                 }
             }
 
-            lock (_loadLock)
+            lock (loadLock)
             {
-                _loadedMonthKeys.Add(monthKey);
+                loadedMonthKeys.Add(monthKey);
             }
 
-            _loadFailed = false;
+            loadFailed = false;
         }
         catch (Exception exception) when (exception is JSDisconnectedException or OperationCanceledException)
         {
@@ -258,7 +258,7 @@
         {
             // The month is not marked as loaded, so opening it again retries.
             Logger.LogWarning(exception, "Archive month statuses failed to load");
-            _loadFailed = true;
+            loadFailed = true;
         }
         finally
         {

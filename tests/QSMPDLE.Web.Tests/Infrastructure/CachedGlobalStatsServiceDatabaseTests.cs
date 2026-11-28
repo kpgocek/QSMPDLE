@@ -34,10 +34,10 @@ public sealed class CachedGlobalStatsServiceDatabaseTests : IAsyncLifetime
         var returning = Guid.NewGuid();
         var abandoning = Guid.NewGuid();
         await SeedAsync(
-            Session(returning, SessionCategory.CanonicalPuzzle, finished: true),
-            Session(returning, SessionCategory.Practice, finished: true),
-            Session(abandoning, SessionCategory.Practice, finished: false),
-            Session(Guid.NewGuid(), SessionCategory.CanonicalPuzzle, finished: true, isLegacyDuplicate: true));
+            Session(returning, SessionCategory.CanonicalPuzzle, true),
+            Session(returning, SessionCategory.Practice, true),
+            Session(abandoning, SessionCategory.Practice, false),
+            Session(Guid.NewGuid(), SessionCategory.CanonicalPuzzle, true, true));
         var service = new CachedGlobalStatsService(
             new TestDbContextFactory(options),
             new MemoryCache(new MemoryCacheOptions()),
@@ -45,7 +45,7 @@ public sealed class CachedGlobalStatsServiceDatabaseTests : IAsyncLifetime
 
         var totals = await service.GetTotalsAsync();
 
-        totals.Should().Be(new GlobalTotals(FinishedGames: 2, Players: 1),
+        totals.Should().Be(new GlobalTotals(2, 1),
             "abandoned games and legacy duplicates are not games played, and a player who only abandoned is not counted");
     }
 
@@ -64,10 +64,10 @@ public sealed class CachedGlobalStatsServiceDatabaseTests : IAsyncLifetime
     public async Task GetTotalsAsync_GamesDecidedByTheirGuesses_CountWithoutASavedFinish()
     {
         await SeedAsync(
-            Guessed(target: 100, 1, 2, 3, 4, 5, 6),
-            Guessed(target: 100, 1, 100),
-            Guessed(target: 100, 1, 2, 3, 4, 5),
-            Guessed(target: 0, 1, 2, 3, 4, 5, 6));
+            Guessed(100, 1, 2, 3, 4, 5, 6),
+            Guessed(100, 1, 100),
+            Guessed(100, 1, 2, 3, 4, 5),
+            Guessed(0, 1, 2, 3, 4, 5, 6));
         var service = new CachedGlobalStatsService(
             new TestDbContextFactory(options),
             new MemoryCache(new MemoryCacheOptions()),
@@ -75,7 +75,8 @@ public sealed class CachedGlobalStatsServiceDatabaseTests : IAsyncLifetime
 
         var totals = await service.GetTotalsAsync();
 
-        totals.Should().Be(new GlobalTotals(FinishedGames: 2, Players: 2), "an unfinished board, or one with an unknown answer, is not decided");
+        totals.Should().Be(new GlobalTotals(2, 2),
+            "an unfinished board, or one with an unknown answer, is not decided");
     }
 
     [Fact]
@@ -97,10 +98,12 @@ public sealed class CachedGlobalStatsServiceDatabaseTests : IAsyncLifetime
 
     private static GameSession Guessed(int target, params int[] guessedCharacterIds)
     {
-        var session = Session(Guid.NewGuid(), SessionCategory.CanonicalPuzzle, finished: false);
+        var session = Session(Guid.NewGuid(), SessionCategory.CanonicalPuzzle, false);
         session.TargetCharacterId = target;
         foreach (var characterId in guessedCharacterIds)
+        {
             session.AddGuess(characterId);
+        }
 
         return session;
     }
@@ -112,7 +115,8 @@ public sealed class CachedGlobalStatsServiceDatabaseTests : IAsyncLifetime
         await database.SaveChangesAsync();
     }
 
-    private static GameSession Session(Guid playerId, SessionCategory category, bool finished, bool isLegacyDuplicate = false) => new()
+    private static GameSession
+        Session(Guid playerId, SessionCategory category, bool finished, bool isLegacyDuplicate = false) => new()
     {
         GameId = Guid.NewGuid(),
         PlayerId = playerId,
@@ -120,10 +124,11 @@ public sealed class CachedGlobalStatsServiceDatabaseTests : IAsyncLifetime
         TargetCharacterId = 1,
         IsLegacyDuplicate = isLegacyDuplicate,
         StartedOnUtc = DateTimeOffset.UtcNow,
-        FinishedOnUtc = finished ? DateTimeOffset.UtcNow : null,
+        FinishedOnUtc = finished ? DateTimeOffset.UtcNow : null
     };
 
-    private sealed class TestDbContextFactory(DbContextOptions<ApplicationDbContext> options) : IDbContextFactory<ApplicationDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<ApplicationDbContext> options)
+        : IDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext() => new(options);
     }

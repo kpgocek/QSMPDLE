@@ -32,14 +32,14 @@ public sealed class LegacySessionColumnsMigrationTests : IAsyncLifetime
         await using var database = new ApplicationDbContext(options);
         await database.GetService<IMigrator>().MigrateAsync(MigrationBefore);
         await database.Database.ExecuteSqlAsync($"""
-            INSERT INTO "GameStats" ("GameId", "PlayerId", "PuzzleId", "DailyNumber", "Mode", "TargetCharacterId", "StartedOnUtc", "FinishedOnUtc", "IsWon")
-            VALUES (gen_random_uuid(), {WithCanonicalGame}, 5, 5, 0, 1, now(), NULL, false),
-                   (gen_random_uuid(), {WithCanonicalGame}, NULL, 5, 0, 1, now() - interval '1 hour', now(), true),
-                   (gen_random_uuid(), {WithTwoMissedGames}, NULL, 5, 1, 1, now() - interval '2 hours', now(), false),
-                   (gen_random_uuid(), {WithTwoMissedGames}, NULL, 5, 0, 1, now() - interval '1 hour', now(), true),
-                   (gen_random_uuid(), {WithMissedArchive}, NULL, 5, 1, 1, now(), now(), true),
-                   (gen_random_uuid(), {WithMissedPractice}, NULL, NULL, 2, 1, now(), now(), true);
-            """);
+                                                 INSERT INTO "GameStats" ("GameId", "PlayerId", "PuzzleId", "DailyNumber", "Mode", "TargetCharacterId", "StartedOnUtc", "FinishedOnUtc", "IsWon")
+                                                 VALUES (gen_random_uuid(), {WithCanonicalGame}, 5, 5, 0, 1, now(), NULL, false),
+                                                        (gen_random_uuid(), {WithCanonicalGame}, NULL, 5, 0, 1, now() - interval '1 hour', now(), true),
+                                                        (gen_random_uuid(), {WithTwoMissedGames}, NULL, 5, 1, 1, now() - interval '2 hours', now(), false),
+                                                        (gen_random_uuid(), {WithTwoMissedGames}, NULL, 5, 0, 1, now() - interval '1 hour', now(), true),
+                                                        (gen_random_uuid(), {WithMissedArchive}, NULL, 5, 1, 1, now(), now(), true),
+                                                        (gen_random_uuid(), {WithMissedPractice}, NULL, NULL, 2, 1, now(), now(), true);
+                                                 """);
         await database.Database.MigrateAsync();
     }
 
@@ -51,7 +51,8 @@ public sealed class LegacySessionColumnsMigrationTests : IAsyncLifetime
         var sessions = await GetSessionsAsync(WithCanonicalGame);
 
         sessions.Should().HaveCount(2).And.OnlyContain(session => session.PuzzleId == 5);
-        sessions.Should().ContainSingle(session => !session.IsLegacyDuplicate).Which.FinishedOnUtc.Should().BeNull("the session the player has been seeing stays");
+        sessions.Should().ContainSingle(session => !session.IsLegacyDuplicate).Which.FinishedOnUtc.Should()
+            .BeNull("the session the player has been seeing stays");
     }
 
     [Fact]
@@ -60,7 +61,8 @@ public sealed class LegacySessionColumnsMigrationTests : IAsyncLifetime
         var sessions = await GetSessionsAsync(WithTwoMissedGames);
 
         sessions.Should().HaveCount(2).And.OnlyContain(session => session.PuzzleId == 5);
-        sessions.Should().ContainSingle(session => !session.IsLegacyDuplicate).Which.FirstEntryPoint.Should().Be(EntryPoint.Daily);
+        sessions.Should().ContainSingle(session => !session.IsLegacyDuplicate).Which.FirstEntryPoint.Should()
+            .Be(EntryPoint.Daily);
     }
 
     [Fact]
@@ -91,13 +93,17 @@ public sealed class LegacySessionColumnsMigrationTests : IAsyncLifetime
         var player = Guid.NewGuid();
 
         await database.Database.ExecuteSqlAsync($"""
-            INSERT INTO "GameStats" ("GameId", "PlayerId", "PuzzleId", "DailyNumber", "Mode", "SessionCategory", "FirstEntryPoint", "IsLegacyDuplicate", "TargetCharacterId", "StartedOnUtc", "IsWon")
-            VALUES (gen_random_uuid(), {player}, 6, 6, 1, 0, 1, false, 1, now(), false);
-            """);
-        database.GameStats.Add(new GameSession { GameId = Guid.NewGuid(), PlayerId = player, PuzzleId = 7, TargetCharacterId = 1 });
+                                                 INSERT INTO "GameStats" ("GameId", "PlayerId", "PuzzleId", "DailyNumber", "Mode", "SessionCategory", "FirstEntryPoint", "IsLegacyDuplicate", "TargetCharacterId", "StartedOnUtc", "IsWon")
+                                                 VALUES (gen_random_uuid(), {player}, 6, 6, 1, 0, 1, false, 1, now(), false);
+                                                 """);
+        database.GameStats.Add(new GameSession
+        {
+            GameId = Guid.NewGuid(), PlayerId = player, PuzzleId = 7, TargetCharacterId = 1
+        });
         await database.SaveChangesAsync();
 
-        (await GetSessionsAsync(player)).Should().HaveCount(2, "both versions write to the table until the old one stops");
+        (await GetSessionsAsync(player)).Should()
+            .HaveCount(2, "both versions write to the table until the old one stops");
     }
 
     private async Task<List<GameSession>> GetSessionsAsync(Guid playerId)

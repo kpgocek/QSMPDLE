@@ -38,7 +38,7 @@ public sealed class DatabaseGameStatsStoreTests : IAsyncLifetime
         var game = CreateGame(category);
 
         await store.RecordGuessAsync(Copy(game), [1], Now);
-        await store.RecordGuessAsync(Copy(game, startedOnUtc: Now.AddHours(1), ruleset: Ruleset.V2), [1, Target], Now.AddMinutes(1));
+        await store.RecordGuessAsync(Copy(game, Now.AddHours(1), Ruleset.V2), [1, Target], Now.AddMinutes(1));
 
         var session = await LoadSingleAsync();
         session.GameId.Should().Be(game.GameId);
@@ -109,7 +109,8 @@ public sealed class DatabaseGameStatsStoreTests : IAsyncLifetime
         var playerId = Guid.NewGuid();
 
         var results = await Task.WhenAll(Enumerable.Range(1, 8)
-            .Select(characterId => Task.Run(() => store.RecordGuessAsync(CreateGame(playerId: playerId), [characterId], Now))));
+            .Select(characterId =>
+                Task.Run(() => store.RecordGuessAsync(CreateGame(playerId: playerId), [characterId], Now))));
 
         var session = await LoadSingleAsync();
         session.Guesses.Should().ContainSingle();
@@ -136,12 +137,19 @@ public sealed class DatabaseGameStatsStoreTests : IAsyncLifetime
         await using (var database = new ApplicationDbContext(options))
         {
             database.GameStats.AddRange(
-                new GameSession { GameId = Guid.NewGuid(), PlayerId = player, SessionCategory = SessionCategory.CanonicalPuzzle },
-                new GameSession { GameId = Guid.NewGuid(), PlayerId = player, SessionCategory = SessionCategory.Practice });
+                new GameSession
+                {
+                    GameId = Guid.NewGuid(), PlayerId = player, SessionCategory = SessionCategory.CanonicalPuzzle
+                },
+                new GameSession
+                {
+                    GameId = Guid.NewGuid(), PlayerId = player, SessionCategory = SessionCategory.Practice
+                });
             await database.SaveChangesAsync();
         }
 
-        (await store.GetPlayerGames(player, SessionCategory.CanonicalPuzzle)).Should().ContainSingle().Which.SessionCategory.Should().Be(SessionCategory.CanonicalPuzzle);
+        (await store.GetPlayerGames(player, SessionCategory.CanonicalPuzzle)).Should().ContainSingle().Which
+            .SessionCategory.Should().Be(SessionCategory.CanonicalPuzzle);
         (await store.GetPlayerGames(player)).Should().HaveCount(2);
     }
 
@@ -169,7 +177,8 @@ public sealed class DatabaseGameStatsStoreTests : IAsyncLifetime
         legacy.Guesses = [LegacyGuess(legacy, 1), LegacyGuess(legacy, 2)];
         await AddAsync(legacy);
 
-        var stored = await store.RecordGuessAsync(CreateGame(gameId: legacy.GameId, playerId: legacy.PlayerId), [.. legacy.GuessedCharacterIds, 3], Now);
+        var stored = await store.RecordGuessAsync(CreateGame(gameId: legacy.GameId, playerId: legacy.PlayerId),
+            [.. legacy.GuessedCharacterIds, 3], Now);
 
         stored.Guesses.Should().HaveCount(3);
         stored.GuessedCharacterIds[^1].Should().Be(3);
@@ -192,7 +201,9 @@ public sealed class DatabaseGameStatsStoreTests : IAsyncLifetime
         return await database.GameStats.AsNoTracking().Include(session => session.Guesses).SingleAsync();
     }
 
-    private static GameSession CreateGame(SessionCategory category = SessionCategory.CanonicalPuzzle, Guid? playerId = null, Guid? gameId = null) => new()
+    private static GameSession
+        CreateGame(SessionCategory category = SessionCategory.CanonicalPuzzle, Guid? playerId = null,
+            Guid? gameId = null) => new()
     {
         GameId = gameId ?? Guid.NewGuid(),
         PlayerId = playerId ?? Guid.NewGuid(),
@@ -200,22 +211,24 @@ public sealed class DatabaseGameStatsStoreTests : IAsyncLifetime
         SessionCategory = category,
         TargetCharacterId = Target,
         Ruleset = Ruleset.Classic,
-        StartedOnUtc = Now,
+        StartedOnUtc = Now
     };
 
     // Every call brings its own instance, as every tab and every guess does.
-    private static GameSession Copy(GameSession game, DateTimeOffset? startedOnUtc = null, Ruleset? ruleset = null) => new()
-    {
-        GameId = game.GameId,
-        PlayerId = game.PlayerId,
-        PuzzleId = game.PuzzleId,
-        SessionCategory = game.SessionCategory,
-        TargetCharacterId = game.TargetCharacterId,
-        Ruleset = ruleset ?? game.Ruleset,
-        StartedOnUtc = startedOnUtc ?? game.StartedOnUtc,
-    };
+    private static GameSession Copy(GameSession game, DateTimeOffset? startedOnUtc = null, Ruleset? ruleset = null) =>
+        new()
+        {
+            GameId = game.GameId,
+            PlayerId = game.PlayerId,
+            PuzzleId = game.PuzzleId,
+            SessionCategory = game.SessionCategory,
+            TargetCharacterId = game.TargetCharacterId,
+            Ruleset = ruleset ?? game.Ruleset,
+            StartedOnUtc = startedOnUtc ?? game.StartedOnUtc
+        };
 
-    private sealed class TestDbContextFactory(DbContextOptions<ApplicationDbContext> options) : IDbContextFactory<ApplicationDbContext>
+    private sealed class TestDbContextFactory(DbContextOptions<ApplicationDbContext> options)
+        : IDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext() => new(options);
     }

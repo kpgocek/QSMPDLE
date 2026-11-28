@@ -18,7 +18,8 @@ public sealed class LocalStoragePlayerStatsStoreTests
 
         ids[0].Should().NotBeEmpty();
         ids[1].Should().Be(ids[0]);
-        (await CreateStore().GetPlayerIdAsync()).Should().Be(ids[0], "later visits read the identity the games were recorded under");
+        (await CreateStore().GetPlayerIdAsync()).Should()
+            .Be(ids[0], "later visits read the identity the games were recorded under");
     }
 
     [Fact]

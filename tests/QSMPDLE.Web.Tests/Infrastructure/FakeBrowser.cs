@@ -19,16 +19,22 @@ internal sealed class FakeBrowser : IJSRuntime
         .BuildServiceProvider()
         .GetRequiredService<ILocalStorageService>();
 
-    public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args) => InvokeAsync<TValue>(identifier, CancellationToken.None, args);
+    public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args) =>
+        InvokeAsync<TValue>(identifier, CancellationToken.None, args);
 
-    public async ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, object?[]? args)
+    public async ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken,
+        object?[]? args)
     {
         await Task.Delay(10, cancellationToken);
         if (FailuresLeft-- > 0)
+        {
             throw new JSException("Simulated storage failure.");
+        }
 
         if (identifier == "storageKeys")
+        {
             return Send<TValue>(Keys((string)args![0]!));
+        }
 
         var key = (string)args![0]!;
         if (identifier.EndsWith("setItem", StringComparison.Ordinal))
@@ -42,7 +48,9 @@ internal sealed class FakeBrowser : IJSRuntime
 
     // Mirrors wwwroot/js/storage.js.
     private string[] Keys(string prefix) =>
-        [.. Items.Keys.Where(key => key.StartsWith(prefix, StringComparison.Ordinal)).Select(key => key[prefix.Length..])];
+    [
+        .. Items.Keys.Where(key => key.StartsWith(prefix, StringComparison.Ordinal)).Select(key => key[prefix.Length..])
+    ];
 
     private static TValue Send<TValue>(object? result) =>
         JsonSerializer.SerializeToUtf8Bytes(result).Length <= MaxMessageBytes

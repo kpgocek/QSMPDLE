@@ -46,7 +46,8 @@ See [CHANGELOG.md](./CHANGELOG.md) for the release history.
 
 QSMPDLE does not require accounts or collect personal information such as names, emails, passwords, or payment details.
 
-Tracking is minimal: pseudonymous gameplay statistics, linked only by a random id in your browser, are collected solely to improve balancing, understand player behavior, and monitor the health of the game.
+Tracking is minimal: pseudonymous gameplay statistics, linked only by a random id in your browser, are collected solely
+to improve balancing, understand player behavior, and monitor the health of the game.
 
 Game progress is stored locally in your browser.
 

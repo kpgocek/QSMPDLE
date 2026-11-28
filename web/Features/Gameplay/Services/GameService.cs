@@ -4,19 +4,19 @@ using QSMPDLE.Web.Infrastructure.Persistence;
 
 namespace QSMPDLE.Web.Features.Gameplay.Services;
 
-public sealed class GameService(ICharacterStore CharacterStore, IDayService DayService) : IGameService
+public sealed class GameService(ICharacterStore characterStore, IDayService dayService) : IGameService
 {
     public async Task<GameState> StartDailyAsync(CancellationToken cancellationToken = default)
     {
-        var game = await StartGameForDayAsync(DayService.GetTodayDayNumber(), cancellationToken);
+        var game = await StartGameForDayAsync(dayService.GetTodayDayNumber(), cancellationToken);
 
         return CreateCanonicalState(game, EntryPoint.Daily);
     }
 
     public async Task<GameState> StartPracticeAsync(CancellationToken cancellationToken = default)
     {
-        var today = DayService.GetArchiveDate(DayService.GetTodayDayNumber());
-        var character = await CharacterStore.GetRandomCharacterAsync(today, cancellationToken);
+        var today = dayService.GetArchiveDate(dayService.GetTodayDayNumber());
+        var character = await characterStore.GetRandomCharacterAsync(today, cancellationToken);
 
         var game = new Game
         {
@@ -42,7 +42,7 @@ public sealed class GameService(ICharacterStore CharacterStore, IDayService DayS
 
     private async Task<Game> StartGameForDayAsync(int dayNumber, CancellationToken cancellationToken = default)
     {
-        var character = await CharacterStore.GetCharacterForDayAsync(dayNumber, cancellationToken);
+        var character = await characterStore.GetCharacterForDayAsync(dayNumber, cancellationToken);
 
         ArgumentNullException.ThrowIfNull(character);
 

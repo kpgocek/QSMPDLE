@@ -34,9 +34,9 @@
 
     <section class="mb-5">
         <div class="example-wrapper">
-            @if (ExampleGuess is not null)
+            @if (exampleGuess is not null)
             {
-                <GuessBoard Guesses="@([ExampleGuess])" ActiveClues="@ActiveClues" ShowPlaceholders="false"/>
+                <GuessBoard Guesses="@([exampleGuess])" ActiveClues="@ActiveClues" ShowPlaceholders="false"/>
             }
         </div>
 
@@ -106,7 +106,7 @@
     // The page explains today's board, so it only describes clues released by today.
     private IReadOnlySet<ClueGroup> ActiveClues => Availability.GetActiveClues(Availability.GetEffectiveDate(null));
 
-    private GuessResult? ExampleGuess;
+    private GuessResult? exampleGuess;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,7 +115,7 @@
         if (lookup is null)
             return;
 
-        ExampleGuess = new GuessResult
+        exampleGuess = new GuessResult
         {
             Character = lookup,
             Pronouns = ComparisonResult.Wrong,

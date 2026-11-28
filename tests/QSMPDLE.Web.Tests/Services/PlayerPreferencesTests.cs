@@ -11,16 +11,11 @@ public sealed class PlayerPreferencesTests
     [InlineData("  Krzysztof  ", "Krzysztof")]
     [InlineData("Big\r\nTubbo\tfan", "Big Tubbo fan")]
     [InlineData("A name that is much too long", "A name that is much")]
-    public void CleanName_TypedName_IsOneShortTrimmedLine(string? typed, string? expected)
-    {
+    public void CleanName_TypedName_IsOneShortTrimmedLine(string? typed, string? expected) =>
         PlayerPreferences.CleanName(typed).Should().Be(expected);
-    }
 
     [Theory]
     [InlineData(null)]
     [InlineData("a-theme-that-was-removed")]
-    public void Find_NoKnownTheme_IsTheDefault(string? id)
-    {
-        ColourTheme.Find(id).Should().Be(ColourTheme.Default);
-    }
+    public void Find_NoKnownTheme_IsTheDefault(string? id) => ColourTheme.Find(id).Should().Be(ColourTheme.Default);
 }

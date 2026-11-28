@@ -27,7 +27,7 @@ public sealed class ArchiveStatusServiceTests
 
         var result = await svc.GetStatusesAsync(start, end);
 
-        Assert.Equal((end.DayNumber - start.DayNumber) + 1, result.Count);
+        Assert.Equal(end.DayNumber - start.DayNumber + 1, result.Count);
         Assert.All(result.Values, v => Assert.Equal(DayStatus.NotStarted, v));
     }
 
@@ -38,7 +38,8 @@ public sealed class ArchiveStatusServiceTests
         var start = dayService.GetFirstDay().AddDays(-14);
         var end = dayService.GetFirstDay().AddDays(15);
         var source = new TestArchiveGameStateSource { StoredDays = new HashSet<int> { 3 } };
-        var svc = new ArchiveStatusService(new TestPlayerStatsStore(Guid.NewGuid()), new TestGameStatsStore(), dayService, source);
+        var svc = new ArchiveStatusService(new TestPlayerStatsStore(Guid.NewGuid()), new TestGameStatsStore(),
+            dayService, source);
 
         await svc.GetStatusesAsync(start, end);
 
@@ -139,9 +140,12 @@ public sealed class ArchiveStatusServiceTests
             PuzzleId = dayService.GetArchiveDayNumber(day)
         };
         for (var guess = 1; guess <= 6; guess++)
+        {
             session.AddGuess(guess);
+        }
 
-        var svc = new ArchiveStatusService(new TestPlayerStatsStore(playerId), new TestGameStatsStore(new[] { session }), dayService, new TestArchiveGameStateSource());
+        var svc = new ArchiveStatusService(new TestPlayerStatsStore(playerId),
+            new TestGameStatsStore(new[] { session }), dayService, new TestArchiveGameStateSource());
 
         var result = await svc.GetStatusesAsync(day, day);
 
@@ -209,12 +213,20 @@ public sealed class ArchiveStatusServiceTests
     public async Task ArchiveEntryFinish_CountsAsPlayedWithoutTouchingLocalTotalsOrStreak()
     {
         var playerId = Guid.NewGuid();
-        var playerStatsStore = new TestPlayerStatsStore(new PlayerStats { Id = playerId, GamesPlayed = 2, GamesWon = 1, CurrentStreak = 2, MaxStreak = 3 });
-        var gameStatsStore = new TestGameStatsStore([FinishedSession(playerId, EntryPoint.Archive, puzzleId: 1, isWon: true)]);
+        var playerStatsStore = new TestPlayerStatsStore(new PlayerStats
+        {
+            Id = playerId,
+            GamesPlayed = 2,
+            GamesWon = 1,
+            CurrentStreak = 2,
+            MaxStreak = 3
+        });
+        var gameStatsStore = new TestGameStatsStore([FinishedSession(playerId, EntryPoint.Archive, 1, true)]);
 
         var local = await playerStatsStore.LoadAsync();
         Assert.Equal(2, local.GamesPlayed);
-        var stats = PlayerStatsProjection.Create(local, await gameStatsStore.GetPlayerGames(playerId), new DayService());
+        var stats = PlayerStatsProjection.Create(local, await gameStatsStore.GetPlayerGames(playerId),
+            new DayService());
         Assert.Equal(1, stats.GamesPlayed);
         Assert.Equal(0, stats.CurrentStreak);
         Assert.Equal(0, stats.MaxStreak);
@@ -225,9 +237,10 @@ public sealed class ArchiveStatusServiceTests
     {
         var playerId = Guid.NewGuid();
         var playerStatsStore = new TestPlayerStatsStore(new PlayerStats { Id = playerId });
-        var gameStatsStore = new TestGameStatsStore([FinishedSession(playerId, EntryPoint.Daily, puzzleId: 18, isWon: false)]);
+        var gameStatsStore = new TestGameStatsStore([FinishedSession(playerId, EntryPoint.Daily, 18, false)]);
 
-        var stats = PlayerStatsProjection.Create(await playerStatsStore.LoadAsync(), await gameStatsStore.GetPlayerGames(playerId), new DayService());
+        var stats = PlayerStatsProjection.Create(await playerStatsStore.LoadAsync(),
+            await gameStatsStore.GetPlayerGames(playerId), new DayService());
 
         Assert.Equal(1, stats.GamesPlayed);
         Assert.Equal(0, stats.GamesWon);
@@ -343,7 +356,7 @@ public sealed class ArchiveStatusServiceTests
         TargetCharacterId = 15,
         SessionCategory = SessionCategory.CanonicalPuzzle,
         FirstEntryPoint = entryPoint,
-        IsWon = isWon,
+        IsWon = isWon
     };
 
     private sealed class TestArchiveGameStateSource : IArchiveGameStateSource
@@ -365,19 +378,22 @@ public sealed class ArchiveStatusServiceTests
 
     private sealed class TestGameStatsStore(IEnumerable<GameSession>? sessions = null) : IGameStatsStore
     {
-        private readonly List<GameSession> _sessions = sessions?.ToList() ?? [];
+        private readonly List<GameSession> sessions = sessions?.ToList() ?? [];
         public int QueryCount { get; private set; }
 
-        public Task<GameSession> RecordGuessAsync(GameSession game, IReadOnlyList<int> guessedCharacterIds, DateTimeOffset recordedOnUtc) =>
+        public Task<GameSession> RecordGuessAsync(GameSession game, IReadOnlyList<int> guessedCharacterIds,
+            DateTimeOffset recordedOnUtc) =>
             throw new NotSupportedException();
 
-        public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId, SessionCategory? category = null) => Task.FromResult<IEnumerable<GameSession>>(_sessions.Where(session => session.PlayerId == playerId).ToList());
+        public Task<IEnumerable<GameSession>> GetPlayerGames(Guid playerId, SessionCategory? category = null) =>
+            Task.FromResult<IEnumerable<GameSession>>(sessions.Where(session => session.PlayerId == playerId).ToList());
 
-        public Task<List<GameSession>> GetPlayerCanonicalGamesByPuzzleRangeAsync(Guid playerId, int startPuzzleId, int endPuzzleId)
+        public Task<List<GameSession>> GetPlayerCanonicalGamesByPuzzleRangeAsync(Guid playerId, int startPuzzleId,
+            int endPuzzleId)
         {
             QueryCount++;
 
-            var list = _sessions
+            var list = sessions
                 .Where(s => s.PlayerId == playerId && s.PuzzleId >= startPuzzleId && s.PuzzleId <= endPuzzleId)
                 .ToList();
 

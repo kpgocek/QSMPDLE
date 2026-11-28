@@ -28,7 +28,8 @@ public sealed class ServiceRegistrationTests
         builder.Services.AddMemoryCache();
         builder.Services.AddDiagnostics();
         builder.Services.AddMudServices();
-        builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options => options.UseNpgsql("Host=localhost"));
+        builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options =>
+            options.UseNpgsql("Host=localhost"));
         builder.Services.AddInfrastructure();
         builder.Services.AddGameplay();
         builder.Services.AddStatistics();

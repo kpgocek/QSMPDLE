@@ -79,11 +79,20 @@ public sealed class GameSessionTests
     [InlineData(0, false, false, new[] { 1, 2, 3, 4, 5, 6 }, GameOutcome.InProgress)]
     [InlineData(0, true, false, new[] { 1 }, GameOutcome.Lost)]
     [InlineData(0, true, true, new[] { 1 }, GameOutcome.Won)]
-    public void Outcome_StoredSession_UsesTheSavedResultAndTheGuesses(int target, bool finished, bool isWon, int[] board, GameOutcome expected)
+    public void Outcome_StoredSession_UsesTheSavedResultAndTheGuesses(int target, bool finished, bool isWon,
+        int[] board, GameOutcome expected)
     {
-        var session = new GameSession { GameId = Guid.NewGuid(), TargetCharacterId = target, IsWon = isWon, FinishedOnUtc = finished ? Now : null };
+        var session = new GameSession
+        {
+            GameId = Guid.NewGuid(),
+            TargetCharacterId = target,
+            IsWon = isWon,
+            FinishedOnUtc = finished ? Now : null
+        };
         foreach (var characterId in board)
+        {
             session.AddGuess(characterId);
+        }
 
         session.Outcome.Should().Be(expected);
         GameSession.IsDecided.Compile()(session).Should().Be(expected != GameOutcome.InProgress);
@@ -93,7 +102,9 @@ public sealed class GameSessionTests
     {
         var session = new GameSession { GameId = Guid.NewGuid(), TargetCharacterId = Target };
         for (var count = 1; count <= board.Length; count++)
+        {
             session.RecordGuesses([.. board.Take(count)], Now);
+        }
 
         return session;
     }

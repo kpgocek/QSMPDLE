@@ -2,11 +2,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace QSMPDLE.Web.Infrastructure.Persistence;
 
-public sealed class DatabaseHiLoScoreStore(IDbContextFactory<ApplicationDbContext> DbContextFactory) : IHiLoScoreStore
+public sealed class DatabaseHiLoScoreStore(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IHiLoScoreStore
 {
     public async Task<int> GetBestScoreAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
-        await using var database = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var database = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         return await database.HiLoScores
             .AsNoTracking()
@@ -22,7 +22,7 @@ public sealed class DatabaseHiLoScoreStore(IDbContextFactory<ApplicationDbContex
             throw new InvalidOperationException("Cannot save a Hi-Lo score without a valid player id.");
         }
 
-        await using var database = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var database = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         // One statement, so two tabs of the same player cannot lower the best score.
         await database.Database.ExecuteSqlAsync($"""

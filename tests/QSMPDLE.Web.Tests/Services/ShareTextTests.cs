@@ -19,7 +19,7 @@ public sealed class ShareTextTests
         Species = ComparisonResult.Wrong,
         Languages = ComparisonResult.More,
         Joined = ComparisonResult.Later,
-        Affiliation = ComparisonResult.Partial,
+        Affiliation = ComparisonResult.Partial
     };
 
     private static readonly GuessResult SevenClueGuess = new()
@@ -31,7 +31,7 @@ public sealed class ShareTextTests
         Joined = ComparisonResult.Earlier,
         QPhone = ComparisonResult.Wrong,
         Award2026 = ComparisonResult.Correct,
-        Affiliation = ComparisonResult.Partial,
+        Affiliation = ComparisonResult.Partial
     };
 
     private static readonly GuessResult SevenClueWin = new()
@@ -44,7 +44,7 @@ public sealed class ShareTextTests
         Joined = ComparisonResult.Correct,
         Affiliation = ComparisonResult.Correct,
         QPhone = ComparisonResult.Correct,
-        Award2026 = ComparisonResult.Correct,
+        Award2026 = ComparisonResult.Correct
     };
 
     [Fact]

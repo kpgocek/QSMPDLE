@@ -10,23 +10,23 @@ public sealed class PlayerProfileServiceTests
 {
     private static readonly Guid PlayerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly DateTimeOffset Now = new(2026, 11, 22, 12, 0, 0, TimeSpan.Zero);
+    private readonly DayService dayService = new(new TestClock(Now));
 
     private readonly InMemoryGameStatsStore gameStats = new();
-    private readonly InMemoryPlayerStatsStore playerStats = new() { Stats = new PlayerStats { Id = PlayerId } };
     private readonly InMemoryHiLoScoreStore hiLoScores = new();
-    private readonly DayService dayService = new(new TestClock(Now));
+    private readonly InMemoryPlayerStatsStore playerStats = new() { Stats = new PlayerStats { Id = PlayerId } };
 
     private int TodayPuzzle => dayService.GetTodayDayNumber();
 
     [Fact]
     public async Task GetProfileAsync_MixedSessions_SummarizesCanonicalAndPracticeSeparately()
     {
-        AddSession(SessionCategory.CanonicalPuzzle, isWon: true, guesses: 2, finished: true);
-        AddSession(SessionCategory.CanonicalPuzzle, isWon: false, guesses: 6, finished: true);
-        AddSession(SessionCategory.CanonicalPuzzle, isWon: false, guesses: 1, finished: false);
-        AddSession(SessionCategory.CanonicalPuzzle, isWon: true, guesses: 1, finished: true, isLegacyDuplicate: true);
-        AddSession(SessionCategory.Practice, isWon: true, guesses: 3, finished: true);
-        AddSession(SessionCategory.Practice, isWon: false, guesses: 1, finished: false);
+        AddSession(SessionCategory.CanonicalPuzzle, true, 2, true);
+        AddSession(SessionCategory.CanonicalPuzzle, false, 6, true);
+        AddSession(SessionCategory.CanonicalPuzzle, false, 1, false);
+        AddSession(SessionCategory.CanonicalPuzzle, true, 1, true, true);
+        AddSession(SessionCategory.Practice, true, 3, true);
+        AddSession(SessionCategory.Practice, false, 1, false);
 
         var profile = await CreateService().GetProfileAsync();
 
@@ -42,9 +42,9 @@ public sealed class PlayerProfileServiceTests
     [Fact]
     public async Task GetProfileAsync_GamesDecidedByTheirGuesses_CountWithoutASavedFinish()
     {
-        AddGame(target: 9, isWon: false, guessed: [1, 9], finished: false);
-        AddGame(target: 9, isWon: false, guessed: [1, 9], category: SessionCategory.Practice, finished: false);
-        AddGame(target: 9, isWon: false, guessed: [1, 2, 3, 4, 5, 6], category: SessionCategory.Practice, finished: false);
+        AddGame(9, false, [1, 9], finished: false);
+        AddGame(9, false, [1, 9], SessionCategory.Practice, finished: false);
+        AddGame(9, false, [1, 2, 3, 4, 5, 6], SessionCategory.Practice, finished: false);
 
         var profile = await CreateService().GetProfileAsync();
 
@@ -58,7 +58,7 @@ public sealed class PlayerProfileServiceTests
     [Fact]
     public async Task GetProfileAsync_LoadsPlayerHistoryOnce()
     {
-        AddSession(SessionCategory.CanonicalPuzzle, isWon: true, guesses: 1, finished: true);
+        AddSession(SessionCategory.CanonicalPuzzle, true, 1, true);
 
         await CreateService().GetProfileAsync();
 
@@ -70,9 +70,12 @@ public sealed class PlayerProfileServiceTests
     public async Task GetProfileAsync_CharacterMissingFromCatalog_FallsBackToItsId()
     {
         for (var game = 0; game < 4; game++)
-            AddGame(target: 99, isWon: false, guessed: [7]);
-        AddGame(target: 99, isWon: true, guessed: [99]);
-        AddGame(target: 99, isWon: true, guessed: [99]);
+        {
+            AddGame(99, false, [7]);
+        }
+
+        AddGame(99, true, [99]);
+        AddGame(99, true, [99]);
 
         var characterStats = (await CreateService().GetProfileAsync()).CharacterStats;
 
@@ -100,13 +103,13 @@ public sealed class PlayerProfileServiceTests
     [Fact]
     public async Task GetProfileAsync_MostGuessed_CountsOnlyWrongGuessesInCanonicalGames()
     {
-        AddGame(target: 3, isWon: false, guessed: [5, 3]);
-        AddGame(target: 4, isWon: true, guessed: [5, 3, 4]);
-        AddGame(target: 3, isWon: true, guessed: [3]);
-        AddGame(target: 3, isWon: true, guessed: [3]);
-        AddGame(target: 1, isWon: false, guessed: [6], category: SessionCategory.Practice);
-        AddGame(target: 1, isWon: false, guessed: [6], category: SessionCategory.Practice);
-        AddGame(target: 1, isWon: false, guessed: [6], category: SessionCategory.Practice);
+        AddGame(3, false, [5, 3]);
+        AddGame(4, true, [5, 3, 4]);
+        AddGame(3, true, [3]);
+        AddGame(3, true, [3]);
+        AddGame(1, false, [6], SessionCategory.Practice);
+        AddGame(1, false, [6], SessionCategory.Practice);
+        AddGame(1, false, [6], SessionCategory.Practice);
 
         var characterStats = (await CreateService().GetProfileAsync()).CharacterStats!;
 
@@ -117,13 +120,13 @@ public sealed class PlayerProfileServiceTests
     [Fact]
     public async Task GetProfileAsync_MostCorrectlyGuessed_CountsWonCanonicalGamesByTarget()
     {
-        AddGame(target: 8, isWon: true, guessed: [8]);
-        AddGame(target: 8, isWon: true, guessed: [2, 8]);
-        AddGame(target: 9, isWon: true, guessed: [9]);
-        AddGame(target: 9, isWon: false, guessed: [1]);
-        AddGame(target: 9, isWon: false, guessed: [2]);
-        AddGame(target: 9, isWon: true, guessed: [9], category: SessionCategory.Practice);
-        AddGame(target: 9, isWon: true, guessed: [9], category: SessionCategory.Practice);
+        AddGame(8, true, [8]);
+        AddGame(8, true, [2, 8]);
+        AddGame(9, true, [9]);
+        AddGame(9, false, [1]);
+        AddGame(9, false, [2]);
+        AddGame(9, true, [9], SessionCategory.Practice);
+        AddGame(9, true, [9], SessionCategory.Practice);
 
         var characterStats = (await CreateService().GetProfileAsync()).CharacterStats!;
 
@@ -134,9 +137,9 @@ public sealed class PlayerProfileServiceTests
     [Fact]
     public async Task GetProfileAsync_TodaysPuzzle_IsExcludedFromCharacterStats()
     {
-        AddGame(target: 9, isWon: true, guessed: [5, 9]);
-        AddGame(target: 8, isWon: true, guessed: [6, 8], puzzleId: TodayPuzzle);
-        AddGame(target: 8, isWon: true, guessed: [6, 8], puzzleId: TodayPuzzle);
+        AddGame(9, true, [5, 9]);
+        AddGame(8, true, [6, 8], puzzleId: TodayPuzzle);
+        AddGame(8, true, [6, 8], puzzleId: TodayPuzzle);
 
         var characterStats = (await CreateService().GetProfileAsync()).CharacterStats!;
 
@@ -149,9 +152,9 @@ public sealed class PlayerProfileServiceTests
     [Fact]
     public async Task GetProfileAsync_LegacyDuplicates_AreExcludedFromCharacterStats()
     {
-        AddGame(target: 9, isWon: true, guessed: [5, 9]);
-        AddGame(target: 8, isWon: true, guessed: [6, 8], isLegacyDuplicate: true);
-        AddGame(target: 8, isWon: true, guessed: [6, 8], isLegacyDuplicate: true);
+        AddGame(9, true, [5, 9]);
+        AddGame(8, true, [6, 8], isLegacyDuplicate: true);
+        AddGame(8, true, [6, 8], isLegacyDuplicate: true);
 
         var characterStats = (await CreateService().GetProfileAsync()).CharacterStats!;
 
@@ -162,10 +165,10 @@ public sealed class PlayerProfileServiceTests
     [Fact]
     public async Task GetProfileAsync_TiedCounts_PickTheLowestCharacterId()
     {
-        AddGame(target: 9, isWon: true, guessed: [6, 9]);
-        AddGame(target: 8, isWon: true, guessed: [6, 5, 8]);
-        AddGame(target: 9, isWon: true, guessed: [5, 9]);
-        AddGame(target: 8, isWon: true, guessed: [8]);
+        AddGame(9, true, [6, 9]);
+        AddGame(8, true, [6, 5, 8]);
+        AddGame(9, true, [5, 9]);
+        AddGame(8, true, [8]);
 
         var characterStats = (await CreateService().GetProfileAsync()).CharacterStats!;
 
@@ -186,12 +189,14 @@ public sealed class PlayerProfileServiceTests
 
     private PlayerProfileService CreateService()
     {
-        var characters = new InMemoryCharacterStore([new Character { Id = 7, Name = "Alpha", PortraitId = Guid.NewGuid() }], 7);
+        var characters =
+            new InMemoryCharacterStore([new Character { Id = 7, Name = "Alpha", PortraitId = Guid.NewGuid() }], 7);
 
         return new PlayerProfileService(playerStats, gameStats, hiLoScores, characters, dayService);
     }
 
-    private void AddSession(SessionCategory category, bool isWon, int guesses, bool finished, bool isLegacyDuplicate = false)
+    private void AddSession(SessionCategory category, bool isWon, int guesses, bool finished,
+        bool isLegacyDuplicate = false)
     {
         var session = new GameSession
         {
@@ -200,7 +205,7 @@ public sealed class PlayerProfileServiceTests
             SessionCategory = category,
             IsWon = isWon,
             FinishedOnUtc = finished ? DateTimeOffset.UtcNow : null,
-            IsLegacyDuplicate = isLegacyDuplicate,
+            IsLegacyDuplicate = isLegacyDuplicate
         };
 
         for (var guess = 0; guess < guesses; guess++)
@@ -231,11 +236,13 @@ public sealed class PlayerProfileServiceTests
             IsWon = isWon,
             StartedOnUtc = startedOnUtc ?? Now.AddDays(-1),
             FinishedOnUtc = finished ? Now.AddDays(-1) : null,
-            IsLegacyDuplicate = isLegacyDuplicate,
+            IsLegacyDuplicate = isLegacyDuplicate
         };
 
         foreach (var characterId in guessed)
+        {
             session.AddGuess(characterId);
+        }
 
         gameStats.Sessions[session.GameId] = session;
     }

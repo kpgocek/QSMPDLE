@@ -1,5 +1,7 @@
+using System.Globalization;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
+using QSMPDLE.Web.Extensions;
 using QSMPDLE.Web.Features.Gameplay.Models;
 using QSMPDLE.Web.Features.Gameplay.Services;
 using QSMPDLE.Web.Features.Sharing;
@@ -9,13 +11,12 @@ namespace QSMPDLE.Web.Tests.GameplayFlow;
 
 public sealed class ReleaseGatingTests
 {
-    private static readonly DateOnly Release = new(2026, 12, 1);
-    private static readonly DateTimeOffset DayBeforeRelease = new(2026, 11, 30, 12, 0, 0, TimeSpan.Zero);
-    private static readonly DateTimeOffset ReleaseMidnight = new(2026, 12, 1, 0, 0, 0, TimeSpan.Zero);
-
     private const int TargetId = 1;
     private const int ReleasedGuessId = 2;
     private const int UnreleasedId = 60;
+    private static readonly DateOnly Release = new(2026, 12, 1);
+    private static readonly DateTimeOffset DayBeforeRelease = new(2026, 11, 30, 12, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset ReleaseMidnight = new(2026, 12, 1, 0, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public void IsAvailableOn_ReleaseDate_IsInclusiveAndNullMeansAlways()
@@ -142,14 +143,14 @@ public sealed class ReleaseGatingTests
             PuzzleId = archiveDay,
             TargetCharacterId = TargetId,
             StartedOnUtc = DayBeforeRelease,
-            Guesses = [new GameGuess { GuessOrder = 0, GuessedCharacterId = ReleasedGuessId }],
+            Guesses = [new GameGuess { GuessOrder = 0, GuessedCharacterId = ReleasedGuessId }]
         };
 
         var loaded = await game.Manager.StartGameAsync(EntryPoint.Archive, archiveDay);
         var unreleased = await game.Manager.MakeGuessAsync(UnreleasedId);
         var share = ShareText.BuildDailyResult(archiveDay, game.Manager.GameState.GuessesMade);
 
-        loaded.Should().Be(Extensions.LoadGameResult.LoadedExisting);
+        loaded.Should().Be(LoadGameResult.LoadedExisting);
         game.Manager.ActiveClues.Should().BeEmpty();
         var restored = game.Manager.GameState.GuessesMade.Should().ContainSingle().Subject;
         restored.QPhone.Should().BeNull();
@@ -169,7 +170,15 @@ public sealed class ReleaseGatingTests
             GameId = Guid.NewGuid(),
             PlayerId = game.PlayerId,
             Game = new Game { PuzzleId = archiveDay, TargetId = TargetId, PortraitUrl = string.Empty },
-            GuessesMade = [new GuessResult { Character = new CharacterLookup(ReleasedGuessId, "Guess", null, [], ""), QPhone = ComparisonResult.Correct, Award2026 = ComparisonResult.Wrong }],
+            GuessesMade =
+            [
+                new GuessResult
+                {
+                    Character = new CharacterLookup(ReleasedGuessId, "Guess", null, [], ""),
+                    QPhone = ComparisonResult.Correct,
+                    Award2026 = ComparisonResult.Wrong
+                }
+            ]
         };
 
         await game.Manager.StartGameAsync(EntryPoint.Archive, archiveDay);
@@ -199,7 +208,8 @@ public sealed class ReleaseGatingTests
         await firstPractice.Manager.StartGameAsync(EntryPoint.Practice);
         await firstPractice.Manager.MakeGuessAsync(ReleasedGuessId);
         var archive = CreateGame(clock);
-        await archive.Manager.StartGameAsync(EntryPoint.Archive, archive.DayService.GetArchiveDayNumber(Release.AddDays(-5)));
+        await archive.Manager.StartGameAsync(EntryPoint.Archive,
+            archive.DayService.GetArchiveDayNumber(Release.AddDays(-5)));
         await archive.Manager.MakeGuessAsync(ReleasedGuessId);
         await lastClassicPractice.Manager.MakeGuessAsync(TargetId);
 
@@ -216,7 +226,7 @@ public sealed class ReleaseGatingTests
     public async Task StartPractice_BeforeRelease_NeverPicksAnUnreleasedTarget()
     {
         var character = CreateCharacter(UnreleasedId, Release);
-        var store = new InMemoryCharacterStore([CreateCharacter(TargetId), character], randomCharacterId: UnreleasedId);
+        var store = new InMemoryCharacterStore([CreateCharacter(TargetId), character], UnreleasedId);
         var service = new GameService(store, new DayService(new TestClock(DayBeforeRelease)));
 
         var practice = await service.StartPracticeAsync();
@@ -228,8 +238,26 @@ public sealed class ReleaseGatingTests
     public void BuildDailyResult_ClueSet_SquaresMatchActiveCluesInColumnOrder()
     {
         var lookup = new CharacterLookup(ReleasedGuessId, "Guess", null, [], "");
-        GuessResult withoutGated = new() { Character = lookup, Pronouns = ComparisonResult.Correct, Species = ComparisonResult.Wrong, Languages = ComparisonResult.More, Joined = ComparisonResult.Later, Affiliation = ComparisonResult.Partial };
-        GuessResult withGated = new() { Character = lookup, Pronouns = ComparisonResult.Correct, Species = ComparisonResult.Wrong, Languages = ComparisonResult.More, Joined = ComparisonResult.Later, QPhone = ComparisonResult.Wrong, Award2026 = ComparisonResult.Correct, Affiliation = ComparisonResult.Partial };
+        GuessResult withoutGated = new()
+        {
+            Character = lookup,
+            Pronouns = ComparisonResult.Correct,
+            Species = ComparisonResult.Wrong,
+            Languages = ComparisonResult.More,
+            Joined = ComparisonResult.Later,
+            Affiliation = ComparisonResult.Partial
+        };
+        GuessResult withGated = new()
+        {
+            Character = lookup,
+            Pronouns = ComparisonResult.Correct,
+            Species = ComparisonResult.Wrong,
+            Languages = ComparisonResult.More,
+            Joined = ComparisonResult.Later,
+            QPhone = ComparisonResult.Wrong,
+            Award2026 = ComparisonResult.Correct,
+            Affiliation = ComparisonResult.Partial
+        };
 
         var before = ShareText.BuildDailyResult(1, [withoutGated]).Split('\n')[2].Trim();
         var after = ShareText.BuildDailyResult(1, [withGated]).Split('\n')[2].Trim();
@@ -239,18 +267,20 @@ public sealed class ReleaseGatingTests
     }
 
     private static int SquaresIn(string row) =>
-        System.Globalization.StringInfo.ParseCombiningCharacters(row.Trim()).Length;
+        StringInfo.ParseCombiningCharacters(row.Trim()).Length;
 
     private static GameplayAvailabilityService CreateAvailability(TimeProvider clock) =>
-        new(new DayService(clock), Options.Create(new GameplayOptions
-        {
-            CluePremieres = { [ClueGroup.QPhone] = Release, [ClueGroup.Award2026] = Release },
-        }));
+        new(new DayService(clock),
+            Options.Create(new GameplayOptions
+            {
+                CluePremieres = { [ClueGroup.QPhone] = Release, [ClueGroup.Award2026] = Release }
+            }));
 
     private static TestGame CreateGame(TestClock clock)
     {
         var dayService = new DayService(clock);
-        Character[] characters = [CreateCharacter(TargetId), CreateCharacter(ReleasedGuessId), CreateCharacter(UnreleasedId, Release)];
+        Character[] characters =
+            [CreateCharacter(TargetId), CreateCharacter(ReleasedGuessId), CreateCharacter(UnreleasedId, Release)];
         var store = new InMemoryCharacterStore(characters, TargetId);
         var playerId = Guid.NewGuid();
         var playerStatsStore = new InMemoryPlayerStatsStore { Stats = new PlayerStats { Id = playerId } };
@@ -279,8 +309,13 @@ public sealed class ReleaseGatingTests
         LanguageCount = 1,
         Species = ["Human"],
         JoinDayNumber = id,
-        AvailableFrom = availableFrom,
+        AvailableFrom = availableFrom
     };
 
-    private sealed record TestGame(GameStateManager Manager, InMemoryGameStateStore GameStateStore, InMemoryGameStatsStore Statistics, DayService DayService, Guid PlayerId);
+    private sealed record TestGame(
+        GameStateManager Manager,
+        InMemoryGameStateStore GameStateStore,
+        InMemoryGameStatsStore Statistics,
+        DayService DayService,
+        Guid PlayerId);
 }

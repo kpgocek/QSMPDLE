@@ -19,7 +19,7 @@ public sealed class CharacterComparerTests
     [InlineData("Any", "He/Him", ComparisonResult.Partial)]
     [InlineData("He/Him", "Any", ComparisonResult.Partial)]
     public async Task Compare_Pronouns_MatchOnlyTheSameSet(string target, string guessed, ComparisonResult expected) =>
-        (await CompareAsync(Create(1, pronouns: target), Create(2, pronouns: guessed))).Pronouns.Should().Be(expected);
+        (await CompareAsync(Create(1, target), Create(2, guessed))).Pronouns.Should().Be(expected);
 
     [Theory]
     [InlineData(2, 2, ComparisonResult.Correct)]
@@ -29,7 +29,8 @@ public sealed class CharacterComparerTests
     [InlineData(4, 3, ComparisonResult.More)]
     [InlineData(3, 4, ComparisonResult.Less)]
     public async Task Compare_Languages_TreatFourOrMoreAsOneValue(int target, int guessed, ComparisonResult expected) =>
-        (await CompareAsync(Create(1, languages: target), Create(2, languages: guessed))).Languages.Should().Be(expected);
+        (await CompareAsync(Create(1, languages: target), Create(2, languages: guessed))).Languages.Should()
+        .Be(expected);
 
     [Theory]
     [InlineData(5, 5, ComparisonResult.Correct)]
@@ -46,8 +47,10 @@ public sealed class CharacterComparerTests
     [InlineData("Guild,Order", "Guild", ComparisonResult.Partial)]
     [InlineData("Guild", "Guild,Order", ComparisonResult.Partial)]
     [InlineData("Guild", "Order", ComparisonResult.Wrong)]
-    public async Task Compare_Affiliations_MatchOnlyTheSameSet(string target, string guessed, ComparisonResult expected) =>
-        (await CompareAsync(Create(1, affiliations: target), Create(2, affiliations: guessed))).Affiliation.Should().Be(expected);
+    public async Task
+        Compare_Affiliations_MatchOnlyTheSameSet(string target, string guessed, ComparisonResult expected) =>
+        (await CompareAsync(Create(1, affiliations: target), Create(2, affiliations: guessed))).Affiliation.Should()
+        .Be(expected);
 
     [Theory]
     [InlineData("Human", "human", ComparisonResult.Correct)]
@@ -59,10 +62,13 @@ public sealed class CharacterComparerTests
         (await CompareAsync(Create(1, species: target), Create(2, species: guessed))).Species.Should().Be(expected);
 
     private static async Task<GuessResult> CompareAsync(Character target, Character guessed) =>
-        await new CharacterComparer(new InMemoryCharacterStore([target, guessed], target.Id)).CompareAsync(target.Id, guessed.Id, NoClues);
+        await new CharacterComparer(new InMemoryCharacterStore([target, guessed], target.Id)).CompareAsync(target.Id,
+            guessed.Id, NoClues);
 
-    private static Character Create(int id, string pronouns = "He/Him", int languages = 1, int joinDay = 1, string affiliations = "", string species = "Human") =>
-        TestCharacters.Create(id, $"Character {id}", joinDay, languages, Split(pronouns), Split(affiliations), Split(species));
+    private static Character Create(int id, string pronouns = "He/Him", int languages = 1, int joinDay = 1,
+        string affiliations = "", string species = "Human") =>
+        TestCharacters.Create(id, $"Character {id}", joinDay, languages, Split(pronouns), Split(affiliations),
+            Split(species));
 
     private static string[] Split(string values) => values.Split(',', StringSplitOptions.RemoveEmptyEntries);
 }

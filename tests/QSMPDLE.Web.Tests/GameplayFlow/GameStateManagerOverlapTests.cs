@@ -8,14 +8,15 @@ namespace QSMPDLE.Web.Tests.GameplayFlow;
 /// <summary>A circuit can start an operation while another one still waits for the database.</summary>
 public sealed class GameStateManagerOverlapTests
 {
+    private readonly TaskCompletionSource database = new();
     private readonly InMemoryGameStateStore gameStateStore = new();
     private readonly InMemoryGameStatsStore gameStatsStore = new();
-    private readonly TaskCompletionSource database = new();
     private readonly GameStateManager manager;
 
     public GameStateManagerOverlapTests()
     {
-        var characters = Enumerable.Range(1, 5).Select(id => TestCharacters.Create(id, $"Character {id}", id, 1, ["He/Him"], [], ["Human"]));
+        var characters = Enumerable.Range(1, 5)
+            .Select(id => TestCharacters.Create(id, $"Character {id}", id, 1, ["He/Him"], [], ["Human"]));
         var characterStore = new InMemoryCharacterStore(characters, 1, new Dictionary<int, int> { [1] = 2, [2] = 3 });
         var dayService = new DayService();
         manager = new GameStateManager(
@@ -71,7 +72,8 @@ public sealed class GameStateManagerOverlapTests
     {
         gameStatsStore.Loading = database.Task;
 
-        await ReleaseAndWaitAsync(manager.StartGameAsync(EntryPoint.Archive, 1), manager.StartGameAsync(EntryPoint.Practice));
+        await ReleaseAndWaitAsync(manager.StartGameAsync(EntryPoint.Archive, 1),
+            manager.StartGameAsync(EntryPoint.Practice));
 
         manager.GameState.SessionCategory.Should().Be(SessionCategory.Practice);
         gameStateStore.GetStateForKey("practice-current").Game.PuzzleId.Should().BeNull();

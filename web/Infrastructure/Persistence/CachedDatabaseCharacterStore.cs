@@ -16,11 +16,11 @@ namespace QSMPDLE.Web.Infrastructure.Persistence;
 ///     load that other players are waiting on.
 /// </summary>
 public class CachedDatabaseCharacterStore(
-    IDbContextFactory<ApplicationDbContext> DbContextFactory,
-    IMemoryCache Cache,
-    IDayService DayService,
-    TimeProvider TimeProvider,
-    ILogger<CachedDatabaseCharacterStore> Logger) : ICharacterStore
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    IMemoryCache cache,
+    IDayService dayService,
+    TimeProvider timeProvider,
+    ILogger<CachedDatabaseCharacterStore> logger) : ICharacterStore
 {
     private const string CatalogKey = "qsmpdle-character-catalog";
 
@@ -52,7 +52,7 @@ public class CachedDatabaseCharacterStore(
     public async Task<Character> GetCharacterForDayAsync(int dayNumber, CancellationToken cancellationToken = default)
     {
         var key = $"daily-character-{dayNumber}";
-        if (Cache.TryGetValue(key, out Character? cached) && cached is not null)
+        if (cache.TryGetValue(key, out Character? cached) && cached is not null)
         {
             return cached;
         }
@@ -62,13 +62,13 @@ public class CachedDatabaseCharacterStore(
         await LoadGate.WaitAsync(cancellationToken);
         try
         {
-            if (Cache.TryGetValue(key, out cached) && cached is not null)
+            if (cache.TryGetValue(key, out cached) && cached is not null)
             {
                 return cached;
             }
 
             var character = await LoadCharacterForDayAsync(dayNumber, catalog);
-            Cache.Set(key, character, TimeSpan.FromDays(1));
+            cache.Set(key, character, TimeSpan.FromDays(1));
             return character;
         }
         finally
@@ -88,7 +88,7 @@ public class CachedDatabaseCharacterStore(
 
     private async Task<CharacterCatalog> GetCatalogAsync(CancellationToken cancellationToken)
     {
-        if (Cache.TryGetValue(CatalogKey, out CharacterCatalog? catalog) && catalog is not null)
+        if (cache.TryGetValue(CatalogKey, out CharacterCatalog? catalog) && catalog is not null)
         {
             return catalog;
         }
@@ -96,17 +96,17 @@ public class CachedDatabaseCharacterStore(
         await LoadGate.WaitAsync(cancellationToken);
         try
         {
-            if (Cache.TryGetValue(CatalogKey, out catalog) && catalog is not null)
+            if (cache.TryGetValue(CatalogKey, out catalog) && catalog is not null)
             {
                 return catalog;
             }
 
-            await using var gameplay = await DbContextFactory.CreateDbContextAsync(CancellationToken.None);
+            await using var gameplay = await dbContextFactory.CreateDbContextAsync(CancellationToken.None);
             var characters = await gameplay.Characters.AsNoTracking().ToListAsync(CancellationToken.None);
 
             catalog = CharacterCatalog.Create(characters);
-            var nextMidnight = new DateTimeOffset(TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1), TimeSpan.Zero);
-            Cache.Set(CatalogKey, catalog,
+            var nextMidnight = new DateTimeOffset(timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1), TimeSpan.Zero);
+            cache.Set(CatalogKey, catalog,
                 new MemoryCacheEntryOptions
                 {
                     Priority = CacheItemPriority.NeverRemove, AbsoluteExpiration = nextMidnight
@@ -121,8 +121,8 @@ public class CachedDatabaseCharacterStore(
 
     private async Task<Character> LoadCharacterForDayAsync(int dayNumber, CharacterCatalog catalog)
     {
-        var date = DayService.GetArchiveDate(dayNumber);
-        await using var gameplay = await DbContextFactory.CreateDbContextAsync(CancellationToken.None);
+        var date = dayService.GetArchiveDate(dayNumber);
+        await using var gameplay = await dbContextFactory.CreateDbContextAsync(CancellationToken.None);
 
         var scheduled = await gameplay.DailyGames
             .Where(x => x.Id == dayNumber)
@@ -131,7 +131,7 @@ public class CachedDatabaseCharacterStore(
         if (scheduled is not null && catalog.CharactersById.TryGetValue(scheduled.CharacterId, out var character))
         {
             // A played day keeps its answer, even if the character's release date was moved past it later.
-            return character.IsAvailableOn(date) || dayNumber < DayService.GetTodayDayNumber()
+            return character.IsAvailableOn(date) || dayNumber < dayService.GetTodayDayNumber()
                 ? character
                 : await ReplaceUnreleasedScheduleAsync(gameplay, scheduled, date, catalog);
         }
@@ -171,7 +171,7 @@ public class CachedDatabaseCharacterStore(
         scheduled.CharacterId = replacement;
         await gameplay.SaveChangesAsync(CancellationToken.None);
 
-        Logger.LogError(
+        logger.LogError(
             "Daily game {DayNumber} was scheduled with a character released after its date; it was re-planned and saved.",
             scheduled.Id);
         return catalog.CharactersById[replacement];

@@ -23,17 +23,17 @@ public sealed class GameStateManager(
     TimeProvider? timeProvider = null) : IGameStateManager
 {
     // Without configured release dates every clue is live, which is what callers that predate releases expect.
-    private readonly IGameplayAvailabilityService _availability =
+    private readonly IGameplayAvailabilityService availability =
         availability ?? new GameplayAvailabilityService(dayService, Options.Create(new GameplayOptions()));
 
     // The state and the store's key are shared by the whole circuit, so operations that use them never overlap.
-    private readonly SemaphoreSlim _operationGate = new(1, 1);
+    private readonly SemaphoreSlim operationGate = new(1, 1);
 
-    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+    private readonly TimeProvider timeProvider = timeProvider ?? TimeProvider.System;
 
-    public DateOnly EffectiveDate => _availability.GetEffectiveDate(GameState?.Game.PuzzleId);
+    public DateOnly EffectiveDate => availability.GetEffectiveDate(GameState?.Game.PuzzleId);
 
-    public IReadOnlySet<ClueGroup> ActiveClues => _availability.GetActiveClues(EffectiveDate);
+    public IReadOnlySet<ClueGroup> ActiveClues => availability.GetActiveClues(EffectiveDate);
 
     public GameState GameState { get; private set; } = null!;
 
@@ -42,7 +42,7 @@ public sealed class GameStateManager(
     public async Task<LoadGameResult> StartGameAsync(EntryPoint entryPoint, int? puzzleId = null,
         CancellationToken cancellationToken = default)
     {
-        await _operationGate.WaitAsync(cancellationToken);
+        await operationGate.WaitAsync(cancellationToken);
         try
         {
             var result = await LoadGameAsync(entryPoint, puzzleId, cancellationToken);
@@ -55,13 +55,13 @@ public sealed class GameStateManager(
         }
         finally
         {
-            _operationGate.Release();
+            operationGate.Release();
         }
     }
 
     public async Task StartNewPracticeGameAsync(CancellationToken cancellationToken = default)
     {
-        await _operationGate.WaitAsync(cancellationToken);
+        await operationGate.WaitAsync(cancellationToken);
         try
         {
             await gameStateStore.Init("practice-current");
@@ -76,7 +76,7 @@ public sealed class GameStateManager(
         }
         finally
         {
-            _operationGate.Release();
+            operationGate.Release();
         }
     }
 
@@ -88,7 +88,7 @@ public sealed class GameStateManager(
         }
 
         var gameId = GameState.GameId;
-        await _operationGate.WaitAsync(cancellationToken);
+        await operationGate.WaitAsync(cancellationToken);
         try
         {
             // The guess was meant for the game on screen, not for one that loaded while it waited.
@@ -96,7 +96,7 @@ public sealed class GameStateManager(
         }
         finally
         {
-            _operationGate.Release();
+            operationGate.Release();
         }
     }
 
@@ -106,7 +106,7 @@ public sealed class GameStateManager(
     public async Task MarkPopupAsSeenAsync(CancellationToken cancellationToken = default)
     {
         var gameId = GameState.GameId;
-        await _operationGate.WaitAsync(cancellationToken);
+        await operationGate.WaitAsync(cancellationToken);
         try
         {
             if (GameState.GameId != gameId)
@@ -119,7 +119,7 @@ public sealed class GameStateManager(
         }
         finally
         {
-            _operationGate.Release();
+            operationGate.Release();
         }
     }
 
@@ -283,7 +283,7 @@ public sealed class GameStateManager(
     /// </summary>
     private async Task<GameSession?> RecordGuessAsync(IReadOnlyList<int> board)
     {
-        var now = _timeProvider.GetUtcNow();
+        var now = timeProvider.GetUtcNow();
         try
         {
             return await gameStatsStore.RecordGuessAsync(CreateSession(now), board, now);
@@ -328,7 +328,7 @@ public sealed class GameStateManager(
     {
         var characters = await characterStore.GetCharacterMapAsync(cancellationToken);
         var target = characters.GetValueOrDefault(session.TargetCharacterId);
-        var activeClues = _availability.GetActiveClues(_availability.GetEffectiveDate(session.PuzzleId));
+        var activeClues = availability.GetActiveClues(availability.GetEffectiveDate(session.PuzzleId));
         // Without its answer, or with a guess that is no longer in the catalog, the rest of the game still opens.
         var comparable = target is null ? [] : session.GuessedCharacterIds.Where(characters.ContainsKey).ToList();
         var guesses = await CompareGuessesAsync(session.TargetCharacterId, comparable, activeClues, cancellationToken);
@@ -373,7 +373,7 @@ public sealed class GameStateManager(
         SessionCategory = GameState.SessionCategory,
         FirstEntryPoint = GameState.FirstEntryPoint,
         TargetCharacterId = GameState.Game.TargetId,
-        Ruleset = _availability.GetRuleset(EffectiveDate),
+        Ruleset = availability.GetRuleset(EffectiveDate),
         StartedOnUtc = startedOnUtc
     };
 

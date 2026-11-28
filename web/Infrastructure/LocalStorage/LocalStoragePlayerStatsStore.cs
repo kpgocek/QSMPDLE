@@ -9,18 +9,18 @@ public sealed class LocalStoragePlayerStatsStore(ILocalStorageService localStora
     private const string Key = "qsmpdle-player-stats";
 
     // Components of one page ask at once; a new visitor's first call must store the identity before the next one reads it.
-    private readonly SemaphoreSlim _loadGate = new(1, 1);
+    private readonly SemaphoreSlim loadGate = new(1, 1);
 
     public async Task<PlayerStats> LoadAsync()
     {
-        await _loadGate.WaitAsync();
+        await loadGate.WaitAsync();
         try
         {
             return await LoadOrCreateAsync();
         }
         finally
         {
-            _loadGate.Release();
+            loadGate.Release();
         }
     }
 

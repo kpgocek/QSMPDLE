@@ -11,8 +11,8 @@
     }
     else
     {
-        <MudChart ChartType="ChartType.Bar" ChartSeries="@Series" ChartLabels="@GuessLabels" ChartOptions="@Options"
-                  Width="100%" Height="300px" @bind-SelectedIndex="@Index" MatchBoundsToSize="true">
+        <MudChart ChartType="ChartType.Bar" ChartSeries="@series" ChartLabels="@guessLabels" ChartOptions="@options"
+                  Width="100%" Height="300px" @bind-SelectedIndex="@index" MatchBoundsToSize="true">
         </MudChart>
     }
 </div>
@@ -23,20 +23,20 @@
 
     [Parameter] public string Title { get; set; } = "Guess Distribution";
 
-    private int Index = -1;
-    private readonly BarChartOptions Options = new();
+    private int index = -1;
+    private readonly BarChartOptions options = new();
 
-    private readonly string[] GuessLabels = [.. Enumerable.Range(1, GameRules.MaxGuesses).Select(count => count.ToString())];
+    private readonly string[] guessLabels = [.. Enumerable.Range(1, GameRules.MaxGuesses).Select(count => count.ToString())];
 
-    private List<ChartSeries<double>> Series = [];
+    private List<ChartSeries<double>> series = [];
 
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
 
-        Series = [new ChartSeries<double> { Name = "Wins", Data = Distribution }];
+        series = [new ChartSeries<double> { Name = "Wins", Data = Distribution }];
 
-        Options.ChartPalette = QsmpdleTheme.ChartPalette;
+        options.ChartPalette = QsmpdleTheme.ChartPalette;
     }
 
 }

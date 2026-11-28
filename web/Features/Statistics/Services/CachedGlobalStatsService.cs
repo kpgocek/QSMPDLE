@@ -18,7 +18,7 @@ public sealed class CachedGlobalStatsService(
     private static readonly TimeSpan Expiry = TimeSpan.FromMinutes(5);
 
     // Concurrent misses wait for a single load instead of stampeding the database.
-    private readonly SemaphoreSlim _loadGate = new(1, 1);
+    private readonly SemaphoreSlim loadGate = new(1, 1);
 
     public async Task<GlobalTotals> GetTotalsAsync()
     {
@@ -27,7 +27,7 @@ public sealed class CachedGlobalStatsService(
             return cached;
         }
 
-        await _loadGate.WaitAsync();
+        await loadGate.WaitAsync();
         try
         {
             if (cache.TryGetValue(TotalsKey, out cached) && cached is not null)
@@ -51,7 +51,7 @@ public sealed class CachedGlobalStatsService(
         }
         finally
         {
-            _loadGate.Release();
+            loadGate.Release();
         }
     }
 }
